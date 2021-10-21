@@ -1,0 +1,3 @@
+# GIT ignore configruation
+# The environment is ignored
+env/
