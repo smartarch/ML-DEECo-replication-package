@@ -3,6 +3,12 @@
 """
 
 
+from source.simulation import World
+
+world = World()
+k = world.generate_random_drones()
+
+
 
 
 

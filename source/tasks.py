@@ -1,6 +1,6 @@
 
 from ensemble import Ensemble
-from base import Charger, Drone, Bird
+from .base import Charger, Drone, Bird
 
 class ChargerAssignment(Ensemble): # This formed only until the drone starts charging
     

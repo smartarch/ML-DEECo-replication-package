@@ -195,9 +195,7 @@ class Drone(Component):
             This property returns true if a drone needs charging or not/
         """
 
-        # the energyNeededToStartCharging needs to be calculated
-        energyNeededToStartCharging = 0.5
-        return self.state is not DroneState.CHARGING and self.battery < self.energyNeededToStartCharging + 0.05  # <-- what is this?
+        return self.state is not DroneState.CHARGING and self.battery < self.energyNeededToStartCharging() + 0.05  # <-- what is this?
   
 
 
