@@ -161,12 +161,12 @@ class Drone(Component):
     state: DroneState
 
     # target is either a charger or a bird/activity
-    target: Component
+    target: Point
 
     # speed of the drone which is distance unit / time unit, default value = 0.01
     speed :float
 
-    # speed of the energy required to live in 1 timestep
+    # amount of the energy required to live in 1 timestep (rename it later)
     energy :float
 
     def __init__ (
@@ -184,6 +184,7 @@ class Drone(Component):
         self.target = None
         self.energy = energy
 
+    ### rename and add comments
     def live (self):
         # if the drone is dead return false
         if self.state == DroneState.TERMINATED:
@@ -214,7 +215,7 @@ class Drone(Component):
             self.location.x = self.location.x + x_forward
             self.location.y = self.location.y + y_forward
             return True
-            
+
         return False
 
 
@@ -236,6 +237,8 @@ class Drone(Component):
         return self.state is not DroneState.CHARGING and self.battery < self.energyNeededToStartCharging() + 0.05  # <-- what is this?
   
 
+    def __str__ (self):
+        print ("%s, battery:%f, status:%d"%(self.id,self.battery,self.state))
 
 class Charger (Component):
     """
