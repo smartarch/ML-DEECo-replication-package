@@ -14,6 +14,7 @@ class Point:
         The class represents a point on the world.
         X and Y are values from 0 to 1, for instance 0.5 meaning at the center of map.
         The default values at the start of each Point is 0.5 and 0.5
+        Please keep in mind that the X and Y must be a value, where  0 < value < 1
     """
 
     _x: float
@@ -32,8 +33,8 @@ class Point:
     
     @x.setter
     def x(self, value):
-        if value<0 or value>1: 
-            raise Exception("X must be between 0 and 1.")
+        if value<=0 or value>=1: 
+            raise Exception("X must be between (0,1).")
         self._x = value
     
     @property
@@ -43,7 +44,7 @@ class Point:
     @y.setter
     def y(self, value):
         if value<0 or value>1: 
-            raise Exception("Y must be between 0 and 1.")
+            raise Exception("Y must be between (0,1).")
         self._y = value
 
 
@@ -97,6 +98,8 @@ class Field (Component):
     """
         A Field that the simulation is running on.
         The places contain all the places on the Field.
+
+        Static Count for the Fields
     """
 
     # Field counter
@@ -157,11 +160,16 @@ class Drone(Component):
     state: DroneState
 
     # target is either a charger or a bird/activity
-    targe: Component
+    target: Component
+
+    # speed of the drone which is distance unit / time unit, default value = 0.01
+    speed :float
+
 
     def __init__ (
                     self, 
-                    location=Point()):
+                    location=Point(),
+                    speed=0.01):
 
         Drone.Count = Drone.Count + 1
         Component.__init__(self,Drone.Count)
@@ -169,8 +177,28 @@ class Drone(Component):
         self.location = location
         self.battery = 1
         self.state = DroneState.IDLE
-        self.targe = None
+        self.target = None
 
+
+    def energyNeededToStartCharging(self):
+        # calculation required
+        return 0.15
+
+    # added functions
+    def needsCharging(self):
+        """
+        	Tomas's Comments
+            .... initial estimate
+      	    .... trained - for this we have a predictor
+            .... features: drone.pos, drone.battery, overallDemand on the chargers (number of drones currently in the need of charging), number of available chargers, ....
+        
+            This property returns true if a drone needs charging or not/
+        """
+
+        # the energyNeededToStartCharging needs to be calculated
+        energyNeededToStartCharging = 0.5
+        return self.state is not DroneState.CHARGING and self.battery < self.energyNeededToStartCharging + 0.05  # <-- what is this?
+  
 
 
 class Charger (Component):
@@ -178,8 +206,8 @@ class Charger (Component):
         The charger class represnets a charging slot.
         Location: type of a Point (x,y) in a given world.
         Client: a variable to indicate which drone has reserved the time of this charger.
-        Speed: the speed of charging, is basically power unit  / time unit
-        Static Count for the Drones
+        Rate: the speed (rate) of charging, is basically power unit  / time unit
+        Static Count for the Chargers
     """
     # static Counter
     Count = 0
@@ -190,20 +218,64 @@ class Charger (Component):
     # which drone has reserved the Charger
     client: Drone
 
-    # rate (speed) of charging per timestep defined as power unit / time unit
-    speed : float
+    # rate of charging per timestep defined as power unit / time unit
+    rate : float
     
     def __init__ (
                     self,
                     location, 
-                    speed=0.01):
+                    rate=0.01):
                 
         Charger.Count = Charger.Count + 1
         Component.__init__(self,Charger.Count)
 
         self.location = location
-        self.speed = speed
+        self.rate = rate
         self.client = None
 
     def is_busy (self):
         return self.client != None
+    """
+        need some clarification 
+    
+    def step(self):
+      	if (self.state == IDLE or self.state == PROTECTING) and self.targetCharger is not None:
+          	self.state = DroneState.MOVING_TO_CHARGER
+        
+        if self.state == CHARGING and self.battery == 1:
+          	self.targetCharger = None
+            self.state = IDLE
+    """
+
+
+
+class Bird(Component):
+    """
+        The charger class represnets a bird/flock/imposter.
+        Location: type of a Point (x,y) in a given world.
+        Center: the center of an area of interest.
+        Speed: the speed (rate) of charging, is basically power unit  / time unit
+        Static Count for the Birds
+    """
+    # static Counter
+    Count = 0
+
+    # the location on the zone/map/field
+    location: Point
+
+    # speed of the bird which is distance unit / time unit, default value = 0.01
+    speed :float
+
+    # intrest zone's center,  something to be remembered by bird, where is a good place to visit
+    center : Point
+
+    def __init__(
+                    self,
+                    location,
+                    speed=0.01):
+
+        Bird.Count = Bird.Count + 1
+        Component.__init__(self,Bird.Count)
+
+        self.location = location
+        self.speed = speed

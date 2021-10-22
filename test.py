@@ -3,10 +3,6 @@
 """
 
 
-from source.base import Point
-
-x = Point(0,0.5)
-
 
 
 
