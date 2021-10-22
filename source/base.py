@@ -8,6 +8,7 @@
 
 """
 from enum import Enum
+from .utility import diff
 
 class Point:
     """
@@ -165,11 +166,14 @@ class Drone(Component):
     # speed of the drone which is distance unit / time unit, default value = 0.01
     speed :float
 
+    # speed of the energy required to live in 1 timestep
+    energy :float
 
     def __init__ (
                     self, 
                     location=Point(),
-                    speed=0.01):
+                    speed=0.01,
+                    energy=0.01):
 
         Drone.Count = Drone.Count + 1
         Component.__init__(self,Drone.Count)
@@ -178,6 +182,40 @@ class Drone(Component):
         self.battery = 1
         self.state = DroneState.IDLE
         self.target = None
+        self.energy = energy
+
+    def live (self):
+        # if the drone is dead return false
+        if self.state == DroneState.TERMINATED:
+            return False
+
+
+        # if the drone is not charging, then decrease the living cost
+        if self.state != DroneState.CHARGING:
+            self.battery = self.battery - self.energy
+            # check if the battery is dead, then change the state of drone
+            if self.battery<=0:
+                self.state = DroneState.TERMINATED
+                return False
+
+        return True
+            
+
+    # move the drone for 1 time step
+    def moveToPoint (
+                        self,
+                        target):
+        
+        if self.live():
+            x_forward = self.speed * (utility.diff(self.location.x,target.x))
+            y_forward = self.speed * (utility.diff(self.location.y,target.y))
+            
+            
+            self.location.x = self.location.x + x_forward
+            self.location.y = self.location.y + y_forward
+            return True
+            
+        return False
 
 
     def energyNeededToStartCharging(self):
