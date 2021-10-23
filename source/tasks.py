@@ -1,50 +1,64 @@
+from typing import List
 
-from .ensemble import Ensemble
-from .base import Charger, Drone, Bird
+from .ensemble import Ensemble, oneOf, someOf
+from .base import Point, Charger, Drone, Bird, Field, DroneState
 
-class ChargerAssignment(Ensemble): # This formed only until the drone starts charging
-    
+
+class ChargerAssignment(Ensemble):
     charger: Charger
 
     def __init__(self, charger):
-    	self.charger = charger
-    """
-    NEEDS CLARIFICATION
-    drone: Drone[1]
-        not in other Drone.drone
-    order lambda drone: drone.battery - drone.energyNeededToStartCharging, order=ASC
+        self.charger = charger
 
-    def isMember(
-    """
-    def selectComponents(self, allComponents, allEnsemblesSoFarInThisRound):
-        # select the drones that are already in this Ensemble
-        dronesAlreadySelected = [ens.drone for ens in allEnsemblesSoFarInThisRound if isinstance(ens, ChargerAssignment)]
 
-        # select all other drones that are not part of this ensemble
-        allDrones = [drone for drone in allComponents if isinstance(drone, Drone) and drone not in dronesAlreadySelected]
-        allDrones = sorted(allDrones, key=lambda drone: drone.battery - drone.energyNeededToStartCharging(), order=ASC)
-        potentialDrones = [drone for drone in allDrones and drone.needsCharging()]
-        if len(potentialDrones) > 0:
-            self.drone = potentialDrones[0]
-            return True
-        else:
-            return False
+    def needsCharging(self, drone):
+        return True
 
-    def actuation(self):
-      	self.drone.targetCharger = self.charger
-      
-    
+    def energyNeededToStartCharging(self, drone):
+        return 0.1
+
+
+    drone: Drone = oneOf(Drone)
+
+    @drone.select
+    def drone(self, drone, otherEnsembles):
+        return not any(ens for ens in otherEnsembles if isinstance(ens, ChargerAssignment) and ens.drone == drone) and self.needsCharging(drone)
+
+    @drone.priority
+    def drone(self, drone):
+        return self.energyNeededToStartCharging(drone) - drone.battery
+
+
+    def actuate(self):
+        self.drone.targetCharger = self.charger
+
+
 class FieldProtection(Ensemble):
-    def __init__(self, field):
-    	self.field = field
-    """
-        drones: Drone[self.numberOfDronesNeededForProtection(field)]
-    
-        select drones which are IDLE
-        order them by distance to the field
-      
-    """
+    field: Field
 
-    def actuation(self):
-      	for drone, pos in zip(self.drones, self.field.places):
-      		drone.targetFieldPosition = pos
+    def __init__(self, field):
+        self.field = field
+
+
+    def distanceToField(self, drone):
+        # TODO
+        return 1
+
+    drones: List[Drone] = someOf(Drone)
+
+    @drones.cardinality
+    def drones(self, drone):
+        return len(self.field.places)
+
+    @drones.select
+    def drone(self, drone, otherEnsembles):
+        return drone.state == DroneState.IDLE and not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones)
+
+    @drones.priority
+    def drone(self, drone):
+        return -self.distanceToField(drone)
+
+
+    def actuate(self):
+        for drone, pos in zip(self.drones, self.field.places):
+            drone.targetFieldPosition = pos

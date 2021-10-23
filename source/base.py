@@ -238,7 +238,7 @@ class Drone(Component):
   
 
     def __str__ (self):
-        print ("%s, battery:%f, status:%d"%(self.id,self.battery,self.state))
+        return f"{self.id}, battery:{self.battery}, status:{self.state}"
 
 class Charger (Component):
     """
