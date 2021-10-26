@@ -20,8 +20,14 @@ components = [
 ]
 
 ca = ChargerAssignment(charger_1)
-ca.materialize(components, [])
-print(ca.drone)
+ca2 = ChargerAssignment(charger_2)
+ca3 = ChargerAssignment(charger_3)
 
+potentialEnsembles = [ca, ca2, c3]
+portentialEnsembles = sorted(potentialEnsembles, key=lambda x: x.priority())
 
-
+instantiatedEnsembles = []
+for ens in potentialEnsembles:
+    if ca.materialize(components, instantiatedEnsembles):
+        instantiatedEnsembles.append(ens)
+        ens.actuate()

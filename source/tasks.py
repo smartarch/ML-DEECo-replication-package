@@ -10,6 +10,8 @@ class ChargerAssignment(Ensemble):
     def __init__(self, charger):
         self.charger = charger
 
+    def priority(self):
+        return 1
 
     def needsCharging(self, drone):
         return True
@@ -47,15 +49,15 @@ class FieldProtection(Ensemble):
     drones: List[Drone] = someOf(Drone)
 
     @drones.cardinality
-    def drones(self, drone):
+    def drones(self):
         return len(self.field.places)
 
     @drones.select
-    def drone(self, drone, otherEnsembles):
+    def drones(self, drone, otherEnsembles):
         return drone.state == DroneState.IDLE and not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones)
 
     @drones.priority
-    def drone(self, drone):
+    def drones(self, drone):
         return -self.distanceToField(drone)
 
 
