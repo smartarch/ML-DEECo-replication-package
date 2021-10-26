@@ -1,0 +1,153 @@
+!!python/object:source.base.Drone
+battery: 1
+energy: 0.01
+id: Drone_1
+location: !!python/object:source.base.Point
+  _x: 0.4
+  _y: 0.9
+state: !!python/object/apply:source.base.DroneState
+- 0
+target: !!python/object:source.base.Bird
+  id: Bird_1
+  location: !!python/object:source.base.Point
+    _x: 0.5
+    _y: 0.3
+  speed: 0.01
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_1
+  location: !!python/object:source.base.Point
+    _x: 0.1
+    _y: 0.7
+  state: &id001 !!python/object/apply:source.base.DroneState
+  - 0
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_2
+  location: !!python/object:source.base.Point
+    _x: 0.3
+    _y: 0.4
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_3
+  location: !!python/object:source.base.Point
+    _x: 0.2
+    _y: 0.5
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_4
+  location: !!python/object:source.base.Point
+    _x: 0.4
+    _y: 0.6
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_5
+  location: !!python/object:source.base.Point
+    _x: 0.1
+    _y: 0.2
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_1
+  location: !!python/object:source.base.Point
+    _x: 0.1
+    _y: 0.7
+  state: &id001 !!python/object/apply:source.base.DroneState
+  - 0
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_2
+  location: !!python/object:source.base.Point
+    _x: 0.3
+    _y: 0.4
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_3
+  location: !!python/object:source.base.Point
+    _x: 0.2
+    _y: 0.5
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_4
+  location: !!python/object:source.base.Point
+    _x: 0.4
+    _y: 0.6
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_5
+  location: !!python/object:source.base.Point
+    _x: 0.1
+    _y: 0.2
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_1
+  location: !!python/object:source.base.Point
+    _x: 0.1
+    _y: 0.7
+  state: &id001 !!python/object/apply:source.base.DroneState
+  - 0
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_2
+  location: !!python/object:source.base.Point
+    _x: 0.3
+    _y: 0.4
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_3
+  location: !!python/object:source.base.Point
+    _x: 0.2
+    _y: 0.5
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_4
+  location: !!python/object:source.base.Point
+    _x: 0.4
+    _y: 0.6
+  state: *id001
+  target: null
+- !!python/object:source.base.Drone
+  battery: 1
+  energy: 0.01
+  id: Drone_5
+  location: !!python/object:source.base.Point
+    _x: 0.1
+    _y: 0.2
+  state: *id001
+  target: null
