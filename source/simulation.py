@@ -52,11 +52,8 @@ class World:
                 points = []
                 if isinstance(conf_value,int):
                     for i in range(conf_value):
-                        if conf=="places":          # a place needs two points
-                            points.append(
-                                            Point(x=random.random(), y =random.random()),
-                                            Point(x=random.random(), y =random.random())
-                                            )
+                        if conf=="places":          # a place 4 random values as pair of points
+                            points.append([random.random() for i in range(4)])
                         else:
                             points.append(Point(x=random.random(), y =random.random()))
                 else:
