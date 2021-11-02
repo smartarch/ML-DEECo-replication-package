@@ -8,7 +8,6 @@
 
 """
 from enum import Enum
-from .utility import diff
 
 class Point:
     """
@@ -48,6 +47,8 @@ class Point:
             raise Exception("Y must be between (0,1).")
         self._y = value
 
+    def __str__ (self):
+        return f"{self._x} {self.y}"
 
 class Component:
     """
@@ -64,8 +65,12 @@ class Component:
 class Place(Component):
     """
         This defines an Area, which is technically a set of points.
-        Any polygon can be defined as [(x1,y1), (x2,y2), (x3,y3),... (xn,yn)]
-        The list of points are defined in local points variable.
+        The set of points consist of 2 points, top-left and bottom-right
+
+            (x1,y1) .__________
+                    |          |
+                    |__________|.(x2,y2)
+                    
     """
     points: list()
 
@@ -81,19 +86,7 @@ class Place(Component):
         Component.__init__(self,Place.Count)
 
         self.points = points
-    
 
-    def is_inside(
-                    self,
-                    given_point):
-
-        """
-            this function checks if a point is inside the Place or not.
-            It returns True if given_point is inside the polygon
-
-            !NOT IMPLEMENTED YET!
-        """
-        return False
 
 class Field (Component):
     """
@@ -132,8 +125,7 @@ class DroneState(Enum):
     MOVING_TO_CHARGER = 2
     CHARGING = 3
     TERMINATED = 4
-
-
+   
 class Drone(Component):
     """
         The drone class represent the active drones that are in the field.
@@ -202,21 +194,21 @@ class Drone(Component):
         return True
             
 
-    # move the drone for 1 time step
-    def moveToPoint (
-                        self,
-                        target):
+    # # move the drone for 1 time step
+    # def moveToPoint (
+    #                     self,
+    #                     target):
         
-        if self.live():
-            x_forward = self.speed * (utility.diff(self.location.x,target.x))
-            y_forward = self.speed * (utility.diff(self.location.y,target.y))
+    #     if self.live():
+    #         x_forward = self.speed * (utility.diff(self.location.x,target.x))
+    #         y_forward = self.speed * (utility.diff(self.location.y,target.y))
             
             
-            self.location.x = self.location.x + x_forward
-            self.location.y = self.location.y + y_forward
-            return True
+    #         self.location.x = self.location.x + x_forward
+    #         self.location.y = self.location.y + y_forward
+    #         return True
 
-        return False
+    #     return False
 
 
     def energyNeededToStartCharging(self):
@@ -238,7 +230,7 @@ class Drone(Component):
   
 
     def __str__ (self):
-        return f"{self.id}, battery:{self.battery}, status:{self.state}"
+        return f"id:{self.id},battery:{self.battery},status:{self.state},location:({self.location})"
 
 class Charger (Component):
     """

@@ -30,7 +30,7 @@ class ChargerAssignment(Ensemble):
     def drone(self, drone):
         return self.energyNeededToStartCharging(drone) - drone.battery
 
-
+    # tells the drone this is your charger
     def actuate(self):
         self.drone.targetCharger = self.charger
 

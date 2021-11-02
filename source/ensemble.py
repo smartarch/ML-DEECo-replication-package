@@ -24,9 +24,9 @@ class someOf():
         self.cardinalityFn = cardinalityFn
         return self
 
-    def select(self, selectFn):
-        self.selectFn = selectFn
-        return self
+    # def select(self, selectFn):
+    #     self.selectFn = selectFn
+    #     return self
 
     def select(self, selectFn):
         self.selectFn = selectFn
@@ -49,6 +49,7 @@ class someOf():
             sel = [(self.priorityFn(instance, comp), comp) for comp in allComponents if isinstance(comp, self.compClass) and self.selectFn(instance, comp, otherEnsembles)]
             if len(sel) > 0:
                 prio, comp = max(sel, key=operator.itemgetter(0))
+                print(comp)
                 self.selections[instance].append(comp)
             else:
                 return False
@@ -68,6 +69,8 @@ class oneOf(someOf):
 
 class Ensemble:
     def materialize(self, components, otherEnsembles):
+
+        # sorts a list of ensembles that are type of someOf according to id, 
         compFields = sorted([fld for (fldName, fld) in type(self).__dict__.items() if not fldName.startswith('__') and isinstance(fld, someOf)], key=lambda fld: fld.id)
 
         allOk = True
