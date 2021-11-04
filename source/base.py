@@ -62,53 +62,41 @@ class Component:
         child_type = type(self).__name__
         self.id = "%s_%d"%(child_type, id)
 
-class Place(Component):
-    """
-        This defines an Area, which is technically a set of points.
-        The set of points consist of 2 points, top-left and bottom-right
 
-            (x1,y1) .__________
-                    |          |
-                    |__________|.(x2,y2)
-                    
-    """
-    points: list()
-
-    # Static Count
-    Count = 0
-    def __init__ (
-                    self, 
-                    points):
-
-        # each Place is given an ID and a TAG: Place
-        # for example the first Place object will be Place_1
-        Place.Count = Place.Count + 1
-        Component.__init__(self,Place.Count)
-
-        self.points = points
+    def actuate(self):
+        pass
 
 
 class Field (Component):
     """
         A Field that the simulation is running on.
-        The places contain all the places on the Field.
+        
+        This defines an Area, which is technically a set of points.
+        The set of points consist of 4 doubles as [x1, y1, x2, y2]
 
+            (x1,y1) .__________
+                    |          |
+                    |__________|.(x2,y2)
+                    
         Static Count for the Fields
     """
 
     # Field counter
     Count = 0
+    topLeft : Point
+    bottomRight : Point
 
-    places: list()
     def __init__ (
                     self,
-                    places):
+                    pointLists):
         Field.Count = Field.Count + 1
         Component.__init__(self,Field.Count)
-    
-        self.places = places
 
-    
+        self.topLeft = Point(pointLists[0],pointLists[1])
+        self.bottomRight = Point(pointLists[2],pointLists[3])
+
+    # a bulk call for creating multiple places
+
 
 class DroneState(Enum):
     """

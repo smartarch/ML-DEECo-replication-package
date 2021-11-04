@@ -1,7 +1,7 @@
 from typing import List
 
-from .ensemble import Ensemble, oneOf, someOf
-from .base import Point, Charger, Drone, Bird, Field, DroneState
+from ensemble import Ensemble, oneOf, someOf
+from base import Point, Charger, Drone, Bird, Field, DroneState
 
 
 class ChargerAssignment(Ensemble):
