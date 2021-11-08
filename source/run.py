@@ -11,21 +11,6 @@ import argparse
 import simulation
 
 
-DEFAULT_CONFIGURE ={
-    'drones': 5,
-    'chargers': [
-        [0.4,0.4],
-        [0.6,0.6],
-    ],
-    'birds': 5,
-    'fields': [
-        [0.1,0.1,0.3,0.3], # a square top-lef -> (0.1,0.1) and bottom-right -> (0.3,0.3)
-        [0.6,0.6,0.8,0.8], 
-    ],
-    'maxTimeSteps':100,
-    'gridCellSize': [0.01,0.01]
-}
-
 def run (yamlFileAddress):
     yamlFile = open(yamlFileAddress,'r')
     yamlObject = load(yamlFile,Loader=Loader)
