@@ -8,6 +8,7 @@
 
 """
 from enum import Enum
+import simulation
 
 class Point:
     """
@@ -95,8 +96,16 @@ class Field (Component):
         self.topLeft = Point(pointLists[0],pointLists[1])
         self.bottomRight = Point(pointLists[2],pointLists[3])
 
-    # a bulk call for creating multiple places
-
+        
+    # a function to call and set all field points
+    def drawField(self,world):
+        for x in range(0,int((self.bottomRight.x-self.topLeft.x)/world.cellSize)):
+            for y in range(0,int((self.bottomRight.y - self.topLeft.y)/world.cellSize)):
+                world.setPoint(
+                    Point(
+                        x= self.topLeft.x+(float(x*world.cellSize)),
+                        y = self.topLeft.y + (float(y*world.cellSize))),
+                        self)
 
 class DroneState(Enum):
     """
@@ -268,6 +277,19 @@ class Charger (Component):
 
 
 
+class BirdState(Enum):
+    """
+        An enumerate property for the birds.
+        IDLE: a default state for birds, when they are out of fields.
+        ATTACKING: a state where a bird has a field in mind, and attacking it.
+        FLEEING: a state where a bird is running away from drones
+    """
+
+    IDLE = 0
+    ATTACKING = 1
+    FLEEING = 2
+
+
 class Bird(Component):
     """
         The charger class represnets a bird/flock/imposter.
@@ -284,9 +306,6 @@ class Bird(Component):
 
     # speed of the bird which is distance unit / time unit, default value = 0.01
     speed :float
-
-    # intrest zone's center,  something to be remembered by bird, where is a good place to visit
-    center : Point
 
     def __init__(
                     self,

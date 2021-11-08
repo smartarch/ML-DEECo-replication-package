@@ -35,9 +35,7 @@ fields: [
 [0.8,0.4,0.9,0.5]
 ]
 maxTimeSteps: 100
-gridCellSize: [
-[0.01,0.01]
-]
+gridCellSize: 0.01
 ```
 ## Running the simulation
 simply run `python run ../experiments/[yamlfile.yaml]`
