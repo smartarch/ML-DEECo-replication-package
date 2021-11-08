@@ -1,13 +1,15 @@
-drones: 3
-birds: 10
+drones: 5
+birds: 8
 chargers: [
-  [0.7, 0.1],
-  [0.6, 0.5]
+  [25,77],
+  [65,19]
 ]
 fields: [
-[0.4,0.5,0.7,0.8],
-[0.2,0.6,0.3,0.5],
-[0.8,0.4,0.9,0.5]
+  [40,50,66,80],
+  [20,60,40,70],
+  [81,35,90,44]
 ]
-maxTimeSteps: 100
-gridCellSize: 0.01
+maxSteps: 200
+gridSize: 1
+mapWidth: 100
+mapHeight: 100
