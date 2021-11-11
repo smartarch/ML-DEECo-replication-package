@@ -49,7 +49,6 @@ class someOf():
             sel = [(self.priorityFn(instance, comp), comp) for comp in allComponents if isinstance(comp, self.compClass) and self.selectFn(instance, comp, otherEnsembles)]
             if len(sel) > 0:
                 prio, comp = max(sel, key=operator.itemgetter(0))
-                print(comp)
                 self.selections[instance].append(comp)
             else:
                 return False
@@ -72,7 +71,7 @@ class Ensemble:
 
         # sorts a list of ensembles that are type of someOf according to id, 
         compFields = sorted([fld for (fldName, fld) in type(self).__dict__.items() if not fldName.startswith('__') and isinstance(fld, someOf)], key=lambda fld: fld.id)
-
+        
         allOk = True
         for fld in compFields:
             if not fld.execute(self, components, otherEnsembles):
@@ -84,7 +83,8 @@ class Ensemble:
                 fld.reset(self)
         else:
             self.actuate()
-
+            
+        return allOk
 
 
 

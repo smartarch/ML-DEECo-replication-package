@@ -3,22 +3,17 @@ from typing import List
 from ensemble import Ensemble, oneOf, someOf
 from components import Point, Charger, Drone, Bird, Field, DroneState
 
-
 class ChargerAssignment(Ensemble):
     charger: Charger
 
     def __init__(self, charger):
         self.charger = charger
 
-    def priority(self):
-        return 1
-
     def needsCharging(self, drone):
         return True
 
     def energyNeededToStartCharging(self, drone):
         return 0.1
-
 
     drone: Drone = oneOf(Drone)
 
@@ -52,6 +47,7 @@ class FieldProtection(Ensemble):
     def drones(self):
         return len(self.field.places)
 
+    # choose this if not selected
     @drones.select
     def drones(self, drone, otherEnsembles):
         return drone.state == DroneState.IDLE and not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones)
