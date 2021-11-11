@@ -20,32 +20,37 @@
 ### __Max Time Steps__: indicates the maximum time steps of the simulation
 * __maxSteps__: a positive integers > 0.
 
-### __Grid  Size__: an integer represent size of a grid square cell on map
-* __gridSize__: a positive integers > 0.
-
 ### __Height and Width__: integers that represent the maximum height and width of a map.
 * __mapWidth__: a positive integers > 0.
 * __mapHeight__: a positive integers > 0.
 
 ### A YAML configure example
 ```yaml
-drones: 3
-birds: 10
+drones:  [ 
+  [17,45],
+  [22,12],
+  [90,85]
+]
+birds: 8
 chargers: [
-  [15,44],
-  [65,65]
+  [45,77],
+  [65,19]
 ]
 fields: [
-  [40,50,70,80],
-  [20,60,40,70],
-  [81,35,88,39]
+  [20,10,45,25],
+  [20,60,40,80],
+  [81,35,90,44]
 ]
-maxTimeSteps: 100
-gridSize: 1
+maxSteps: 1000
 mapWidth: 100
 mapHeight: 100
 ```
 ## Running the simulation
-simply run `python run ../experiments/[yamlfile.yaml]`
+simply run `python source\run.py experiments\exp1.yaml`
 * if no yaml file is selected it will run the default configuration.
 
+
+## Results
+the results will be save in the run location under the folder named __results__, and it currently has:
+* animation video in GIF format
+* agent report in CSV format
