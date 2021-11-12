@@ -8,15 +8,15 @@ except ImportError:
     from yaml import Loader, Dumper
 
 import argparse
-import simulation
+from source.simulations.simulation import Simulation, World
 
 
 def run (yamlFileAddress):
     yamlFile = open(yamlFileAddress,'r')
     yamlObject = load(yamlFile,Loader=Loader)
     conf = yamlObject
-    simulation.currentWorld = simulation.World(conf)
-    newSimulation = simulation.Simulation()
+    currentWorld = World(conf)
+    newSimulation = Simulation(currentWorld)
     newSimulation.run()
 
    
