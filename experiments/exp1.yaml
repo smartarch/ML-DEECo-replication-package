@@ -13,6 +13,6 @@ fields: [
   [20,60,40,80],
   [81,35,90,44]
 ]
-maxSteps: 1000
+maxSteps: 500
 mapWidth: 100
 mapHeight: 100
