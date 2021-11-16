@@ -1,12 +1,9 @@
-drones:  [ 
-  [17,45],
-  [22,12],
-  [90,85]
-]
-birds: 8
+drones: 7
+birds: 10
 chargers: [
   [45,77],
-  [65,19]
+  [65,19],
+  [33,33]
 ]
 fields: [
   [20,10,45,25],
@@ -16,3 +13,7 @@ fields: [
 maxSteps: 500
 mapWidth: 100
 mapHeight: 100
+
+
+# new changes: radius of a protecting drone
+droneRadius: 5

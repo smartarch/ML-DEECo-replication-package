@@ -1,4 +1,5 @@
 from source.components.exceptions import PointNotOnMapError
+import math
 class Point:
     """
         The class represents a point on the world.
@@ -42,6 +43,7 @@ class Point:
     
     def __eq__(self, other):
         return self[0]==other[0] and self[1]==other[1]
+
     def __str__ (self):
         return f"{self._x},{self.y}"
     
@@ -50,6 +52,12 @@ class Point:
             return self._x
         else:
             return self._y
+
+    def distance(self,other):
+        dx = other[0] - self[0]
+        dy = other[1] - self[1]
+        dl = math.sqrt(dx * dx + dy * dy)
+        return int(dl)
 
     def random (maxWidth,maxHeight):
         return Point(randint(1,maxWidth-1),randint(1,maxHeight-1))

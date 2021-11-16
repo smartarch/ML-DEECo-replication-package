@@ -40,7 +40,8 @@ class Bird(Agent):
     def __init__(
                     self,
                     location,
-                    speed=1):
+                    **kwargs):
+        speed = 1 if 'speed' not in kwargs else kwargs['speed']
 
         Bird.Count = Bird.Count + 1
         Agent.__init__(self,location,speed,Bird.Count)
@@ -103,7 +104,7 @@ class Bird(Agent):
                     self.state = BirdState.EATING
         
         if self.state == BirdState.FLEEING:
-            self.moveWithinSameField()
+            self.moveToNoField()
             self.state = BirdState.MOVING
         
     

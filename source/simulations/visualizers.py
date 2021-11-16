@@ -16,9 +16,9 @@ COLORS ={
 }
 
 SIZES = {
-    'drone': 4,
-    'bird': 4,
-    'field': 5,
+    'drone': 3,
+    'bird': 3,
+    'field': 6,
     'charger': 5, 
 }
 
@@ -91,9 +91,9 @@ class Visualizer:
         for drone in self.world.drones:
             if drone.state == DroneState.TERMINATED:
                 continue
-            if drone.state != DroneState.CHARGING:
-                self.drawCircle(draw,drone.protectRadius())
-            draw.text((self.grid[drone]),f"{drone.battery:.2f}",COLORS['text'])   
+            
+            self.drawCircle(draw,drone.protectRadius())
+            draw.text((self.grid[drone]),f"{drone.battery:.2f}",COLORS['text']) 
 
         for bird in self.world.birds:
             draw.text((self.grid[bird]),f"{str(bird.state)[10:]}",COLORS['text'])   

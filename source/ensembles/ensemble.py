@@ -44,7 +44,6 @@ class someOf():
         assert(self.selectFn is not None)
 
         self.selections[instance] = []
-
         for idx in range(self.cardinalityFn(instance)):
             sel = [(self.priorityFn(instance, comp), comp) for comp in allComponents if isinstance(comp, self.compClass) and self.selectFn(instance, comp, otherEnsembles)]
             if len(sel) > 0:
@@ -71,7 +70,6 @@ class Ensemble:
 
         # sorts a list of ensembles that are type of someOf according to id, 
         compFields = sorted([fld for (fldName, fld) in type(self).__dict__.items() if not fldName.startswith('__') and isinstance(fld, someOf)], key=lambda fld: fld.id)
-        
         allOk = True
         for fld in compFields:
             if not fld.execute(self, components, otherEnsembles):

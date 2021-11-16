@@ -33,7 +33,8 @@ class Agent (Component):
             move the current location toward the target
     """
     reporter = None
-
+    header = ""
+    
     def __init__ (
                     self,
                     location,
@@ -71,7 +72,6 @@ class Agent (Component):
         dy = target[1] - self.location[1]
         dl = math.sqrt(dx * dx + dy * dy)
         randomFactor = random.random()+1
-        # TODO if the point are in float, the int convertor is not anymore needed
         if dl >= self.speed * randomFactor:
             self.location = Point(int(self.location[0] + dx * self.speed * randomFactor / dl),
                                 int(self.location[1] + dy * self.speed * randomFactor / dl))

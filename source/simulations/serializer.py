@@ -6,11 +6,11 @@ class Report:
         for key in component.__dict__:
             self.context += f"{component.__dict__[key]},"
         self.context = self.context[:-1]+"\n" 
-    
+
     def __init__ (self, componentClass):
-        self.context = ""
+        self.context = componentClass.header + "\n"
         componentClass.reporter = self.write
-        #self.header = 
+  
     def export (self, filename):
         file = open (filename,'w')
         file.write(self.context)
@@ -18,3 +18,4 @@ class Report:
 
     def __str__ (self):
         return self.context
+

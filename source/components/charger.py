@@ -1,4 +1,7 @@
 from source.components.component import Component
+from source.components.point import Point
+import random
+
 class Charger (Component):
     """
         The charger class represnets a charging slot.
@@ -13,14 +16,30 @@ class Charger (Component):
     
     def __init__ (
                     self,
-                    location):
+                    location,
+                    **kwargs):
                 
         Charger.Count = Charger.Count + 1
         Component.__init__(self,location,Charger.Count)
-        self.rate = 0.02
+        self.rate = 0.1
+        self.occupied = False
+        self.client = None
     
     def charge(self,drone):
+        if self.client != drone:
+            return
+
         drone.battery = drone.battery + self.rate
+        if drone.battery >= 1:
+            self.client = None
+
+
+
+
+    def randomLocationClose (self):
+        return Point(self.location.x+random.randint(-5,5),self.location.y+random.randint(-5,5))
+
+
 
     def __str__ (self):
         return f"{self.id},{self.location}"

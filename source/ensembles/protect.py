@@ -6,36 +6,41 @@ from source.components.drone import DroneState,Drone
 from source.components.point import Point
 from source.components.field import Field
 from source.components.charger import Charger
-
 import random
-
-# a new ensemble to give 
-
+import math
 
 class FieldProtection(Ensemble):
     field: Field
 
     def __init__(self, field):
         self.field = field
+        self.extraDrones = 0
 
+    def assignCardinality (self, extraDrones):
+        self.extraDrones = self.extraDrones + extraDrones
+        
     def distanceToField(self, drone):
-        # TODO
-        return 1
+        return self.field.closestDistanceToDrone(drone) 
+
     drones: List[Drone] = someOf(Drone)
 
     @drones.cardinality
     def drones(self):
-        return len(self.field.places)
+        #return len(self.field.zones)
+        return self.extraDrones + 1
 
     # choose this if not selected
     @drones.select
     def drones(self, drone, otherEnsembles):
-        return drone.state == DroneState.IDLE and not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones)
+        return (drone.state == DroneState.IDLE) and (not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones)) and drone not in self.drones
 
     @drones.priority
     def drones(self, drone):
-        return -self.distanceToField(drone)
+        return - self.distanceToField (drone) 
+
+    def size (self):
+        return len(self.field.zones) 
 
     def actuate(self):
-        for drone in self.drones:
-            drone.targetFieldPosition = random.choice(self.field.places)
+        for (drone,place) in zip(self.drones,self.field.randomZones(len(self.drones))):
+            drone.targetFieldPosition = place

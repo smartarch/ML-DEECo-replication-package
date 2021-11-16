@@ -19,8 +19,8 @@ class DroneState(Enum):
 
     IDLE = 0
     PROTECTING = 1
-    MOVING_FIELD = 2
-    MOVING_CHARGER = 3
+    MOVING_TO_FIELD = 2
+    MOVING_TO_CHARGER = 3
     CHARGING = 4
     TERMINATED = 5
    
@@ -40,68 +40,75 @@ class Drone(Agent):
     """
     # static Counter
     Count = 0
-    ChargingAlert = 0.1
+    ChargingAlert = 0.2
 
     def __init__ (
                     self, 
                     location,
-                    speed=1,
-                    energy=0.005):
+                    **kwargs):
+        
+        speed = 0.9 if 'speed' not in kwargs else kwargs['speed']
 
         Drone.Count = Drone.Count + 1
         Agent.__init__(self,location,speed,Drone.Count)
         
         #self.location = location
-        self.battery = 1 - (0.1 * random.random())
+        self.battery = 1 - (0.5 * random.random())
         self.state = DroneState.IDLE
         self.target = None
-        self.energy = energy
-        self.radius = 5 # 5 points around it
-        self.targetFieldPosition = None
+        self.energy = 0.005 if 'energy' not in kwargs else kwargs['energy']
+        self.radius = 5 if 'radius' not in kwargs else kwargs['radius']
+        self.targetFieldPosition = location
         self.targetCharger = None
-
+        
     def actuate(self):
+        if self.state == DroneState.TERMINATED:
+            return 
+
+
         self.battery -= self.energy
         if self.battery<=0:
+            self.battery=0
             self.state = DroneState.TERMINATED
 
         if self.state == DroneState.IDLE or self.state == DroneState.PROTECTING:
             if self.criticalBattery():
                 if self.targetCharger!=None:
-                    self.target = self.targetCharger.location
-                    self.state = DroneState.MOVING_CHARGER
+                    self.state = DroneState.MOVING_TO_CHARGER
                 else:
                     pass
             else:
                 self.target = self.targetFieldPosition
-                self.state = DroneState.MOVING_FIELD
+                self.state = DroneState.MOVING_TO_FIELD
 
-        if self.state == DroneState.MOVING_CHARGER:
+        if self.state == DroneState.MOVING_TO_CHARGER:
             if self.targetCharger!=None:
-                if self.location == self.target:
+                if self==self.targetCharger.client:
+                    self.target = self.targetCharger.location
                     self.state = DroneState.CHARGING
                 else:
+                    self.target = self.targetCharger.randomLocationClose()
                     self.move(self.target)
             else:
                 pass
 
-        if self.state == DroneState.MOVING_FIELD:
-            if self.targetFieldPosition!=None:
-                if self.location == self.target:
-                    self.state = DroneState.PROTECTING
-                else:
-                    self.move(self.target)
+        if self.state == DroneState.MOVING_TO_FIELD:
+            if self.location == self.target:
+                self.state = DroneState.PROTECTING
             else:
-                pass
-            
+                self.move(self.target)
+
         if self.state == DroneState.CHARGING:
-            self.targetCharger.charge(self)
-            if self.battery >=1 :
-                self.state = DroneState.IDLE
+            if self.location != self.targetCharger.location:
+                self.move(self.targetCharger.location)
+            else:
+                self.targetCharger.charge(self)
+                if self.battery >=1 :
+                    self.state = DroneState.IDLE
 
     
     def criticalBattery (self):
-        return self.battery -  self.energyNeededToMoveToCharger() < Drone.ChargingAlert
+        return self.battery -  self.energyNeededToMoveToCharger() < Drone.ChargingAlert and self.state != DroneState.TERMINATED
 
     def protectRadius(self):
         startX = self.location[0]-self.radius
@@ -116,7 +123,10 @@ class Drone(Agent):
     
     # return all points that are protected by this drone 
     def locationPoints(self):
+        if self.state == DroneState.TERMINATED:
+            return []
         startX,startY,endX,endY = self.protectRadius()
+
         points = []
         for i in range(startX,endX):
             for j in range(startY,endY):
