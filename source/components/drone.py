@@ -45,19 +45,22 @@ class Drone(Agent):
     def __init__ (
                     self, 
                     location,
-                    **kwargs):
+                    world):
         
-        speed = 0.9 if 'speed' not in kwargs else kwargs['speed']
+        self.droneRadius= world.droneRadius
+        self.droneSpeed= world.droneSpeed
+        self.droneEnergyMovingConsumption= world.droneEnergyMovingConsumption
+        self.droneEnergyProtectingConsumption= world.droneEnergyProtectingConsumption
 
         Drone.Count = Drone.Count + 1
-        Agent.__init__(self,location,speed,Drone.Count)
+        Agent.__init__(self,location,self.droneSpeed,world,Drone.Count)
         
         #self.location = location
-        self.battery = 1 - (0.5 * random.random())
+        self.battery = 1 - (0.3 * random.random())
         self.state = DroneState.IDLE
         self.target = None
-        self.energy = 0.005 if 'energy' not in kwargs else kwargs['energy']
-        self.radius = 5 if 'radius' not in kwargs else kwargs['radius']
+        self.energy = self.droneEnergyProtectingConsumption
+        #self.radius = 5 if 'radius' not in kwargs else kwargs['radius']
         self.targetFieldPosition = location
         self.targetCharger = None
         
@@ -111,14 +114,14 @@ class Drone(Agent):
         return self.battery -  self.energyNeededToMoveToCharger() < Drone.ChargingAlert and self.state != DroneState.TERMINATED
 
     def protectRadius(self):
-        startX = self.location[0]-self.radius
-        endX = self.location[0]+self.radius
-        startY = self.location[1]-self.radius
-        endY = self.location[1]+self.radius
+        startX = self.location[0]-self.droneRadius
+        endX = self.location[0]+self.droneRadius
+        startY = self.location[1]-self.droneRadius
+        endY = self.location[1]+self.droneRadius
         startX = 0 if startX <0 else startX
         startY = 0 if startY <0 else startY
-        endX = Component.World.Width-1 if endX>=Component.World.Width else endX
-        endY = Component.World.Height-1 if endY>=Component.World.Height else endY
+        endX = self.world.mapWidth-1 if endX>=self.world.mapWidth else endX
+        endY = self.world.mapHeight-1 if endY>=self.world.mapHeight else endY
         return (startX,startY,endX,endY)
     
     # return all points that are protected by this drone 

@@ -40,11 +40,11 @@ class Bird(Agent):
     def __init__(
                     self,
                     location,
-                    **kwargs):
-        speed = 1 if 'speed' not in kwargs else kwargs['speed']
+                    world):
+        self.speed = world.birdSpeed
 
         Bird.Count = Bird.Count + 1
-        Agent.__init__(self,location,speed,Bird.Count)
+        Agent.__init__(self,location,self.speed,world,Bird.Count)
 
         #self.location = location
 
@@ -75,7 +75,7 @@ class Bird(Agent):
                 self.move (self.target)
         
         if self.state == BirdState.OBSERVING:
-            components = Component.World.components(self.location)
+            components = self.world.components(self.location)
             if any ([isinstance(component,Drone) for component in components]):
                 self.state = BirdState.FLEEING
             else:
@@ -87,7 +87,7 @@ class Bird(Agent):
                     self.state = BirdState.IDLE
         
         if self.state == BirdState.EATING:
-            components = Component.World.components(self.location)
+            components = self.world.components(self.location)
             if any ([isinstance(component,Drone) for component in components]):
                 self.state = BirdState.FLEEING
             else:
@@ -109,7 +109,7 @@ class Bird(Agent):
         
     
     def moveToNewField(self):
-        components = Component.World.map
+        components = self.world.map
         fields = [component for component in components if isinstance(component, Field)]
         #random choice
         self.field = random.choice(fields)
@@ -119,17 +119,17 @@ class Bird(Agent):
     def moveToNoField(self):
         self.field = None
         self.target = None
-        components = Component.World.map
+        components = self.world.map
         fieldsAndDrones = [component for component in components if isinstance(component, Field) or isinstance(component, Drone) ]
         while not isinstance(self.target,Point):
-            randomPoint = [random.randint(0, Component.World.Width-1) ,random.randint(1, Component.World.Height-1)]
+            randomPoint = [random.randint(0, self.world.mapWidth-1) ,random.randint(1, self.world.mapHeight-1)]
             if randomPoint not in fieldsAndDrones:
                 self.target = Point(randomPoint[0],randomPoint[1])
 
     def moveWithinSameField(self):
         if self.field==None:
             self.moveToNewField()
-        fieldPoints = Component.World.map[self.field]
+        fieldPoints = self.world.map[self.field]
         target = random.choice(fieldPoints)
         self.target = Point(target[0],target[1])
         

@@ -3,14 +3,14 @@ from source.components.bird import BirdState
 class Monitor:
 
     reporter = None
-    header=  "timestep,allDrones,chargingDrones,deadDrones,allBirds,eatingBirds,allChargers,idleChargers,energyConsumed,damageRate"
+    header=  "timestep,protectingDrones,chargingDrones,deadDrones,allBirds,eatingBirds,allChargers,idleChargers,energyConsumed,damageRate"
                 
 
 
     def report(self,timeStep,world):
         world = world
 
-        self.allDrones = len(world.drones)
+        self.protectingDrones = len([drone for drone in world.drones if drone.state==DroneState.PROTECTING or drone.state==DroneState.MOVING_TO_FIELD])
         self.chargingDrones = len([drone for drone in world.drones if drone.state==DroneState.CHARGING])
         self.deadDrones = len([drone for drone in world.drones if drone.state==DroneState.TERMINATED])
         self.allBirds = len(world.birds)
@@ -20,7 +20,7 @@ class Monitor:
         self.energyConsumed = 0
         for charger in world.chargers:
             if charger.client is not None:
-                self.energyConsumed += charger.rate
+                self.energyConsumed += charger.chargingRate
 
         allPlace = 1
         for field in world.fields:

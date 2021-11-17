@@ -13,7 +13,11 @@ fields: [
 maxSteps: 500
 mapWidth: 100
 mapHeight: 100
-
-
-# new changes: radius of a protecting drone
 droneRadius: 5
+birdSpeed: 1 
+droneSpeed: 1
+droneEnergyMovingConsumption: 0.01
+droneEnergyProtectingConsumption: 0.005
+chargingRate: 0.2
+ 
+

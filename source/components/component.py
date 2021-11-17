@@ -21,12 +21,12 @@ class Component:
             return the current point as a list object.
     """
     location: Point
-    World = None
 
     id: str
     def __init__(
                     self,
                     location,
+                    world,
                     id=0):
         """
             Initiate the Component object.
@@ -43,9 +43,13 @@ class Component:
 
             id : int
                 the number of component created with this type to be used as ID.
+
+            world : World 
+                the world that the components are living in.
         """
         child_type = type(self).__name__
         self.id = "%s_%d"%(child_type, id)
+        self.world = world
 
         if isinstance(location,Point):
             self.location = location
@@ -55,7 +59,6 @@ class Component:
     def actuate(self):
         """
             An abstract method to be developed by the derived instances.
-            
         """
         pass
 

@@ -17,7 +17,6 @@ class Field:
 
     # Field counter
     Count = 0
-    World = None
 
     topLeft : Point
     bottomRight : Point
@@ -25,9 +24,10 @@ class Field:
     def __init__ (
                     self,
                     pointLists,
-                    **kwargs):
+                    world):
 
-        self.radius = 5 if 'radius' not in kwargs else kwargs['radius']
+        self.droneRadius = world.droneRadius
+        self.world = world
         Field.Count = Field.Count +1
         self.id = f"FIELD_{Field.Count}"
         self.topLeft = Point(pointLists[0],pointLists[1])
@@ -35,9 +35,9 @@ class Field:
 
         self.zones = []
         # new approach: how many protecting zones there are
-        for x in range(self.topLeft[0],self.bottomRight[0],self.radius):
-            for y in range(self.topLeft[1],self.bottomRight[1],self.radius):
-                self.zones .append([x+ self.radius/2,y+ self.radius/2 ])
+        for x in range(self.topLeft[0],self.bottomRight[0],self.droneRadius):
+            for y in range(self.topLeft[1],self.bottomRight[1],self.droneRadius):
+                self.zones .append([x+ self.droneRadius/2,y+ self.droneRadius/2 ])
     
             
     @property

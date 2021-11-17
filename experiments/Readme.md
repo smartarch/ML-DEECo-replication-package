@@ -26,24 +26,28 @@
 
 ### A YAML configure example
 ```yaml
-drones:  [ 
-  [17,45],
-  [22,12],
-  [90,85]
-]
-birds: 8
+drones: 7
+birds: 10
 chargers: [
   [45,77],
-  [65,19]
+  [65,19],
+  [33,33]
 ]
 fields: [
   [20,10,45,25],
   [20,60,40,80],
   [81,35,90,44]
 ]
-maxSteps: 1000
+maxSteps: 500
 mapWidth: 100
 mapHeight: 100
+droneRadius: 5
+birdSpeed: 1 
+droneSpeed: 1
+droneEnergyMovingConsumption: 0.01
+droneEnergyProtectingConsumption: 0.005
+chargingRate: 0.2
+
 ```
 ## Running the simulation
 simply run `python source\run.py experiments\exp1.yaml`

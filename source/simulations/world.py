@@ -1,13 +1,10 @@
 import random
 from source.components.bird import Bird
-from source.components.drone import DroneState,Drone
+from source.components.drone import Drone
 from source.components.point import Point
 from source.components.field import Field
 from source.components.charger import Charger
 from source.components.component import Component
-
-
-currentWorld = None
 
 CLASSNAMES = {
     'drones': Drone,
@@ -22,18 +19,7 @@ class World:
         A world class consist of Drones, Birds, Fields and Chargers.
     """
 
-    drones : list
-    birds : list
-    charges : list
-    field : list
-    gridSize: int
-    maxSteps: int
-
-    # static
-    Width = 100
-    Height = 100
-
-    droneRadius: int
+ 
     def createComponenets(self,targetClassName,points):
         """
             creates instances of type target class name in the size of points
@@ -41,55 +27,54 @@ class World:
         """
         for point in points:
             targetClass = CLASSNAMES[targetClassName]
-            newComponenet = targetClass(point, radius=self.droneRadius)
+            newComponenet = targetClass(point,self)
             self.__dict__[targetClassName].append(newComponenet)
         return self.__dict__[targetClassName]
     
 
-    def __init__(self,conf_dict):
+    def __init__(self,confDict):
         """
             initiate a world with a YAML configuration file
             component:X a number or list of points for given component
 
         """
-        self.maxSteps = conf_dict['maxSteps']
-        conf_dict['maxSteps'] =None
+        self.maxSteps= 500
+        self.mapWidth= 100
+        self.mapHeight= 100
+        self.droneRadius= 5
+        self.birdSpeed= 1 
+        self.droneSpeed= 1
+        self.droneEnergyMovingConsumption= 0.01
+        self.droneEnergyProtectingConsumption= 0.005
+        self.chargingRate= 0.2
+        for conf,confValue in confDict.items():
+            if conf not in CLASSNAMES:
+                self.__dict__[conf] = confValue
+
         
-        self.mapWidth = conf_dict['mapWidth']
-        conf_dict['mapWidth'] =None
-        World.Width = self.mapWidth
-
-        self.mapHeight = conf_dict['mapHeight']
-        conf_dict['mapHeight'] =None
-        World.Height = self.mapHeight
-        
-        self.droneRadius = conf_dict['droneRadius']
-        conf_dict['droneRadius'] =None
-
-
         self.drones = []
         self.birds =[]
         self.chargers= []
         self.fields = []
+
+
+
         self.map = {} 
-
-        Component.World = self
-        Field.World = self
-
-        for conf,conf_value in conf_dict.items():
-            if conf_value is not None:
+        self.map
+        for conf,confValue in confDict.items():
+            if conf in CLASSNAMES:
                 points = []
-                if isinstance(conf_value,int):
-                    for i in range(conf_value):
+                if isinstance(confValue,int):
+                    for i in range(confValue):
                         points.append([random.randint(0,self.mapWidth-1), random.randint(0,self.mapHeight-1)])
                 else:
-                    points = conf_value
+                    points = confValue
                     
                 createdComponents = self.createComponenets(conf,points)
                 # add the correspoding function to the map of components
                 for component in createdComponents:
                     self.map[component] = component.locationPoints()
-        
+            
 
 
     @property

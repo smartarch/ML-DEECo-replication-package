@@ -39,6 +39,7 @@ class Agent (Component):
                     self,
                     location,
                     speed,
+                    world,
                     count):
         """
             Initiate the Agent object.
@@ -49,10 +50,12 @@ class Agent (Component):
 
             speed : float
                 the speed of the agent to be determined as point rate/tick.
+            world : World 
+                the world that the components are living in.
             count : int
                 the number of component created with this type to be used as ID.
         """
-        Component.__init__(self,location,count)
+        Component.__init__(self,location,world,count)
         self.speed = speed
 
     def move(self, target):

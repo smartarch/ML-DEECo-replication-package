@@ -17,11 +17,12 @@ class Charger (Component):
     def __init__ (
                     self,
                     location,
-                    **kwargs):
-                
+                    world):
+        self.chargingRate = world.chargingRate
+
         Charger.Count = Charger.Count + 1
-        Component.__init__(self,location,Charger.Count)
-        self.rate = 0.1
+        Component.__init__(self,location,world,Charger.Count)
+        
         self.occupied = False
         self.client = None
     
@@ -29,17 +30,13 @@ class Charger (Component):
         if self.client != drone:
             return
 
-        drone.battery = drone.battery + self.rate
+        drone.battery = drone.battery + self.chargingRate
         if drone.battery >= 1:
             self.client = None
 
 
-
-
     def randomLocationClose (self):
         return Point(self.location.x+random.randint(-5,5),self.location.y+random.randint(-5,5))
-
-
 
     def __str__ (self):
         return f"{self.id},{self.location}"
