@@ -3,22 +3,8 @@ from source.components.component import Component
 from source.components.field import Field
 from source.components.point import Point
 from source.components.drone import Drone
-from enum import Enum
+from source.components.states import BirdState
 import random
-
-class BirdState(Enum):
-    """
-        An enumerate property for the birds.
-        IDLE: a default state for birds, when they are out of fields.
-        ATTACKING: a state where a bird has a field in mind, and attacking it.
-        FLEEING: a state where a bird is running away from drones
-    """
-
-    IDLE = 0
-    MOVING = 1
-    OBSERVING = 2
-    EATING = 3
-    FLEEING = 4
 
 
 class Bird(Agent):

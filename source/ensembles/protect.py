@@ -2,10 +2,11 @@ from typing import List
 
 from source.ensembles.ensemble import Ensemble, oneOf, someOf
 from source.components.bird import Bird
-from source.components.drone import DroneState,Drone
+from source.components.drone import Drone
 from source.components.point import Point
 from source.components.field import Field
 from source.components.charger import Charger
+from source.components.states import DroneState
 import random
 import math
 

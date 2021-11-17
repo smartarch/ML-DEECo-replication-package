@@ -3,26 +3,9 @@ from source.components.charger import Charger
 from source.components.field import Field
 from source.components.component import Component
 from source.components.point import Point
-from enum import Enum
+from source.components.states import DroneState
 import random
 import math
-
-class DroneState(Enum):
-    """
-        An enumerate property for the drones.
-        IDLE: a default state for drones.
-        PROTECTING: when the drones are protecting the zones.
-        MOVING_TO_CHARGING: when the drones are moving/queuing for a charger.
-        CHARGIN: when the drones are being chareged.
-        TERMINATED: when the drone's battery is below 0 and they do not operate anymore.
-    """
-
-    IDLE = 0
-    PROTECTING = 1
-    MOVING_TO_FIELD = 2
-    MOVING_TO_CHARGER = 3
-    CHARGING = 4
-    TERMINATED = 5
    
 class Drone(Agent):
     """
@@ -88,7 +71,11 @@ class Drone(Agent):
             if self.targetCharger!=None:
                 if self==self.targetCharger.client:
                     self.target = self.targetCharger.location
-                    self.state = DroneState.CHARGING
+                    if self.location == self.target:
+
+                        self.state = DroneState.CHARGING
+                    else:
+                        self.move(self.target)
                 else:
                     self.target = self.targetCharger.randomLocationClose()
                     self.move(self.target)
@@ -102,12 +89,8 @@ class Drone(Agent):
                 self.move(self.target)
 
         if self.state == DroneState.CHARGING:
-            if self.location != self.targetCharger.location:
-                self.move(self.targetCharger.location)
-            else:
-                self.targetCharger.charge(self)
-                if self.battery >=1 :
-                    self.state = DroneState.IDLE
+            if self.battery >=1 :
+                self.state = DroneState.IDLE
 
     
     def criticalBattery (self):

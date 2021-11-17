@@ -10,8 +10,8 @@ class Component:
             the current location of the agent on the map as [x,y]
         id : int
             the number of component created with this type to be used as ID.
-        World: static simulation.World
-            the current static world object that has meta data about all elements.
+        world : World 
+                the world that the components are living in.
         Methods
         -------
         actuate()

@@ -19,6 +19,8 @@ class Agent (Component):
             A static variable that points to the corresponding report object
         location : point.Point
             the current location of the agent on the map as [x,y]
+         world : World 
+                the world that the components are living in.
         speed : float
             the speed of the agent to be determined as point rate/tick.
         count : int

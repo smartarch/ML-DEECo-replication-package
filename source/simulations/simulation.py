@@ -48,6 +48,7 @@ class Simulation:
 
     def run (self):
         agents = [agent for agent in self.world.map if isinstance(agent, Agent)]
+        agents.extend(self.world.chargers)
         agentReporter = Report(Agent)
         worldReporter = Report(Monitor)
 
@@ -63,7 +64,7 @@ class Simulation:
         for i in range(self.world.maxSteps):
             for agent in agents:
                 agent.actuate()
-                agent.report(i)
+                #agent.report(i)
 
             for ens in instantiatedEnsembles:
                 ens.actuate()

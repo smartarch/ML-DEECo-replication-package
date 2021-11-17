@@ -1,5 +1,6 @@
 from source.components.component import Component
 from source.components.point import Point
+from source.components.states import DroneState
 import random
 
 class Charger (Component):
@@ -25,14 +26,23 @@ class Charger (Component):
         
         self.occupied = False
         self.client = None
+        self.droneQueue = []
     
-    def charge(self,drone):
-        if self.client != drone:
-            return
+    def actuate(self):
+        if self.client == None:
+            if len(self.droneQueue)>0:
+                self.droneQueue = sorted(self.droneQueue,key = lambda x: x.battery)
+                self.client = self.droneQueue[0] 
+                self.droneQueue.remove(self.client)
+            else:
+                return
 
-        drone.battery = drone.battery + self.chargingRate
-        if drone.battery >= 1:
-            self.client = None
+        
+        if self.client.state ==DroneState.CHARGING:
+            self.client.battery = self.client.battery + self.chargingRate
+            if self.client.battery >= 1:
+                self.client.battery = 1
+                self.client = None
 
 
     def randomLocationClose (self):
