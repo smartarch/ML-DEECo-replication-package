@@ -2,3 +2,4 @@
 # The environment is ignored
 env/
 .vscode/
+*.gif
