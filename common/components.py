@@ -452,7 +452,7 @@ class Drone(Agent):
                 self.state = DroneState.MOVING_TO_FIELD
 
         if self.state == DroneState.MOVING_TO_CHARGER:    
-            if self==self.targetCharger.client:
+            if self in self.targetCharger.acceptedDrones:
                 self.target = self.targetCharger.location
                 if self.location == self.target:
                     self.state = DroneState.CHARGING
@@ -492,18 +492,6 @@ class Drone(Agent):
         endY = self.world.mapHeight-1 if endY>=self.world.mapHeight else endY
         return (startX,startY,endX,endY)
     
-    # # return all points that are protected by this drone 
-    # def locationPoints(self):
-    #     if self.state == DroneState.TERMINATED:
-    #         return []
-    #     startX,startY,endX,endY = self.protectRadius()
-
-    #     points = []
-    #     for i in range(startX,endX):
-    #         for j in range(startY,endY):
-    #             points.append([i,j])
-    #     return points
-
     def energyNeededToMoveToCharger(self):
         if self.targetCharger==None:
             return 0
@@ -617,35 +605,43 @@ class Charger (Component):
     # static Counter
     Count = 0
 
+    Capacity = 1
+
     
     def __init__ (
                     self,
                     location,
                     world):
         self.chargingRate = world.chargingRate
-
+        Charger.Capacity = world.chargerCapacity
         Charger.Count = Charger.Count + 1
         Component.__init__(self,location,world,Charger.Count)
         
         self.occupied = False
-        self.client = None
-        self.droneQueue = []
+        self.acceptedDrones = []
+        self.waitingDrones = []
     
     def actuate(self):
-        if self.client == None:
-            if len(self.droneQueue)>0:
-                self.droneQueue = sorted(self.droneQueue,key = lambda x: x.battery)
-                self.client = self.droneQueue[0] 
-                self.droneQueue.remove(self.client)
+        if len(self.acceptedDrones) < Charger.Capacity:
+            if len(self.waitingDrones)>0:
+                self.waitingDrones = sorted(self.waitingDrones,key = lambda drone: drone.battery)
+                # let's say drone queue is dq, and capacity is cc, current drones is cd
+                # we know that cd < cc and dq>0 because of super conditions
+                # how many can we add to the cd and remove from dq?
+                # if we have less drones in the queue than the capacity, then we add all
+                toAdd = min(Charger.Capacity - len(self.acceptedDrones),len(self.waitingDrones))
+                for i in range(toAdd):
+                    self.acceptedDrones.append(self.waitingDrones[0])
+                    self.waitingDrones.remove(self.waitingDrones[0])
             else:
                 return
 
-        
-        if self.client.state ==DroneState.CHARGING:
-            self.client.battery = self.client.battery + self.chargingRate
-            if self.client.battery >= 1:
-                self.client.battery = 1
-                self.client = None
+        for drone in self.acceptedDrones:
+            if drone.state ==DroneState.CHARGING:
+                drone.battery = drone.battery + self.chargingRate
+                if drone.battery >= 1:
+                    drone.battery = 1
+                    self.acceptedDrones.remove(drone)
 
 
     def randomLocation (self):
@@ -655,3 +651,5 @@ class Charger (Component):
         return f"{self.id},{self.location}"
   
 
+    def report(self,iteration):
+        pass

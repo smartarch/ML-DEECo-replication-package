@@ -1,5 +1,5 @@
-drones: 7
-birds: 10
+drones: 50
+birds: 100
 chargers: [
   [45,77],
   [65,19],
@@ -10,14 +10,18 @@ fields: [
   [20,60,40,80],
   [81,35,90,44]
 ]
+
 maxSteps: 500
 mapWidth: 100
 mapHeight: 100
-droneRadius: 5
+droneRadius: 3
 birdSpeed: 1 
 droneSpeed: 1
+
+chargerCapacity: 5
+chargingRate: 0.2
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
-chargingRate: 0.2
+
  
 

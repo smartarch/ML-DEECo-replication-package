@@ -62,6 +62,8 @@ class PrivateChargerAssignment(Ensemble):
         return -self.distanceToCharger(charger)
 
     def actuate(self):
-        if self.drone not in self.charger.droneQueue:
-            self.charger.droneQueue.append(self.drone)
+        if self.drone in self.charger.acceptedDrones:
+            return
+        if self.drone not in self.charger.waitingDrones:
+            self.charger.waitingDrones.append(self.drone)
             self.drone.targetCharger = self.charger

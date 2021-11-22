@@ -49,6 +49,8 @@ class World:
         self.droneMovingEnergyConsumption= 0.01
         self.droneProtectingEnergyConsumption= 0.005
         self.chargingRate= 0.2
+        self.chargerCapacity= 1
+        
         for conf,confValue in confDict.items():
             if conf not in CLASSNAMES:
                 self.__dict__[conf] = confValue
@@ -59,10 +61,6 @@ class World:
         self.chargers= []
         self.fields = []
 
-
-
-        # self.map = {} 
-        # self.map
         for conf,confValue in confDict.items():
             if conf in CLASSNAMES:
                 points = []
@@ -73,9 +71,6 @@ class World:
                     points = confValue
                     
                 createdComponents = self.createComponenets(conf,points)
-                # add the correspoding function to the map of components
-                # for component in createdComponents:
-                #     self.map[component] = component.locationPoints()
 
         self.emptyPoints = []
         for i in range(World.MAX_RANDOMPOINTS):
@@ -92,22 +87,7 @@ class World:
                 return True
         return False
 
-    # @property
-    # def nonEmptyPoints(self):
-    #     return [point for component in self.map for point in self.map[component]]
 
-    # @property
-    # def emptyPoints (self):
-    #     return [[x,y] for x in range(self.mapWidth) for y in range(self.mapHeight) if [x,y] not in self.nonEmptyPoints]
-
-
-
-    # def components(self,point):
-    #     if isinstance(point, Point):
-    #         return [component for component in self.map if [point.x,point.y] in self.map[component]]
-    #     else:
-    #         return [component for component in self.map if point in self.map[component]]
-    
     def isPointField(self,point):
         for field in self.fields:
             if field.isPointOnField(point):
@@ -153,11 +133,13 @@ class Simulation:
         return instantiatedEnsembles
 
     def run (self):
-        agents= []
+        elements= []
         
-        agents.extend(self.world.drones)
-        agents.extend(self.world.birds)
-        #agents.extend(self.world.chargers)
+        elements.extend(self.world.drones)
+        elements.extend(self.world.birds)
+        elements.extend(self.world.chargers)
+        elements.extend(self.setFieldProtectionEnsembles())
+        elements.extend(self.setPrivateChargers())
         agentReporter = Report(Agent)
         worldReporter = Report(Monitor)
 
@@ -167,19 +149,20 @@ class Simulation:
             visualizer = Visualizer (self.world)
             visualizer.drawFields()
         
-        instantiatedEnsembles = self.setFieldProtectionEnsembles()
-        instantiatedEnsembles.extend(self.setPrivateChargers())
+        #instantiatedEnsembles = self.setFieldProtectionEnsembles()
+        #instantiatedEnsembles.extend(self.setPrivateChargers())
 
         for i in range(self.world.maxSteps):
-            for agent in agents:
-                agent.actuate()
-                agent.report(i)
+            for element in elements:
+                element.actuate()
+                if self.visualize:
+                    element.report(i)
                 
-            for charger in self.world.chargers:
-                charger.actuate()
+            # for charger in self.world.chargers:
+            #     charger.actuate()
 
-            for ens in instantiatedEnsembles:
-                ens.actuate()
+            # for ens in instantiatedEnsembles:
+            #     ens.actuate()
             
             monitor.report(i,self.world)
             if self.visualize:

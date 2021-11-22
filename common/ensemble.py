@@ -83,7 +83,9 @@ class Ensemble:
             self.actuate()
             
         return allOk
-
+    
+    def report(self,iteration):
+        pass
 
 
 

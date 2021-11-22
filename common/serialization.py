@@ -34,12 +34,11 @@ class Monitor:
         self.deadDrones = len([drone for drone in world.drones if drone.state==DroneState.TERMINATED])
         self.allBirds = len(world.birds)
         self.eatingBirds = len([bird for bird in world.birds if bird.state==BirdState.EATING])
-        self.allChargers = len(world.chargers)
-        self.idleChargers = len([charger for charger in world.chargers if charger.client is None])
+        self.allChargers = len(world.chargers) * world.chargerCapacity
+        self.idleChargers = sum([world.chargerCapacity- len(charger.acceptedDrones) for charger in world.chargers])
         self.energyConsumed = 0
         for charger in world.chargers:
-            if charger.client is not None:
-                self.energyConsumed += charger.chargingRate
+            self.energyConsumed += len(charger.acceptedDrones)*world.chargingRate
 
         eatingSummary = sum([bird.ate for bird in world.birds])
 
