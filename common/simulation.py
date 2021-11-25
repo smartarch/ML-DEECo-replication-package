@@ -2,7 +2,7 @@ import os
 from datetime import date
 import random
 
-from common.components import Agent, Bird, Drone, Point, Field, Charger, Component
+from common.components import Agent, Bird, Drone, Point, Field, Charger, Component, DroneState, BirdState
 from common.tasks import FieldProtection, MasterCharger
 from common.serialization import Log
 from common.visualizers import Visualizer
@@ -13,6 +13,26 @@ CLASSNAMES = {
     'chargers': Charger,
     'fields':Field,
 }
+
+dataLogHeader = [
+    "id",
+    "battery",
+    "location.x",
+    "location.y",
+    "state",
+    "distanceToNearestCharger",
+    "requestTime",
+    "acceptedTime"
+]
+timeLogHeader = [
+    'timestep',
+    'deadDrones',
+    'chargingDrones',
+    'totalBirds',
+    'eatingBirds',
+    'damage',
+    'energy',
+]
 
 
 class World:
@@ -88,6 +108,25 @@ class World:
             else:
                 self.emptyPoints.append(p)
 
+    """
+        'timestep',
+        'deadDrones',
+        'chargingDrones',
+        'totalBirds',
+        'eatingBirds',
+        'damage',
+        'energy',
+    """
+    def currentRecord(self):
+        return [
+            self.currentTimeStep,
+            len([drone for drone in self.drones if drone.state==DroneState.TERMINATED]),
+            len([drone for drone in self.drones if drone.state==DroneState.CHARGING]),
+            len(self.birds),
+            len([bird for bird in self.birds if bird.state==BirdState.EATING]),
+            sum([bird.ate for bird in self.birds]),
+            sum([charger.energyConsumed for charger in self.chargers]),
+        ]
             
     def isProtectedByDrone(self,point):
         for drone in self.drones:
@@ -132,8 +171,9 @@ class Simulation:
         elements.extend(self.world.birds)
         elements.extend(self.setFieldProtectionEnsembles())
 
-        log = Log()
-        masterCharger = MasterCharger(self.world,log)
+        dataLog = Log(dataLogHeader)
+        timeLog = Log(timeLogHeader)
+        masterCharger = MasterCharger(self.world,dataLog)
 
 
         if self.visualize:
@@ -144,27 +184,28 @@ class Simulation:
             self.world.currentTimeStep = i
             for element in elements:
                 element.actuate()
- 
+
+            timeLog.register(self.world.currentRecord())
+
             masterCharger.actuate()
             if self.visualize:
                 visualizer.drawComponents(i+1)
         
+        # add the unaccepted drones
         for record in masterCharger.records:
             masterCharger.records[record].append('-')
-            log.register(masterCharger.records[record]) 
+            dataLog.register(masterCharger.records[record]) 
 
         folder = "results"
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        today = date.today().strftime("%Y%m%d")
-        
-        if self.visualize:
-            visualizer.createAnimation(f"{folder}/simulation-{filename}-{today}.gif")
 
-        log.export(f"{folder}/log-{filename}-{today}.csv")
-        #agentReporter.export(f"{folder}/agents-{today}.csv")
-        #worldReporter.export(f"{folder}/world-{today}.csv")
+        if self.visualize:
+            visualizer.createAnimation(f"{folder}/simulation-{filename}.gif")
+        
+        dataLog.export(f"{folder}/dataLog-{filename}.csv")
+        timeLog.export(f"{folder}/timeLog-{filename}.csv")
 
        
   

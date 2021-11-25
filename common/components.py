@@ -144,11 +144,7 @@ class Field:
                 self.places.append([int(x+ self.droneRadius/2),int(y+ self.droneRadius/2 )])
     
             
-    # @property
-    # def places(self):
-    #     return self.locationPoints()
 
-    # # return all locations
     def locationPoints(self):
         points = []
         for x in range(self.topLeft.x,self.bottomRight.x):
@@ -609,13 +605,14 @@ class Charger (Component):
         Charger.Capacity = world.chargerCapacity
         Charger.Count = Charger.Count + 1
         Component.__init__(self,location,world,Charger.Count)
-        
+        self.energyConsumed = 0
         # self.occupied = False
         # self.acceptedDrones = []
         # self.waitingDrones = []
 
     def charge(self,drone):
         drone.battery = drone.battery + self.chargingRate
+        self.energyConsumed = self.energyConsumed + self.chargingRate
         if drone.battery >= 1:
             drone.battery = 1
             return False

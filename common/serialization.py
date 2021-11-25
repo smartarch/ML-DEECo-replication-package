@@ -22,20 +22,8 @@ class Report:
 
 class Log:
 
-    def __init__(self):
-        self.records = [
-            [
-                "id",
-                "battery",
-                "location.x",
-                "location.y",
-                "state",
-                "distanceToNearestCharger",
-                "requestTime",
-                "acceptedTime"
-            ]
-
-        ]
+    def __init__(self,header):
+        self.records = [ header ]
 
     def register (self,newData):
         self.records.append(newData)
