@@ -119,7 +119,7 @@ class Simulation:
         return instantiatedEnsembles
 
 
-    def run (self):
+    def run (self,filename):
         
         elements= []
         
@@ -144,9 +144,6 @@ class Simulation:
             if self.visualize:
                 visualizer.drawComponents(i+1)
         
-
-        
-
         for record in masterCharger.records:
             masterCharger.records[record].append('-')
             log.register(masterCharger.records[record]) 
@@ -158,9 +155,9 @@ class Simulation:
         today = date.today().strftime("%Y%m%d")
         
         if self.visualize:
-            visualizer.createAnimation(f"{folder}/simulation-{today}.gif")
+            visualizer.createAnimation(f"{folder}/simulation-{filename}-{today}.gif")
 
-        log.export(f"{folder}/log-{today}.csv")
+        log.export(f"{folder}/log-{filename}-{today}.csv")
         #agentReporter.export(f"{folder}/agents-{today}.csv")
         #worldReporter.export(f"{folder}/world-{today}.csv")
 

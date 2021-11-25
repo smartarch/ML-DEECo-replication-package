@@ -16,7 +16,7 @@ def run (yamlFileAddress,showAnimation):
     conf = yamlObject
     currentWorld = World(conf)
     newSimulation = Simulation(currentWorld,visualize=showAnimation)
-    newSimulation.run()
+    newSimulation.run(yamlFileAddress.split('\\')[-1].split('.')[0])
 
    
 

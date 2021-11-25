@@ -1,0 +1,6 @@
+id,battery,location.x,location.y,state,distanceToNearestCharger,requestTime,acceptedTime
+Drone_1,0.57078357810048,17,13,2,20,19,19
+Drone_1,0.56078357810048,17,12,2,21,20,20
+Drone_1,0.55578357810048,17,12,1,21,21,90
+Drone_1,0.5949999999999996,12,12,2,23,91,158
+Drone_1,0.5999999999999996,12,12,1,23,159,-
