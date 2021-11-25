@@ -3,8 +3,8 @@ from datetime import date
 import random
 
 from common.components import Agent, Bird, Drone, Point, Field, Charger, Component
-from common.tasks import PrivateChargerAssignment ,FieldProtection
-from common.serialization import Monitor, Report
+from common.tasks import FieldProtection, MasterCharger
+from common.serialization import Log
 from common.visualizers import Visualizer
 
 CLASSNAMES = {
@@ -22,16 +22,7 @@ class World:
 
     MAX_RANDOMPOINTS = 100
  
-    def createComponenets(self,targetClassName,points):
-        """
-            creates instances of type target class name in the size of points
-            adds to corresponding list inside the instance
-        """
-        for point in points:
-            targetClass = CLASSNAMES[targetClassName]
-            newComponenet = targetClass(point,self)
-            self.__dict__[targetClassName].append(newComponenet)
-        return self.__dict__[targetClassName]
+
     
 
     def __init__(self,confDict):
@@ -46,32 +37,44 @@ class World:
         self.droneRadius= 5
         self.birdSpeed= 1 
         self.droneSpeed= 1
+        self.droneBatteryRandomize= 0
         self.droneMovingEnergyConsumption= 0.01
         self.droneProtectingEnergyConsumption= 0.005
         self.chargingRate= 0.2
         self.chargerCapacity= 1
+
+        self.currentTimeStep = 0
         
         for conf,confValue in confDict.items():
             if conf not in CLASSNAMES:
                 self.__dict__[conf] = confValue
 
+        Point.MaxWidth = self.mapWidth
+        Point.MaxHeight = self.mapHeight
         
         self.drones = []
         self.birds =[]
         self.chargers= []
         self.fields = []
 
-        for conf,confValue in confDict.items():
-            if conf in CLASSNAMES:
-                points = []
-                if isinstance(confValue,int):
-                    for i in range(confValue):
-                        points.append([random.randint(0,self.mapWidth-1), random.randint(0,self.mapHeight-1)])
-                else:
-                    points = confValue
-                    
-                createdComponents = self.createComponenets(conf,points)
 
+        for i in range(confDict['drones']):
+            point = Point.randomPoint() 
+            self.drones.append(Drone(point,self))
+
+        for i in range(confDict['birds']):
+            point = Point.randomPoint() 
+            self.birds.append(Bird(point,self))
+
+        for chargerPoint in confDict['chargers']:
+            for i in range(confDict['chargerCapacity']):
+                self.chargers.append(Charger(chargerPoint,self))
+
+        for fieldPoints in confDict['fields']:
+            self.fields.append(Field(fieldPoints,self))
+
+
+        self.sortedFields = sorted(self.fields,key = lambda field : -len(field.places))
         self.emptyPoints = []
         for i in range(World.MAX_RANDOMPOINTS):
             p = Point.random(0, 0, self.mapWidth, self.mapHeight)
@@ -94,6 +97,9 @@ class World:
                 return True
         return False
 
+    def __str__(self):
+        return ""
+
 class Simulation:
 
     def __init__(self, world, visualize = True):
@@ -103,14 +109,7 @@ class Simulation:
     def setFieldProtectionEnsembles(self):
         fieldProtectionEnsembles= []
         for field in self.world.fields:
-            fieldProtectionEnsembles.append (FieldProtection(field))
-
-        fieldProtectionEnsembles = sorted(fieldProtectionEnsembles, key=lambda x: -x.size())
-        totalDrones = len(self.world.drones) - len(fieldProtectionEnsembles)
-        circularIndex = 0
-        for i in range(totalDrones):
-            totalDrones = fieldProtectionEnsembles[circularIndex].assignCardinality(1)
-            circularIndex = (circularIndex+1) % len(fieldProtectionEnsembles)
+            fieldProtectionEnsembles.append (FieldProtection(field,self.world))
 
         instantiatedEnsembles = []
         for ens in fieldProtectionEnsembles:
@@ -119,55 +118,39 @@ class Simulation:
 
         return instantiatedEnsembles
 
-    def setPrivateChargers(self):
-        privateChargers = []
-        for drone in self.world.drones:
-            privateChargers.append (PrivateChargerAssignment(drone))
-        
-                
-        instantiatedEnsembles = []
-        for ens in privateChargers:
-            if ens.materialize(self.world.chargers, instantiatedEnsembles):
-                instantiatedEnsembles.append(ens)
-
-        return instantiatedEnsembles
 
     def run (self):
+        
         elements= []
         
         elements.extend(self.world.drones)
         elements.extend(self.world.birds)
-        elements.extend(self.world.chargers)
         elements.extend(self.setFieldProtectionEnsembles())
-        elements.extend(self.setPrivateChargers())
-        agentReporter = Report(Agent)
-        worldReporter = Report(Monitor)
 
-        monitor = Monitor()
+        log = Log()
+        masterCharger = MasterCharger(self.world,log)
+
 
         if self.visualize:
             visualizer = Visualizer (self.world)
             visualizer.drawFields()
         
-        #instantiatedEnsembles = self.setFieldProtectionEnsembles()
-        #instantiatedEnsembles.extend(self.setPrivateChargers())
-
         for i in range(self.world.maxSteps):
+            self.world.currentTimeStep = i
             for element in elements:
                 element.actuate()
-                if self.visualize:
-                    element.report(i)
-                
-            # for charger in self.world.chargers:
-            #     charger.actuate()
-
-            # for ens in instantiatedEnsembles:
-            #     ens.actuate()
-            
-            monitor.report(i,self.world)
+ 
+            masterCharger.actuate()
             if self.visualize:
                 visualizer.drawComponents(i+1)
         
+
+        
+
+        for record in masterCharger.records:
+            masterCharger.records[record].append('-')
+            log.register(masterCharger.records[record]) 
+
         folder = "results"
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -177,8 +160,9 @@ class Simulation:
         if self.visualize:
             visualizer.createAnimation(f"{folder}/simulation-{today}.gif")
 
-        agentReporter.export(f"{folder}/agents-{today}.csv")
-        worldReporter.export(f"{folder}/world-{today}.csv")
+        log.export(f"{folder}/log-{today}.csv")
+        #agentReporter.export(f"{folder}/agents-{today}.csv")
+        #worldReporter.export(f"{folder}/world-{today}.csv")
 
        
   

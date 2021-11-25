@@ -1,5 +1,5 @@
-drones: 50
-birds: 100
+drones: 10
+birds: 5
 chargers: [
   [45,77],
   [65,19],
@@ -17,11 +17,10 @@ mapHeight: 100
 droneRadius: 3
 birdSpeed: 1 
 droneSpeed: 1
-
-chargerCapacity: 5
+chargerCapacity: 3
 chargingRate: 0.2
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
-
+droneBatteryRandomize: 0.3
  
 

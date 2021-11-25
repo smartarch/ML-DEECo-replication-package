@@ -35,10 +35,8 @@ class Visualizer:
         
         self.images = []
         self.grid = {}
-        #self.textFont = ImageFont.truetype("sans-serif.ttf", 16)
-        
 
-    # change to fill for a  better efferent method
+
     def drawRectangle(self,canvas,point,component):
         
         startY = (point[1])*self.cellSize
@@ -92,7 +90,7 @@ class Visualizer:
                 continue
             
             self.drawCircle(draw,drone.protectRadius())
-            draw.text((self.grid[drone]),f"{drone.battery:.2f}",COLORS['text']) 
+            draw.text((self.grid[drone]),f"{drone.battery:.2f}\n{drone.id}",COLORS['text']) 
 
         for bird in self.world.birds:
             draw.text((self.grid[bird]),f"{str(bird.state)[10:]}",COLORS['text'])   
