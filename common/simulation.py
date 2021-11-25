@@ -48,27 +48,32 @@ class World:
         for conf,confValue in confDict.items():
             if conf not in CLASSNAMES:
                 self.__dict__[conf] = confValue
-
+        
         Point.MaxWidth = self.mapWidth
         Point.MaxHeight = self.mapHeight
-        
+
+        for conf,confValue in confDict.items():
+            if conf in CLASSNAMES:
+                if isinstance(confValue, int):
+                    confDict[conf] = []
+                    for i in range(confValue):
+                        confDict[conf].append(Point.randomPoint())
+
         self.drones = []
         self.birds =[]
         self.chargers= []
         self.fields = []
 
 
-        for i in range(confDict['drones']):
-            point = Point.randomPoint() 
+        for point in confDict['drones']:
             self.drones.append(Drone(point,self))
 
-        for i in range(confDict['birds']):
-            point = Point.randomPoint() 
+        for point in confDict['birds']:
             self.birds.append(Bird(point,self))
 
-        for chargerPoint in confDict['chargers']:
+        for point in confDict['chargers']:
             for i in range(confDict['chargerCapacity']):
-                self.chargers.append(Charger(chargerPoint,self))
+                self.chargers.append(Charger(point,self))
 
         for fieldPoints in confDict['fields']:
             self.fields.append(Field(fieldPoints,self))

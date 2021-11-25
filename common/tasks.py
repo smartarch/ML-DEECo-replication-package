@@ -66,7 +66,9 @@ class MasterCharger(Ensemble):
 
     def actuate(self):
         potentialEnsembles = []
-        for drone in self.drones:
+        notMarkedDrones = [drone for drone in self.drones if drone not in [ens.drone for ens in self.chargerEnsembles]]
+
+        for drone in notMarkedDrones:
             if drone.state != DroneState.TERMINATED:
                 closestChargerLocation = self.distanceToClosestCharger(drone)
                 if self.needsCharging(drone,closestChargerLocation):
@@ -85,7 +87,8 @@ class MasterCharger(Ensemble):
                     potentialEnsembles.append(chargingEnsemble)
 
         potentialEnsembles = sorted(potentialEnsembles)
-        
+
+
         for ens in potentialEnsembles:
             if ens.materialize(self.chargers, self.chargerEnsembles):
                 ens.drone.targetCharger = ens.charger
@@ -118,6 +121,7 @@ class Charging(Ensemble):
     
     def distanceToCharger(self, charger):
         # later check on the field task location
+        #print (f"{charger.id}- {self.drone.targetFieldPosition.distance(charger.location)}")
         return self.drone.targetFieldPosition.distance(charger.location)
     
     @charger.priority
