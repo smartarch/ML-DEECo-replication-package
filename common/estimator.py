@@ -20,6 +20,10 @@ class Estimator:
         """
 
         self._inputs = inputs
+        self._numFeatures = 0
+        for feature in self._inputs.values():
+            self._numFeatures += feature.getNumFeatures()
+
         self._model = self.construct_model()
         self._model.summary()
 
@@ -28,13 +32,9 @@ class Estimator:
 
     def construct_model(self):
 
-        numFeatures = 0
-        for feature in self._inputs.values():
-            numFeatures += feature.getNumFeatures()
-
         hidden_layer = 20
 
-        inputs = tf.keras.layers.Input([numFeatures])
+        inputs = tf.keras.layers.Input([self._numFeatures])
         hidden = tf.keras.layers.Dense(hidden_layer, activation=tf.keras.activations.relu)(inputs)
         output = tf.keras.layers.Dense(1, activation=tf.keras.activations.exponential)(hidden)
 
@@ -49,16 +49,20 @@ class Estimator:
     def predict(self, observations):
         raise NotImplementedError()
 
-    def train(self, x, y):
-        # TODO(MT): use collected records
+    def train(self):
+        x = np.array(self._data_x)
+        y = np.array(self._data_y)
         self._model.fit(x, y,
                         epochs=10)  # TODO(MT): epochs
 
     def collectRecord(self, x, y):
-        # TODO(MT): preprocess
-        print(x, y)
-        self._data_x.append(x)
-        self._data_y.append(y)
+        record = np.concatenate([
+            feature.preprocess(x[featureName])
+            for featureName, feature in self._inputs.items()
+        ])
+
+        self._data_x.append(record)
+        self._data_y.append(np.array([y]))
 
     def dumpData(self, fileName):
         dataLogHeader = []
@@ -69,14 +73,13 @@ class Estimator:
         dataLog = Log(dataLogHeader)
 
         for x, y in zip(self._data_x, self._data_y):
-            dataLog.register([x, y])  # TODO(MT)
+            dataLog.register(list(x) + list(y))
 
         dataLog.export(fileName)
 
     def endIteration(self):
         """Called at the end of the iteration. We want to start the training now."""
-        # TODO(MT)
-        pass
+        self.train()
 
 
 class TimeEstimator(Estimator):
@@ -115,17 +118,25 @@ class Feature(abc.ABC):
     def getHeader(featureName):
         return [featureName]
 
+    @abc.abstractmethod
+    def preprocess(self, value):
+        return np.empty([])
+
 
 class IntEnumFeature(Feature):
 
     def __init__(self, enumClass):
         self.enumClass = enumClass
+        self.numItems = len(self.enumClass)
 
     def getNumFeatures(self):
-        return len(self.enumClass)
+        return self.numItems
 
     def getHeader(self, featureName):
         return [f"{featureName}_{item}" for item, _ in self.enumClass.__members__.items()]
+
+    def preprocess(self, value):
+        return tf.one_hot(int(value), self.numItems).numpy()
 
 
 class FloatFeature(Feature):
@@ -134,21 +145,9 @@ class FloatFeature(Feature):
         self.min = min
         self.max = max
 
-
-# if __name__ == "__main__":
-#     estimator = Estimator()
-#
-#     x = np.array([
-#         [1, 2, -3, -1],
-#         [1, 2, 2, -2],
-#         [-1, 1, 2, -2],
-#     ])
-#     y = np.array([
-#         [1],
-#         [2],
-#         [1]
-#     ])
-#     estimator.train(x, y)
+    def preprocess(self, value):
+        # TODO(MT): normalization
+        return np.array([value])
 
 
 # https://www.tensorflow.org/api_docs/python/tf/keras/layers/CategoryEncoding

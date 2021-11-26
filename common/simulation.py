@@ -15,16 +15,6 @@ CLASSNAMES = {
     'fields': Field,
 }
 
-dataLogHeader = [
-    "id",
-    "battery",
-    "location.x",
-    "location.y",
-    "state",
-    "distanceToNearestCharger",
-    "requestTime",
-    "acceptedTime"
-]
 timeLogHeader = [
     'timestep',
     'deadDrones',
