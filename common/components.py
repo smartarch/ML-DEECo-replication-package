@@ -382,7 +382,6 @@ class Drone(Agent):
     """
     # static Counter
     Count = 0
-    ChargingAlert = 0.2
 
     def __init__ (
                     self, 
@@ -403,7 +402,11 @@ class Drone(Agent):
         self.target = None
         self.targetFieldPosition = location
         self.targetCharger = None
-        
+        self.alert = 0.2+(0.5*random.random())
+
+    def isBatteryCritical(self,newLocation):
+        return self.battery - self.energyRequiredToCharge(newLocation) <= self.alert
+
     def checkBattery(self):
         if self.battery <=0:
             self.battery=0
@@ -536,12 +539,14 @@ class Bird(Agent):
                 
         
         if self.state == BirdState.MOVING_TO_FIELD:
+            self.ate=0
             if self.location == self.target:
                 self.state = BirdState.OBSERVING
             else:
                 self.move (self.target)
 
         if self.state == BirdState.FLEEING:
+            self.ate = 0
             if self.location == self.target:
                 self.state = BirdState.IDLE
             else:
@@ -606,16 +611,19 @@ class Charger (Component):
         Charger.Count = Charger.Count + 1
         Component.__init__(self,location,world,Charger.Count)
         self.energyConsumed = 0
-        # self.occupied = False
+        self.occupied = False
         # self.acceptedDrones = []
         # self.waitingDrones = []
 
     def charge(self,drone):
         drone.battery = drone.battery + self.chargingRate
+        self.occupied = True
         self.energyConsumed = self.energyConsumed + self.chargingRate
         if drone.battery >= 1:
             drone.battery = 1
+            self.occupied=False
             return False
+
         return True
 
 

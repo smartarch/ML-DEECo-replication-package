@@ -1,6 +1,7 @@
 import os
 from datetime import date
 import random
+import statistics
 
 from common.components import Agent, Bird, Drone, Point, Field, Charger, Component, DroneState, BirdState
 from common.tasks import FieldProtection, MasterCharger
@@ -28,7 +29,11 @@ timeLogHeader = [
     'timestep',
     'deadDrones',
     'chargingDrones',
-    'totalBirds',
+    'meanBattery',
+    'minAlert',
+    'maxAlert',
+    'aliveRate',
+    'freeChargers',
     'eatingBirds',
     'damage',
     'energy',
@@ -98,6 +103,7 @@ class World:
         for fieldPoints in confDict['fields']:
             self.fields.append(Field(fieldPoints,self))
 
+        self.totalPlaces = sum([len(f.places) for f in self.fields])
 
         self.sortedFields = sorted(self.fields,key = lambda field : -len(field.places))
         self.emptyPoints = []
@@ -108,23 +114,18 @@ class World:
             else:
                 self.emptyPoints.append(p)
 
-    """
-        'timestep',
-        'deadDrones',
-        'chargingDrones',
-        'totalBirds',
-        'eatingBirds',
-        'damage',
-        'energy',
-    """
     def currentRecord(self):
         return [
             self.currentTimeStep,
-            len([drone for drone in self.drones if drone.state==DroneState.TERMINATED]),
+            len([drone for drone in self.drones if drone.state==DroneState.TERMINATED])/len(self.drones),
             len([drone for drone in self.drones if drone.state==DroneState.CHARGING]),
-            len(self.birds),
+            statistics.mean([drone.battery for drone in self.drones if drone.state!=DroneState.TERMINATED ]),
+            min([drone.alert for drone in self.drones if drone.state!=DroneState.TERMINATED ]),
+            max([drone.alert for drone in self.drones if drone.state!=DroneState.TERMINATED ]),
+            len([drone.alert for drone in self.drones if drone.state!=DroneState.TERMINATED ])/len(self.drones),
+            len([charger for charger in self.chargers if not charger.occupied]),
             len([bird for bird in self.birds if bird.state==BirdState.EATING]),
-            sum([bird.ate for bird in self.birds]),
+            sum([bird.ate for bird in self.birds])/self.totalPlaces,
             sum([charger.energyConsumed for charger in self.chargers]),
         ]
             

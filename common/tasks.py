@@ -58,7 +58,7 @@ class MasterCharger(Ensemble):
     def needsCharging(self,drone,closestChargerLocation):
         # we need to use the estimator in this function
         # to find if the drone needs to be charged 
-        return drone.battery - drone.energyRequiredToCharge(closestChargerLocation)  <= 0.4
+        return drone.isBatteryCritical(closestChargerLocation)
 
     def distanceToClosestCharger(self,drone):
         distances = [charger.location.distance(drone.location) for charger in self.world.chargers ]
