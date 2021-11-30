@@ -3,7 +3,6 @@ import numpy as np
 import abc
 
 from common.serialization import Log
-
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # disable GPU in TF
 import tensorflow as tf

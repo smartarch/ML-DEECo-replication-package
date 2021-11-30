@@ -24,10 +24,6 @@ class someOf():
         self.cardinalityFn = cardinalityFn
         return self
 
-    # def select(self, selectFn):
-    #     self.selectFn = selectFn
-    #     return self
-
     def select(self, selectFn):
         self.selectFn = selectFn
         return self
@@ -66,8 +62,7 @@ class oneOf(someOf):
 
 
 class Ensemble:
-    def actuate(self):
-        pass
+
 
     def materialize(self, components, otherEnsembles):
 
@@ -82,14 +77,17 @@ class Ensemble:
         if not allOk:
             for fld in compFields:
                 fld.reset(self)
-        else:
-            self.actuate()
-            
+                
         return allOk
     
-    def report(self,iteration):
+    def actuate(self):
         pass
 
+    def priority(self):
+        return 1
+
+    def __lt__(self, other):
+        return self.priority() > other.priority()
 
 
 

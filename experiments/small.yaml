@@ -1,5 +1,5 @@
-drones: 4
-birds: 1
+drones: 8
+birds: 20
 chargers: [
   [22,33],
 ]

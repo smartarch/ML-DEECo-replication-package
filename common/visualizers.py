@@ -39,12 +39,12 @@ class Visualizer:
 
     def drawRectangle(self,canvas,point,component):
         
-        startY = (point[1])*self.cellSize
+        startY = (point.y)*self.cellSize
         endY = startY+SIZES[component]
-        startX = (point[0])*self.cellSize
+        startX = (point.x)*self.cellSize
         endX = startX+SIZES[component]
-        for i in range(startY,endY):
-            for j in range(startX,endX):
+        for i in range(int(startY),int(endY)):
+            for j in range(int(startX),int(endX)):
                 canvas[i][j] = COLORS[component]
         return (startX+(endX-startX)/2,startY+(endY-startY)/2)
         

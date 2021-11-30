@@ -21,7 +21,6 @@ class Report:
         return self.context
 
 class Log:
-
     def __init__(self,header):
         self.records = [ header ]
 
