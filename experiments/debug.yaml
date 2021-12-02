@@ -1,11 +1,11 @@
-drones: 2
+drones: 3
 birds: 1
 chargers: [
-  [15,25],
-  [40,25],
+  [15,35],
+  [45,25],
 ]
 fields: [
-  [10,10,20,20],
+  [10,10,20,30],
 ]
 
 maxSteps: 500
@@ -15,8 +15,8 @@ droneRadius: 5
 birdSpeed: 1 
 droneSpeed: 1
 
-chargerCapacity: 1
-chargingRate: 0.1
+chargerCapacity: 2
+chargingRate: 0.01
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0.3

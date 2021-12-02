@@ -80,7 +80,7 @@ class Ensemble:
                 
         return allOk
     
-    def actuate(self):
+    def actuate(self,verbose):
         pass
 
     def priority(self):

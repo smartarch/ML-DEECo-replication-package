@@ -117,6 +117,7 @@ class Field:
         self.bottomRight = Point(pointLists[2],pointLists[3])
 
         self.places = []
+        self.protectingDrones = []
         # new approach: how many protecting places there are
         for x in range(self.topLeft.x,self.bottomRight.x,self.droneRadius):
             for y in range(self.topLeft.y,self.bottomRight.y,self.droneRadius):
@@ -147,6 +148,28 @@ class Field:
             distances.append(math.sqrt(dx * dx + dy * dy))
 
         return min(distances)
+
+    def assingPlace(self,drone):
+        if drone not in self.protectingDrones:
+            self.protectingDrones.append(drone)
+        
+        index = self.protectingDrones.index(drone)
+
+        droneLen = len(self.protectingDrones)
+        placeLen = len(self.places)
+
+        emptyPlace = placeLen - droneLen
+        if index == droneLen-1:
+            if index<placeLen:
+                return random.choice(self.places[index:placeLen])
+            else:
+                return random.choice(self.places)
+        else:
+            return self.places[index] 
+
+    def unassign(self,drone):
+        if drone in self.protectingDrones:
+            self.protectingDrones.remove(drone)
 
     def randomLocation(self):
         return Point.random(self.topLeft.x,self.topLeft.y,self.bottomRight.x,self.bottomRight.y)
@@ -369,29 +392,48 @@ class Drone(Agent):
         self.droneRadius= world.droneRadius
         self.droneSpeed= world.droneSpeed
         self.droneMovingEnergyConsumption= world.droneMovingEnergyConsumption
-        self.droneProtectingEnergyConsumption= world.droneProtectingEnergyConsumption
+        self.droneProtectingEnergyConsumption= world.droneProtectingEnergyConsumption 
+        
         self.battery = 1 - (world.droneBatteryRandomize * random.random())
         self.state = DroneState.IDLE
+        
         self.target = None
-        self.targetFieldPosition = location
+        self.targetField = None
         self.targetCharger = None
 
-        # alert the charger that the battery is critical if below this value
-        # to be changed by AI
         self.alert = 0.4
+        self.world = world
 
 
         Drone.Count = Drone.Count + 1
         Agent.__init__(self,location,self.droneSpeed,world,Drone.Count)
         
-    def needsCharging(self,estimator):
-        if estimator is None:
-            return self.battery <= self.alert
-        else:
-            return self.battery <= estimator
+    def closestCharger(self):
+        distances = [[charger,charger.location.distance(self.location)] for charger in self.world.chargers]
+        distances = sorted(distances, key = lambda x: x[1])
+        return distances[0][0]
 
+    def energyRequiredToCharge(self,chargerLocation):
+        return chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
+
+    def needsCharging(self):
+        if self.state == DroneState.TERMINATED:
+            return False
+        futureBattery =  self.battery - self.energyRequiredToCharge(self.closestCharger().location)
+        if futureBattery < 0:
+            return False
+        
+        return futureBattery < self.alert
+
+
+        
     def batteryAfterGetToCharger(self,charger):
-        return self.battery - self.energyRequiredToCharge(charger.location)
+        value =  self.battery - self.energyRequiredToCharge(charger.location)
+        if value < 0.0001: # not feasible to get to this charger 
+            return 0
+        else:
+            return 1 - value
+
 
     # def isBatteryCritical(self,chargerLocation):
     #     return self.battery - self.energyRequiredToCharge(chargerLocation) <= self.alert
@@ -400,6 +442,8 @@ class Drone(Agent):
         if self.battery <=0:
             self.battery=0
             self.state = DroneState.TERMINATED
+            if self.targetCharger is not None:
+                self.targetCharger.droneDied(self)
 
     def move(self):
         self.battery = self.battery - self.droneMovingEnergyConsumption
@@ -412,13 +456,17 @@ class Drone(Agent):
         if self.state < DroneState.MOVING_TO_CHARGER: # IDLE, PROTECTING or MOVING TO FIELD
             if self.targetCharger is not None:
                 self.state = DroneState.MOVING_TO_CHARGER
+                self.targetField.unassign(self)
             else:
-                self.target = self.targetFieldPosition
+                if self.targetField is None:
+                    self.state = DroneState.IDLE
+                    return
+                self.target = self.targetField.assingPlace(self)
                 self.state = DroneState.MOVING_TO_FIELD
 
         if self.state == DroneState.MOVING_TO_CHARGER:    
-            self.target = self.targetCharger.location
-            if self.location == self.target:
+            self.target = self.targetCharger.provideLocation(self)
+            if self.location == self.targetCharger.location:
                 self.state = DroneState.CHARGING
             else:
                 self.move()
@@ -455,13 +503,9 @@ class Drone(Agent):
         endY = self.world.mapHeight-1 if endY>=self.world.mapHeight else endY
         return (startX,startY,endX,endY)
     
-    def energyRequiredToCharge(self,chargerLocation):
-        energyRequired = chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
-        return energyRequired
 
-
-    # def __str__ (self):
-    #     return f"id:{self.id},battery:{self.battery},status:{self.state},location:({self.location})"
+    def __str__ (self):
+        return f"{self.id}: state= {str(self.state)}, battery= {self.battery}"
 
 
 class BirdState(Enum):
@@ -512,6 +556,23 @@ class Bird(Agent):
     def findRandomField(self):
         self.target = Point.random()
 
+
+            
+    def moveToNewField(self):
+        self.field = random.choice(self.world.fields)
+        self.target = self.field.randomLocation()
+
+    def moveToNoField(self):
+        self.field = None
+        self.target =random.choice(self.world.emptyPoints)
+    
+    def moveWithinSameField(self):
+        if self.field==None:
+            self.moveToNewField()
+        else:
+            self.target = self.field.randomLocation()
+        
+
     def actuate(self):
         if self.state == BirdState.IDLE:
             probability = random.random()
@@ -559,25 +620,11 @@ class Bird(Agent):
                     self.moveToNoField()
                     self.state = BirdState.FLEEING
 
-        
-    
-    def moveToNewField(self):
-        self.field = random.choice(self.world.fields)
-        self.target = self.field.randomLocation()
 
-    def moveToNoField(self):
-        self.field = None
-        self.target =random.choice(self.world.emptyPoints)
-    
-    def moveWithinSameField(self):
-        if self.field==None:
-            self.moveToNewField()
-        else:
-            self.target = self.field.randomLocation()
-        
+
     
     def __str__ (self):
-        return f"{self.id},{self.state},{self.location}"
+        return f"{self.id}: state= {self.state}, Total Ate= {self.ate}"
         
 class Charger (Component):
     """
@@ -590,52 +637,80 @@ class Charger (Component):
     def __init__ (
                     self,
                     location,
-                    world):
+                    world,
+                    estimator=None):
         self.chargingRate = world.chargingRate
+        self.chargerCapacity = world.chargerCapacity
         Charger.Count = Charger.Count + 1
         Component.__init__(self,location,world,Charger.Count)
+        
         self.energyConsumed = 0
-        self.occupied = False
+        self.estimator = estimator
+        self.chargingQueue = []
+        self.chargingDrones = []
 
 
-    def charge(self,drone):
-        drone.battery = drone.battery + self.chargingRate
-        self.occupied = True
-        self.energyConsumed = self.energyConsumed + self.chargingRate
-        if drone.battery >= 1:
-            drone.battery = 1
-            self.occupied=False
-            return False
+    def addToQueue(self,drone):
+        # TODO MT: start the estimator data collector
+        # this is the event when a drone is added to a queue
 
-        return True
+        self.chargingQueue.append(drone)
 
 
-    # def actuate(self):
-    #     if len(self.acceptedDrones) < Charger.Capacity:
-    #         if len(self.waitingDrones)>0:
-    #             self.waitingDrones = sorted(self.waitingDrones,key = lambda drone: drone.battery)
-    #             # let's say drone queue is dq, and capacity is cc, current drones is cd
-    #             # we know that cd < cc and dq>0 because of super conditions
-    #             # how many can we add to the cd and remove from dq?
-    #             # if we have less drones in the queue than the capacity, then we add all
-    #             toAdd = min(Charger.Capacity - len(self.acceptedDrones),len(self.waitingDrones))
-    #             for i in range(toAdd):
-    #                 self.acceptedDrones.append(self.waitingDrones[0])
-    #                 self.waitingDrones.remove(self.waitingDrones[0])
-                    
-    #     for drone in self.acceptedDrones:
-    #         if drone.state ==DroneState.CHARGING:
-    #             drone.battery = drone.battery + self.chargingRate
-    #             if drone.battery >= 1:
-    #                 drone.battery = 1
-    #                 self.acceptedDrones.remove(drone)
+    def startCharging(self,drone):
+        # TODO MT: end the estimator data collector record
+        # this is the event when a drone is starting to charge (accepted)
+         
+        self.chargingQueue.remove(drone)
+        self.chargingDrones.append(drone)
 
 
-    def randomLocation (self):
-        return Point(self.location.x+random.randint(-5,5),self.location.y+random.randint(-5,5))
+    def doneCharging(self,drone):
+        drone.battery = 1
+        self.chargingDrones.remove(drone)
+
+    def droneDied(self,drone):
+        # TODO MT: end the estimator data collector record
+        # this is when a drone died, probably a NaN value to waiting time?
+
+        if drone in self.chargingDrones:
+            self.chargingDrones.remove(drone)
+        
+        if drone in self.chargingQueue:
+            self.chargingQueue.remove(drone)
+
+
+    def randomNearLocation (self):
+        return Point(self.location.x+random.randint(1,5),self.location.y+random.randint(1,5))
+
+    def provideLocation(self,drone):
+        if drone in self.chargingDrones:
+            return self.location
+        else:
+            return self.randomNearLocation()
+
+
+
+    def actuate(self):
+
+        for drone in self.chargingQueue:
+            drone.targetCharger = self
+
+        emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
+        for i in range(emptyPlaces):
+            if len(self.chargingQueue) > 0:
+                drone = self.chargingQueue[0]
+                self.startCharging(drone)
+        
+        for drone in self.chargingDrones:
+            if drone.state == DroneState.CHARGING:
+                drone.battery = drone.battery + self.chargingRate
+                self.energyConsumed = self.energyConsumed + self.chargingRate
+                if drone.battery >= 1:
+                    self.doneCharging(drone)
 
     def __str__ (self):
-        return f"{self.id},{self.location}"
+        return f"{self.id}: ChargingNow= {len(self.chargingDrones)}, QueueLength= {len(self.chargingDrones)}"
   
 
     def report(self,iteration):

@@ -1,7 +1,7 @@
 import random
 
 from common.components import Agent, Bird, Drone, Point, Field, Charger, Component, DroneState, BirdState
-from common.tasks import FieldProtection, DroneCharger
+from common.tasks import  getPotentialEnsembles
 from common.serialization import Log
 from common.visualizers import Visualizer
 
@@ -68,8 +68,7 @@ class World:
             self.birds.append(Bird(point, self))
 
         for point in confDict['chargers']:
-            for i in range(confDict['chargerCapacity']):
-                self.chargers.append(Charger(point, self))
+            self.chargers.append(Charger(point, self))
 
         for fieldPoints in confDict['fields']:
             self.fields.append(Field(fieldPoints, self))
@@ -114,40 +113,17 @@ class Simulation:
             sum([charger.energyConsumed for charger in self.world.chargers])
         ]
 
-    def setFieldProtectionEnsembles(self):
-        fieldProtectionEnsembles = []
-        for field in self.world.fields:
-            fieldProtectionEnsembles.append(FieldProtection(field, self.world))
 
-        instantiatedEnsembles = []
-        for ens in fieldProtectionEnsembles:
-            if ens.materialize(self.world.drones, instantiatedEnsembles):
-                instantiatedEnsembles.append(ens)
-                # we better have first iteration to pre-assign drones to fields
-                ens.actuate()
+    def run(self, filename, model, verbose):
 
-        return instantiatedEnsembles
+        components = []
 
-    def setDroneChargers(self,currentChargerEnsembles):
-        freeChargers = [charger for charger in self.world.chargers if charger not in [ens.charger for ens in currentChargerEnsembles ]]
-        chargeNeededDrones = [drone for drone in self.world.drones if drone.battery < 0.4]
+        components.extend(self.world.drones)
+        components.extend(self.world.birds)
+        components.extend(self.world.chargers)
+        
+        potentialEnsembles = getPotentialEnsembles(self.world)
 
-        for charger in freeChargers:
-            chargerEnsemble = DroneCharger(charger)
-            if chargerEnsemble.materialize(chargeNeededDrones, currentChargerEnsembles):
-                currentChargerEnsembles.append(chargerEnsemble)
-                
-
-        return currentChargerEnsembles
-
-    def run(self, filename, model):
-
-        elements = []
-
-        elements.extend(self.world.drones)
-        elements.extend(self.world.birds)
-        elements.extend(self.setFieldProtectionEnsembles())
-        currentChargerEnsembles = []
         # TODO: we want to move this outside of run so it is preserved between iterations
         # droneWaitingTimeEstimator = TimeEstimator({
         #     'drone_battery': FloatFeature(0, 1),
@@ -166,16 +142,25 @@ class Simulation:
             visualizer.drawFields()
 
         for i in range(self.world.maxSteps):
+            if verbose > 2:
+                print (f"        iteration {i+1}:")
             self.world.currentTimeStep = i
-            for element in elements:
-                element.actuate()
-            currentChargerEnsembles = self.setDroneChargers(currentChargerEnsembles)
-            for ens in currentChargerEnsembles:
-                if not ens.actuate():
-                    # not charging anymore
-                    currentChargerEnsembles.remove(ens)
-            # actuate all chargers
-            #masterCharger.actuate()
+            for component in components:
+                component.actuate()
+
+                if verbose > 3:
+                    print (f"            {component}")
+                
+            
+            initializedEnsembles = []
+
+            potentialEnsembles = sorted(potentialEnsembles)
+
+            for ens in potentialEnsembles:
+                if ens.materialize(components,initializedEnsembles):
+                    initializedEnsembles.append(ens)
+                    ens.actuate(verbose)
+
 
             if self.visualize:
                 visualizer.drawComponents(i + 1)
@@ -190,4 +175,4 @@ class Simulation:
 
         finalLog = self.collectStatistics()
 
-        return None , finalLog
+        return model , finalLog
