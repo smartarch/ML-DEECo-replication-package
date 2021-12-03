@@ -38,7 +38,7 @@ def run(args):
         'Energy Consumed',
     ])
 
-    estimation = getChargerWaitingTimeEstimation(world, baseline=False, outputFolder=folder)
+    estimation = getChargerWaitingTimeEstimation(world, args.waiting_estimation, outputFolder=folder)
 
     verbose = int(args.verbose)
 
@@ -74,6 +74,7 @@ def main():
     parser.add_argument('-a', '--animation', action='store_true', default=False,
                         help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
+    parser.add_argument('-w', '--waiting_estimation', type=str, choices=["baseline_zero", "neural_network"], help='The estimation model to be used for predicting charger waiting time.', required=False, default="neural_network")
     args = parser.parse_args()
 
     number = args.number
