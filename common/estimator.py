@@ -61,6 +61,30 @@ class Estimation(abc.ABC):
         """Called at the end of the iteration. We want to start the training now."""
         pass
 
+    def collectData(self, clear=True):
+        all_x, all_y = [], []
+        for estimator in self._estimators:
+            x, y = estimator.dataCollector.getData(clear)
+            all_x.extend(x)
+            all_y.extend(y)
+        return all_x, all_y
+
+    def dumpData(self, fileName, all_x, all_y):
+        dataLogHeader = []
+        for featureName, feature in self._inputs.items():
+            dataLogHeader.extend(feature.getHeader(featureName))
+        dataLogHeader.append("target")
+
+        dataLog = Log(dataLogHeader)
+
+        for x, y in zip(all_x, all_y):
+            dataLog.register(list(x) + list(y))
+
+        dataLog.export(fileName)
+
+    def save(self):
+        pass
+
 
 class Estimator(abc.ABC):
 
@@ -88,7 +112,7 @@ class Estimator(abc.ABC):
         return
 
     @abc.abstractmethod
-    def predict(self, observations):
+    def predict(self, observation):
         return
 
 
@@ -99,7 +123,7 @@ class Estimator(abc.ABC):
 
 class BaselineTimeEstimator(Estimator):
 
-    def predict(self, observations):
+    def predict(self, observation):
         return 0
 
     def createDataCollector(self, inputs):
@@ -112,11 +136,9 @@ class BaselineEstimation(Estimation):
         return BaselineTimeEstimator(inputs)
 
     def endIteration(self, iteration):
-        # TODO(MT): set verbosity level (or remove this completely as it is only for debugging)
-        print(f"BaselineEstimation.endIteration({iteration})")
-        for estimator in self._estimators:
-            x, y = estimator.dataCollector.getData()
-            print(f"  Collected {len(x)} records")
+        # TODO: set verbosity level (or remove this completely as it is only for debugging)
+        x, _ = self.collectData()
+        print(f"BaselineEstimation.endIteration({iteration}), collected {len(x)} records")
         self._estimators = []
 
 
@@ -127,8 +149,36 @@ class BaselineEstimation(Estimation):
 
 class NeuralNetworkTimeEstimator(Estimator):
 
+    def __init__(self, inputs, model):
+        super().__init__(inputs)
+        self._inputs = inputs
+        self._model = model  # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
+
+    def predict(self, observation):
+        record = np.concatenate([
+            feature.preprocess(observation[featureName])
+            for featureName, feature in self._inputs.items()
+        ]).reshape((1, -1))
+
+        predictions = self._model(record).numpy()[0]
+        return predictions[0]
+
     def createDataCollector(self, inputs):
         return TimeDataCollector(inputs)
+
+
+class NeuralNetworkTimeEstimation(Estimation):
+
+    def __init__(self, inputs, outputFolder):
+        super().__init__(inputs)
+
+        self._outputFolder = outputFolder
+
+        self._numFeatures = 0
+        for feature in self._inputs.values():
+            self._numFeatures += feature.getNumFeatures()
+
+        self._model = self.constructModel()
 
     def constructModel(self):
 
@@ -142,25 +192,49 @@ class NeuralNetworkTimeEstimator(Estimator):
         model.compile(
             tf.optimizers.Adam(),
             tf.losses.Poisson(),
+            metrics=[tf.metrics.mse],
         )
 
         return model
 
-    def train(self):
-        x = np.array(self._data_x)
-        y = np.array(self._data_y)
+    def train(self, x, y):
+        x = np.array(x)
+        y = np.array(y)
+
         self._model.fit(x, y,
-                        epochs=10)  # TODO(MT): epochs
+                        epochs=30,
+                        validation_split=0.2,
+                        callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)],
+                        verbose=2)
 
+    def evaluate(self, x, y, iteration):
+        x = np.array(x)
+        predictions = self._model.predict(x)
+        dataLog = Log(["target", "prediction"])
 
-class NeuralNetworkTimeEstimation(Estimation):
+        for t, p in zip(y, predictions):
+            dataLog.register(list(t) + list(p))
+
+        dataLog.export(f"{self._outputFolder}/waiting-time-{iteration}-evaluation.csv")
 
     def _createEstimator(self, inputs):
-        return NeuralNetworkTimeEstimator(inputs)
+        return NeuralNetworkTimeEstimator(inputs, self._model)
 
     def endIteration(self, iteration):
         """Called at the end of the iteration. We want to start the training now."""
-        pass
+        x, y = self.collectData()
+        self.dumpData(f"{self._outputFolder}/waiting-time-{iteration}.csv", x, y)
+
+        # TODO: set verbosity level (or remove this completely as it is only for debugging)
+        print(f"BaselineEstimation.endIteration({iteration}), collected {len(x)} records")
+
+        self.train(x, y)
+        self.evaluate(x, y, iteration)
+
+        self._estimators = []
+
+    def save(self):
+        self._model.save(f"{self._outputFolder}/waiting-time-model.h5")
 
 
 ###################
@@ -179,9 +253,6 @@ class DataCollector:
         """
 
         self._inputs = inputs
-        self._numFeatures = 0
-        for feature in self._inputs.values():
-            self._numFeatures += feature.getNumFeatures()
 
         self._data_x = []
         self._data_y = []
@@ -279,8 +350,8 @@ class FloatFeature(Feature):
         self.max = max
 
     def preprocess(self, value):
-        # TODO(MT): normalization
-        return np.array([value])
+        normalized = (value - self.min) / (self.max - self.min)
+        return np.array([normalized])
 
 
 # https://www.tensorflow.org/api_docs/python/tf/keras/layers/CategoryEncoding

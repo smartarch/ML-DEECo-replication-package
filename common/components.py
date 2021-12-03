@@ -687,6 +687,7 @@ class Charger(Component):
 
         for drone in self.chargingQueue:
             drone.targetCharger = self
+        # TODO: Should we really set the charger immediately when the drone is added to the queue? It makes all the drones in the queue useless, right?
 
         emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
         for i in range(emptyPlaces):

@@ -38,7 +38,7 @@ def run(args):
         'Energy Consumed',
     ])
 
-    estimation = getChargerWaitingTimeEstimation(world, baseline=True)
+    estimation = getChargerWaitingTimeEstimation(world, baseline=False, outputFolder=folder)
 
     verbose = int(args.verbose)
 
@@ -56,6 +56,8 @@ def run(args):
             log.register(newLog)
 
         estimation.endIteration(t)
+
+    estimation.save()
 
     log.export(f"{folder}\\{yamlFileName}.csv")
     if args.chart == True:
