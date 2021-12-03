@@ -1,12 +1,9 @@
 import random
 
 from common.components import Agent, Bird, Drone, Point, Field, Charger, Component, DroneState, BirdState
-from common.tasks import  getPotentialEnsembles
+from common.tasks import getPotentialEnsembles
 from common.serialization import Log
 from common.visualizers import Visualizer
-
-
-from common.estimator import TimeEstimator, FloatFeature, IntEnumFeature
 
 CLASSNAMES = {
     'drones': Drone,
@@ -14,6 +11,7 @@ CLASSNAMES = {
     'chargers': Charger,
     'fields': Field,
 }
+
 
 class World:
     """
@@ -74,8 +72,8 @@ class World:
             self.fields.append(Field(fieldPoints, self))
 
         self.totalPlaces = sum([len(f.places) for f in self.fields])
-        self.sortedFields = sorted(self.fields,key = lambda field : -len(field.places))
-        
+        self.sortedFields = sorted(self.fields, key=lambda field: -len(field.places))
+
         self.emptyPoints = []
         for i in range(World.MAX_RANDOMPOINTS):
             p = Point.random(0, 0, self.mapWidth, self.mapHeight)
@@ -83,8 +81,6 @@ class World:
                 i = i - 1
             else:
                 self.emptyPoints.append(p)
-
-    
 
     def isProtectedByDrone(self, point):
         for drone in self.drones:
@@ -106,73 +102,58 @@ class Simulation:
         self.world = world
         self.folder = folder
 
-    def collectStatistics (self):
+    def collectStatistics(self):
         return [
-            len([drone for drone in self.world.drones if drone!=DroneState.TERMINATED]),
+            len([drone for drone in self.world.drones if drone != DroneState.TERMINATED]),
             sum([bird.ate for bird in self.world.birds]),
             sum([charger.energyConsumed for charger in self.world.chargers])
         ]
 
-
-    def run(self, filename, model, verbose):
+    def run(self, filename, estimation, verbose):
 
         components = []
 
         components.extend(self.world.drones)
         components.extend(self.world.birds)
         components.extend(self.world.chargers)
-        
+
+        for charger in self.world.chargers:
+            charger.waitingTimeEstimator = estimation.createEstimator()
+
         potentialEnsembles = getPotentialEnsembles(self.world)
 
-        # TODO: we want to move this outside of run so it is preserved between iterations
-        # droneWaitingTimeEstimator = TimeEstimator({
-        #     'drone_battery': FloatFeature(0, 1),
-        #     'drone_location_x': FloatFeature(0, self.world.mapWidth),
-        #     'drone_location_y': FloatFeature(0, self.world.mapHeight),
-        #     'drone_state': IntEnumFeature(DroneState),
-        #     'closest_charger_distance': FloatFeature(0, self.world.mapWidth + self.world.mapHeight),  # TODO(MT): improve the upper bound?
-        # })
+        # masterCharger = MasterCharger(self.world, droneWaitingTimeEstimator)
+        # masterCharger.materialize()
 
-
-        #masterCharger = MasterCharger(self.world, droneWaitingTimeEstimator)
-        #masterCharger.materialize()
-  
         if self.visualize:
             visualizer = Visualizer(self.world)
             visualizer.drawFields()
 
         for i in range(self.world.maxSteps):
             if verbose > 2:
-                print (f"        iteration {i+1}:")
+                print(f"        iteration {i + 1}:")
             self.world.currentTimeStep = i
             for component in components:
                 component.actuate()
 
                 if verbose > 3:
-                    print (f"            {component}")
-                
-            
+                    print(f"            {component}")
+
             initializedEnsembles = []
 
             potentialEnsembles = sorted(potentialEnsembles)
 
             for ens in potentialEnsembles:
-                if ens.materialize(components,initializedEnsembles):
+                if ens.materialize(components, initializedEnsembles):
                     initializedEnsembles.append(ens)
                     ens.actuate(verbose)
-
 
             if self.visualize:
                 visualizer.drawComponents(i + 1)
 
-
         if self.visualize:
             visualizer.createAnimation(f"{self.folder}/simulation-{filename}.gif")
 
-        # TODO(MT): what do we want to do with the started and not ended records?
-        #droneWaitingTimeEstimator.dumpData(f"{self.folder}/dataLog-{filename}.csv")
-        #droneWaitingTimeEstimator.endIteration()
-
         finalLog = self.collectStatistics()
 
-        return model , finalLog
+        return estimation, finalLog

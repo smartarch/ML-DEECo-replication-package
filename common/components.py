@@ -1,6 +1,9 @@
 import math
 import random
-from enum import Enum,IntEnum
+from enum import Enum, IntEnum
+
+from common.charger_waiting_estimation import generateFeatures
+
 
 class Point:
     """
@@ -15,14 +18,14 @@ class Point:
             Value of current position on the map on X-axis
 
         Properties
-        -------
+        ----------
         X: int
             sets and gets the value of X, throws an exception if value < 0.
         Y: int
             sets and gets the value of Y, throws an exception if value < 0.
 
         Operands
-        -------
+        --------
         __sub__(p1,p2): returns (int,int)
             is called as p1-p2
             returns the result of p1-p2 where p1 and p2 are points.
@@ -46,20 +49,18 @@ class Point:
     MaxWidth = 0
     MaxHeight = 0
 
-    def __init__ (
-                    self,
-                    x,
-                    y):
+    def __init__(
+            self,
+            x,
+            y):
         self.x = x
         self.y = y
 
-   
+    def __sub__(self, other):
+        return self.x - other.x, self.y - other.y
 
-    def __sub__ (self, other):
-        return self.x-other.x , self.y-other.y
-    
     def __eq__(self, other):
-        return self.x==other.x and self.y==other.y
+        return self.x == other.x and self.y == other.y
 
     # def __getitem__(self, index):
     #     if index==0:
@@ -67,22 +68,23 @@ class Point:
     #     else:
     #         return self.y
 
-    def __str__ (self):
+    def __str__(self):
         return f"{self.x},{self.y}"
-    
-    def distance(self,other):
+
+    def distance(self, other):
         dx = other.x - self.x
         dy = other.y - self.y
         dl = math.sqrt(dx * dx + dy * dy)
         return dl
 
     @staticmethod
-    def random (x1,y1,x2,y2):
-        return Point(random.randrange(x1,x2),random.randrange(y1,y2))
+    def random(x1, y1, x2, y2):
+        return Point(random.randrange(x1, x2), random.randrange(y1, y2))
 
     @staticmethod
-    def randomPoint ():
-        return Point(random.randrange(0,Point.MaxWidth),random.randrange(0,Point.MaxHeight))
+    def randomPoint():
+        return Point(random.randrange(0, Point.MaxWidth), random.randrange(0, Point.MaxHeight))
+
 
 class Field:
     """
@@ -101,46 +103,45 @@ class Field:
     # Field counter
     Count = 0
 
-    topLeft : Point
-    bottomRight : Point
+    topLeft: Point
+    bottomRight: Point
 
-    def __init__ (
-                    self,
-                    pointLists,
-                    world):
+    def __init__(
+            self,
+            pointLists,
+            world):
 
         self.droneRadius = world.droneRadius
         self.world = world
-        Field.Count = Field.Count +1
+        Field.Count = Field.Count + 1
         self.id = f"FIELD_{Field.Count}"
-        self.topLeft = Point(pointLists[0],pointLists[1])
-        self.bottomRight = Point(pointLists[2],pointLists[3])
+        self.topLeft = Point(pointLists[0], pointLists[1])
+        self.bottomRight = Point(pointLists[2], pointLists[3])
 
         self.places = []
         self.protectingDrones = []
         # new approach: how many protecting places there are
-        for x in range(self.topLeft.x,self.bottomRight.x,self.droneRadius):
-            for y in range(self.topLeft.y,self.bottomRight.y,self.droneRadius):
-                self.places.append(Point(x+ self.droneRadius/2,y+ self.droneRadius/2 ))
-    
-            
+        for x in range(self.topLeft.x, self.bottomRight.x, self.droneRadius):
+            for y in range(self.topLeft.y, self.bottomRight.y, self.droneRadius):
+                self.places.append(Point(x + self.droneRadius / 2, y + self.droneRadius / 2))
 
     def locationPoints(self):
         points = []
-        for x in range(self.topLeft.x,self.bottomRight.x):
-            for y in range(self.topLeft.y,self.bottomRight.y):
-                points.append (Point(x,y))
+        for x in range(self.topLeft.x, self.bottomRight.x):
+            for y in range(self.topLeft.y, self.bottomRight.y):
+                points.append(Point(x, y))
 
         return points
 
     # def randomPointOnField(self):
     #     return [randint(self.topLeft.x, self.bottomRight.x-1),randint(self.topLeft.y, self.bottomRight.y-1)]
-    
-    # a function to call and set all field points
-    def isPointOnField (self,point):
-        return (point.x >= self.topLeft.x and point.x < self.bottomRight.x) and (point.y >= self.topLeft.y and point.y < self.bottomRight.y)
 
-    def closestDistanceToDrone(self,drone):
+    # a function to call and set all field points
+    def isPointOnField(self, point):
+        return (point.x >= self.topLeft.x and point.x < self.bottomRight.x) and (
+                point.y >= self.topLeft.y and point.y < self.bottomRight.y)
+
+    def closestDistanceToDrone(self, drone):
         distances = []
         for place in self.places:
             dx = place.x - drone.location.x
@@ -149,47 +150,48 @@ class Field:
 
         return min(distances)
 
-    def assingPlace(self,drone):
+    def assingPlace(self, drone):
         if drone not in self.protectingDrones:
             self.protectingDrones.append(drone)
-        
+
         index = self.protectingDrones.index(drone)
 
         droneLen = len(self.protectingDrones)
         placeLen = len(self.places)
 
         emptyPlace = placeLen - droneLen
-        if index == droneLen-1:
-            if index<placeLen:
+        if index == droneLen - 1:
+            if index < placeLen:
                 return random.choice(self.places[index:placeLen])
             else:
                 return random.choice(self.places)
         else:
-            return self.places[index] 
+            return self.places[index]
 
-    def unassign(self,drone):
+    def unassign(self, drone):
         if drone in self.protectingDrones:
             self.protectingDrones.remove(drone)
 
     def randomLocation(self):
-        return Point.random(self.topLeft.x,self.topLeft.y,self.bottomRight.x,self.bottomRight.y)
+        return Point.random(self.topLeft.x, self.topLeft.y, self.bottomRight.x, self.bottomRight.y)
 
     # def closestDistanceToDrone (self,drone):
     #     minDistance = self.closestZoneToDrone(drone)
     #     return minDistance
 
-    def randomPlaces(self,protectors):
+    def randomPlaces(self, protectors):
         places = []
-        #lenZones = len(self.zones)
-        #interval = 1 if protectors > lenZones else int(lenZones/protectors)
+        # lenZones = len(self.zones)
+        # interval = 1 if protectors > lenZones else int(lenZones/protectors)
         for i in range(protectors):
             randomZone = random.choice(self.places)
-            places.append (Point(randomZone.x,randomZone.y))
+            places.append(Point(randomZone.x, randomZone.y))
         return places
 
-    def __str__ (self):
+    def __str__(self):
         return f"{self.id},{self.topLeft},{self.bottomRight}"
-        
+
+
 class Component:
     """
         Component class is used to represent A component on the map. 
@@ -214,11 +216,12 @@ class Component:
     location: Point
 
     id: str
+
     def __init__(
-                    self,
-                    location,
-                    world,
-                    componentID):
+            self,
+            location,
+            world,
+            componentID):
         """
             Initiate the Component object.
             After the derived type is identified, it gives a string ID
@@ -239,10 +242,10 @@ class Component:
                 the world that the components are living in.
         """
         child_type = type(self).__name__
-        self.id = "%s_%d"%(child_type, componentID)
+        self.id = "%s_%d" % (child_type, componentID)
         self.world = world
 
-        if isinstance(location,Point):
+        if isinstance(location, Point):
             self.location = location
         else:
             self.location = Point(location[0], location[1])
@@ -258,9 +261,10 @@ class Component:
             locationPoints()
                 return the current point as a list object.
         """
-        return [self.location.x,self.location.y]
+        return [self.location.x, self.location.y]
 
-class Agent (Component):
+
+class Agent(Component):
     """
         Extending component with mobility. 
         Agents can move, where components are all elements on a map that are constant or moving.
@@ -291,15 +295,15 @@ class Agent (Component):
         move(target)
             move the current location toward the target
     """
-    reporter = lambda agent,time: None
+    reporter = lambda agent, time: None
     header = ""
-    
-    def __init__ (
-                    self,
-                    location,
-                    speed,
-                    world,
-                    count):
+
+    def __init__(
+            self,
+            location,
+            speed,
+            world,
+            count):
         """
             Initiate the Agent object.
             Parameters
@@ -314,7 +318,7 @@ class Agent (Component):
             count : int
                 the number of component created with this type to be used as ID.
         """
-        Component.__init__(self,location,world,count)
+        Component.__init__(self, location, world, count)
         self.speed = speed
 
     def move(self, target):
@@ -334,12 +338,12 @@ class Agent (Component):
         dy = target.y - self.location.y
         dl = math.sqrt(dx * dx + dy * dy)
         if dl >= self.speed:
-            self.location = Point(self.location.x +dx * self.speed / dl,
-                                  self.location.y + dy * self.speed  / dl)
+            self.location = Point(self.location.x + dx * self.speed / dl,
+                                  self.location.y + dy * self.speed / dl)
         else:
             self.location = target
 
-    def report(self,timeStep):
+    def report(self, timeStep):
         """
             Register the current situation of the agent in the Report object.
             Parameters
@@ -347,7 +351,7 @@ class Agent (Component):
             timeStep : int
                 the current time step the simulation is running in.
         """
-        Agent.reporter(self,timeStep)
+        Agent.reporter(self, timeStep)
 
 
 class DroneState(IntEnum):
@@ -367,6 +371,7 @@ class DroneState(IntEnum):
     CHARGING = 4
     TERMINATED = 5
 
+
 class Drone(Agent):
     """
         The drone class represent the active drones that are in the field.
@@ -384,19 +389,19 @@ class Drone(Agent):
     # static Counter
     Count = 0
 
-    def __init__ (
-                    self, 
-                    location,
-                    world):
-        
-        self.droneRadius= world.droneRadius
-        self.droneSpeed= world.droneSpeed
-        self.droneMovingEnergyConsumption= world.droneMovingEnergyConsumption
-        self.droneProtectingEnergyConsumption= world.droneProtectingEnergyConsumption 
-        
+    def __init__(
+            self,
+            location,
+            world):
+
+        self.droneRadius = world.droneRadius
+        self.droneSpeed = world.droneSpeed
+        self.droneMovingEnergyConsumption = world.droneMovingEnergyConsumption
+        self.droneProtectingEnergyConsumption = world.droneProtectingEnergyConsumption
+
         self.battery = 1 - (world.droneBatteryRandomize * random.random())
         self.state = DroneState.IDLE
-        
+
         self.target = None
         self.targetField = None
         self.targetCharger = None
@@ -404,43 +409,43 @@ class Drone(Agent):
         self.alert = 0.4
         self.world = world
 
-
         Drone.Count = Drone.Count + 1
-        Agent.__init__(self,location,self.droneSpeed,world,Drone.Count)
-        
+        Agent.__init__(self, location, self.droneSpeed, world, Drone.Count)
+
     def closestCharger(self):
-        distances = [[charger,charger.location.distance(self.location)] for charger in self.world.chargers]
-        distances = sorted(distances, key = lambda x: x[1])
+        distances = [[charger, charger.location.distance(self.location)] for charger in self.world.chargers]
+        distances = sorted(distances, key=lambda x: x[1])
         return distances[0][0]
 
-    def energyRequiredToCharge(self,chargerLocation):
+    def energyRequiredToCharge(self, chargerLocation):
         return chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
+
+    def estimateWaitingEnergy(self, charger):
+        return charger.estimateWaitingTime(self) * self.droneProtectingEnergyConsumption
 
     def needsCharging(self):
         if self.state == DroneState.TERMINATED:
             return False
-        futureBattery =  self.battery - self.energyRequiredToCharge(self.closestCharger().location)
+        closestCharger = self.closestCharger()
+        futureBattery = self.battery - self.energyRequiredToCharge(closestCharger.location) - self.estimateWaitingEnergy(closestCharger)
         if futureBattery < 0:
             return False
-        
+
         return futureBattery < self.alert
 
-
-        
-    def batteryAfterGetToCharger(self,charger):
-        value =  self.battery - self.energyRequiredToCharge(charger.location)
-        if value < 0.0001: # not feasible to get to this charger 
+    def batteryAfterGetToCharger(self, charger):
+        value = self.battery - self.energyRequiredToCharge(charger.location)
+        if value < 0.0001:  # not feasible to get to this charger
             return 0
         else:
             return 1 - value
-
 
     # def isBatteryCritical(self,chargerLocation):
     #     return self.battery - self.energyRequiredToCharge(chargerLocation) <= self.alert
 
     def checkBattery(self):
-        if self.battery <=0:
-            self.battery=0
+        if self.battery <= 0:
+            self.battery = 0
             self.state = DroneState.TERMINATED
             if self.targetCharger is not None:
                 self.targetCharger.droneDied(self)
@@ -451,9 +456,9 @@ class Drone(Agent):
 
     def actuate(self):
         if self.state == DroneState.TERMINATED:
-            return 
+            return
 
-        if self.state < DroneState.MOVING_TO_CHARGER: # IDLE, PROTECTING or MOVING TO FIELD
+        if self.state < DroneState.MOVING_TO_CHARGER:  # IDLE, PROTECTING or MOVING TO FIELD
             if self.targetCharger is not None:
                 self.state = DroneState.MOVING_TO_CHARGER
                 self.targetField.unassign(self)
@@ -464,13 +469,12 @@ class Drone(Agent):
                 self.target = self.targetField.assingPlace(self)
                 self.state = DroneState.MOVING_TO_FIELD
 
-        if self.state == DroneState.MOVING_TO_CHARGER:    
+        if self.state == DroneState.MOVING_TO_CHARGER:
             self.target = self.targetCharger.provideLocation(self)
             if self.location == self.targetCharger.location:
                 self.state = DroneState.CHARGING
             else:
                 self.move()
-
 
         if self.state == DroneState.MOVING_TO_FIELD:
             if self.location == self.target:
@@ -480,31 +484,31 @@ class Drone(Agent):
                 self.move()
 
         if self.state == DroneState.CHARGING:
-            if self.battery >=1 :
+            if self.battery >= 1:
                 self.targetCharger = None
                 self.state = DroneState.IDLE
 
         self.checkBattery()
 
-    def isProtecting(self,point):
-        return (self.state== DroneState.PROTECTING or self.state==DroneState.MOVING_TO_FIELD) and self.location.distance(point) <= self.droneRadius
-       
+    def isProtecting(self, point):
+        return (self.state == DroneState.PROTECTING or self.state == DroneState.MOVING_TO_FIELD) and self.location.distance(
+            point) <= self.droneRadius
+
         # startX,startY,endX,endY = self.protectRadius()
         # return point[0] >= startX and  point[0] < endX and point[1] >= startY and  point[1] < endY
-            
-    def protectRadius(self):
-        startX = self.location.x-self.droneRadius
-        endX = self.location.x+self.droneRadius
-        startY = self.location.y-self.droneRadius
-        endY = self.location.y+self.droneRadius
-        startX = 0 if startX <0 else startX
-        startY = 0 if startY <0 else startY
-        endX = self.world.mapWidth-1 if endX>=self.world.mapWidth else endX
-        endY = self.world.mapHeight-1 if endY>=self.world.mapHeight else endY
-        return (startX,startY,endX,endY)
-    
 
-    def __str__ (self):
+    def protectRadius(self):
+        startX = self.location.x - self.droneRadius
+        endX = self.location.x + self.droneRadius
+        startY = self.location.y - self.droneRadius
+        endY = self.location.y + self.droneRadius
+        startX = 0 if startX < 0 else startX
+        startY = 0 if startY < 0 else startY
+        endX = self.world.mapWidth - 1 if endX >= self.world.mapWidth else endX
+        endY = self.world.mapHeight - 1 if endY >= self.world.mapHeight else endY
+        return (startX, startY, endX, endY)
+
+    def __str__(self):
         return f"{self.id}: state= {str(self.state)}, battery= {self.battery}"
 
 
@@ -532,7 +536,6 @@ class Bird(Agent):
     # # static Counter
     Count = 0
 
-
     StayProbability = 0.85
     AttackProbability = 0.12
     ReplaceProbability = 0.03
@@ -540,13 +543,13 @@ class Bird(Agent):
     # # all direction moves
     # mover : BirdMover
     def __init__(
-                    self,
-                    location,
-                    world):
+            self,
+            location,
+            world):
         self.speed = world.birdSpeed
 
         Bird.Count = Bird.Count + 1
-        Agent.__init__(self,location,self.speed,world,Bird.Count)
+        Agent.__init__(self, location, self.speed, world, Bird.Count)
 
         self.state = BirdState.IDLE
         self.target = None
@@ -556,22 +559,19 @@ class Bird(Agent):
     def findRandomField(self):
         self.target = Point.random()
 
-
-            
     def moveToNewField(self):
         self.field = random.choice(self.world.fields)
         self.target = self.field.randomLocation()
 
     def moveToNoField(self):
         self.field = None
-        self.target =random.choice(self.world.emptyPoints)
-    
+        self.target = random.choice(self.world.emptyPoints)
+
     def moveWithinSameField(self):
-        if self.field==None:
+        if self.field == None:
             self.moveToNewField()
         else:
             self.target = self.field.randomLocation()
-        
 
     def actuate(self):
         if self.state == BirdState.IDLE:
@@ -586,20 +586,18 @@ class Bird(Agent):
                 else:
                     self.moveToNoField()
                     self.state = BirdState.FLEEING
-                
-        
+
         if self.state == BirdState.MOVING_TO_FIELD:
             if self.location == self.target:
                 self.state = BirdState.OBSERVING
             else:
-                self.move (self.target)
+                self.move(self.target)
 
         if self.state == BirdState.FLEEING:
             if self.location == self.target:
                 self.state = BirdState.IDLE
             else:
-                self.move (self.target)
-
+                self.move(self.target)
 
         if self.state == BirdState.OBSERVING or self.state == BirdState.EATING:
             if self.world.isProtectedByDrone(self.location):
@@ -607,7 +605,7 @@ class Bird(Agent):
                 self.state = BirdState.FLEEING
             else:
                 self.state = BirdState.EATING
-        
+
         if self.state == BirdState.EATING:
             self.ate = self.ate + 1
             probability = random.random()
@@ -620,76 +618,70 @@ class Bird(Agent):
                     self.moveToNoField()
                     self.state = BirdState.FLEEING
 
-
-
-    
-    def __str__ (self):
+    def __str__(self):
         return f"{self.id}: state= {self.state}, Total Ate= {self.ate}"
-        
-class Charger (Component):
+
+
+class Charger(Component):
     """
 
     """
     # static Counter
     Count = 0
 
-    
-    def __init__ (
-                    self,
-                    location,
-                    world,
-                    estimator=None):
+    def __init__(
+            self,
+            location,
+            world):
         self.chargingRate = world.chargingRate
         self.chargerCapacity = world.chargerCapacity
         Charger.Count = Charger.Count + 1
-        Component.__init__(self,location,world,Charger.Count)
-        
+        Component.__init__(self, location, world, Charger.Count)
+
         self.energyConsumed = 0
-        self.estimator = estimator
         self.chargingQueue = []
         self.chargingDrones = []
 
+        self.waitingTimeEstimator = None  # TODO: We don't have the estimator when the Charger is created, we currently obtain it only in the 'run' function of the simulation. It is probably fine this way for now.
 
-    def addToQueue(self,drone):
-        # TODO MT: start the estimator data collector
+    def addToQueue(self, drone):
         # this is the event when a drone is added to a queue
+        self.waitingTimeEstimator.dataCollector.collectRecordStart(drone.id, generateFeatures(self, drone), self.world.currentTimeStep)
 
         self.chargingQueue.append(drone)
 
-
-    def startCharging(self,drone):
-        # TODO MT: end the estimator data collector record
+    def startCharging(self, drone):
         # this is the event when a drone is starting to charge (accepted)
-         
+        self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
+
         self.chargingQueue.remove(drone)
         self.chargingDrones.append(drone)
 
-
-    def doneCharging(self,drone):
+    def doneCharging(self, drone):
         drone.battery = 1
         self.chargingDrones.remove(drone)
 
-    def droneDied(self,drone):
-        # TODO MT: end the estimator data collector record
+    def droneDied(self, drone):
+        # TODO(MT): end the estimator data collector record
         # this is when a drone died, probably a NaN value to waiting time?
 
         if drone in self.chargingDrones:
             self.chargingDrones.remove(drone)
-        
+
         if drone in self.chargingQueue:
             self.chargingQueue.remove(drone)
 
+    def estimateWaitingTime(self, drone):
+        return self.waitingTimeEstimator.predict(generateFeatures(self, drone))
 
-    def randomNearLocation (self):
-        return Point(self.location.x+random.randint(1,5),self.location.y+random.randint(1,5))
+    def randomNearLocation(self):
+        return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))
 
-    def provideLocation(self,drone):
+    def provideLocation(self, drone):
         if drone in self.chargingDrones:
             return self.location
         else:
             return self.randomNearLocation()
-
-
 
     def actuate(self):
 
@@ -701,7 +693,7 @@ class Charger (Component):
             if len(self.chargingQueue) > 0:
                 drone = self.chargingQueue[0]
                 self.startCharging(drone)
-        
+
         for drone in self.chargingDrones:
             if drone.state == DroneState.CHARGING:
                 drone.battery = drone.battery + self.chargingRate
@@ -709,9 +701,8 @@ class Charger (Component):
                 if drone.battery >= 1:
                     self.doneCharging(drone)
 
-    def __str__ (self):
+    def __str__(self):
         return f"{self.id}: ChargingNow= {len(self.chargingDrones)}, QueueLength= {len(self.chargingDrones)}"
-  
 
-    def report(self,iteration):
+    def report(self, iteration):
         pass
