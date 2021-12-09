@@ -91,9 +91,7 @@ class Visualizer:
             
             self.drawCircle(draw,drone.protectRadius())
             draw.text((self.grid[drone]),f"{drone.battery:.2f}\n{drone.id}",COLORS['text']) 
-
-        for bird in self.world.birds:
-            draw.text((self.grid[bird]),f"{str(bird.state)[10:]}",COLORS['text'])   
+ 
 
         titleText = f"iteration: {iteration}"
         draw.text((self.width-200,20),titleText,COLORS['text'])   

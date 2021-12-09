@@ -5,11 +5,9 @@ General code for estimators
 import os
 import numpy as np
 import abc
-
 from common.serialization import Log
-
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # disable GPU in TF
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # disable GPU in TF
 import tensorflow as tf
 
 
@@ -200,6 +198,7 @@ class NeuralNetworkTimeEstimation(Estimation):
     def train(self, x, y):
         x = np.array(x)
         y = np.array(y)
+        print (x)
 
         self._model.fit(x, y,
                         epochs=30,
@@ -226,7 +225,7 @@ class NeuralNetworkTimeEstimation(Estimation):
         self.dumpData(f"{self._outputFolder}/waiting-time-{iteration}.csv", x, y)
 
         # TODO: set verbosity level (or remove this completely as it is only for debugging)
-        print(f"BaselineEstimation.endIteration({iteration}), collected {len(x)} records")
+        print(f"NeuralNetwork.endIteration({iteration}), collected {len(x)} records")
 
         self.train(x, y)
         self.evaluate(x, y, iteration)
@@ -352,6 +351,22 @@ class FloatFeature(Feature):
     def preprocess(self, value):
         normalized = (value - self.min) / (self.max - self.min)
         return np.array([normalized])
+
+
+
+
+# empty Model for start, to avoid errors
+
+class EmptyEstimator(Estimator):
+
+    def __init__(self):
+        self.dataCollector = TimeDataCollector({})
+
+    def predict(self, observation):
+        return 0
+
+    def createDataCollector(self, inputs):
+        return TimeDataCollector(inputs)
 
 
 # https://www.tensorflow.org/api_docs/python/tf/keras/layers/CategoryEncoding

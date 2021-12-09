@@ -1,8 +1,8 @@
-drones: 5
-birds: 11
+drones: 7
+birds: 20
 chargers: [
   [12,33],
-  [35,30],
+  [40,35],
 ]
 fields: [
   [10,10,20,25],
@@ -17,7 +17,7 @@ birdSpeed: 1
 droneSpeed: 1
 
 chargerCapacity: 1
-chargingRate: 0.2
+chargingRate: 0.1
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0.3

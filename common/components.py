@@ -1,9 +1,8 @@
 import math
 import random
 from enum import Enum, IntEnum
-
 from common.charger_waiting_estimation import generateFeatures
-
+from common.estimator import EmptyEstimator
 
 class Point:
     """
@@ -119,7 +118,7 @@ class Field:
         self.bottomRight = Point(pointLists[2], pointLists[3])
 
         self.places = []
-        self.protectingDrones = []
+        self.protectingDrones = {}
         # new approach: how many protecting places there are
         for x in range(self.topLeft.x, self.bottomRight.x, self.droneRadius):
             for y in range(self.topLeft.y, self.bottomRight.y, self.droneRadius):
@@ -152,25 +151,17 @@ class Field:
 
     def assingPlace(self, drone):
         if drone not in self.protectingDrones:
-            self.protectingDrones.append(drone)
-
-        index = self.protectingDrones.index(drone)
-
-        droneLen = len(self.protectingDrones)
-        placeLen = len(self.places)
-
-        emptyPlace = placeLen - droneLen
-        if index == droneLen - 1:
-            if index < placeLen:
-                return random.choice(self.places[index:placeLen])
-            else:
+            listOfEmptyPlaces = [place for place in self.places if place not in [self.protectingDrones[d] for d in self.protectingDrones]]
+            if len(listOfEmptyPlaces)<=0 :
                 return random.choice(self.places)
-        else:
-            return self.places[index]
+            self.protectingDrones[drone] = random.choice(listOfEmptyPlaces)
+            
+        return self.protectingDrones[drone]
+
 
     def unassign(self, drone):
         if drone in self.protectingDrones:
-            self.protectingDrones.remove(drone)
+            del self.protectingDrones[drone]
 
     def randomLocation(self):
         return Point.random(self.topLeft.x, self.topLeft.y, self.bottomRight.x, self.bottomRight.y)
@@ -417,17 +408,18 @@ class Drone(Agent):
         distances = sorted(distances, key=lambda x: x[1])
         return distances[0][0]
 
-    def energyRequiredToCharge(self, chargerLocation):
+    def energyRequiredToGetToCharger(self, chargerLocation):
         return chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
 
     def estimateWaitingEnergy(self, charger):
+        #TODO (MA): Change or Find a way for the drone to wait (Energy)
         return charger.estimateWaitingTime(self) * self.droneProtectingEnergyConsumption
 
     def needsCharging(self):
         if self.state == DroneState.TERMINATED:
             return False
         closestCharger = self.closestCharger()
-        futureBattery = self.battery - self.energyRequiredToCharge(closestCharger.location) - self.estimateWaitingEnergy(closestCharger)
+        futureBattery = self.battery - self.energyRequiredToGetToCharger(closestCharger.location) - self.estimateWaitingEnergy(closestCharger)
         if futureBattery < 0:
             return False
 
@@ -457,11 +449,11 @@ class Drone(Agent):
     def actuate(self):
         if self.state == DroneState.TERMINATED:
             return
-
         if self.state < DroneState.MOVING_TO_CHARGER:  # IDLE, PROTECTING or MOVING TO FIELD
             if self.targetCharger is not None:
                 self.state = DroneState.MOVING_TO_CHARGER
-                self.targetField.unassign(self)
+                if self.targetField is not None:
+                    self.targetField.unassign(self)
             else:
                 if self.targetField is None:
                     self.state = DroneState.IDLE
@@ -482,12 +474,10 @@ class Drone(Agent):
                 self.battery = self.battery - self.droneProtectingEnergyConsumption
             else:
                 self.move()
-
         if self.state == DroneState.CHARGING:
             if self.battery >= 1:
                 self.targetCharger = None
                 self.state = DroneState.IDLE
-
         self.checkBattery()
 
     def isProtecting(self, point):
@@ -647,7 +637,6 @@ class Charger(Component):
     def addToQueue(self, drone):
         # this is the event when a drone is added to a queue
         self.waitingTimeEstimator.dataCollector.collectRecordStart(drone.id, generateFeatures(self, drone), self.world.currentTimeStep)
-
         self.chargingQueue.append(drone)
 
     def startCharging(self, drone):
@@ -662,9 +651,8 @@ class Charger(Component):
         self.chargingDrones.remove(drone)
 
     def droneDied(self, drone):
-        # TODO(MT): end the estimator data collector record
-        # this is when a drone died, probably a NaN value to waiting time?
-
+        # TODO(MT): Think about it later
+        self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
         if drone in self.chargingDrones:
             self.chargingDrones.remove(drone)
 

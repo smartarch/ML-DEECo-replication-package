@@ -13,8 +13,10 @@ class FieldProtection(Ensemble):
     drones: List[Drone] = someOf(Drone)
 
     def priority(self):
+        if len(self.field.protectingDrones)  ==0:
+            return 1/len(self.field.places)
         # if there is no drone assigned, it tries to assign at least one
-        return len(self.field.protectingDrones)
+        return len(self.field.protectingDrones) / len(self.field.places)
 
     @drones.cardinality
     def drones(self):

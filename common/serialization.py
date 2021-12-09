@@ -1,4 +1,3 @@
-from common.components import Component, BirdState, DroneState
 import csv
 
 class Report:
@@ -26,6 +25,12 @@ class Log:
 
     def register (self,newData):
         self.records.append(newData)
+    
+    def add (self,newData):
+        currentRecord = self.records[-1]
+        for i in range(len(currentRecord)):
+            currentRecord[i] = currentRecord[i] + newData[i]
+        self.records[-1] = currentRecord
 
     def export(self,filename):
         with open(filename, 'w', newline='') as myFile:

@@ -3,8 +3,6 @@
 """
 from yaml import load, dump
 
-from common.charger_waiting_estimation import getChargerWaitingTimeEstimation
-
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -14,11 +12,10 @@ import os
 import argparse
 import copy
 from datetime import datetime
-
 from visualizer import plots
 from common.simulation import World, Simulation
 from common.serialization import Log
-
+from common.charger_waiting_estimation import getChargerWaitingTimeEstimation
 
 def run(args):
     yamlFile = open(args.source, 'r')
@@ -39,7 +36,6 @@ def run(args):
     ])
 
     estimation = getChargerWaitingTimeEstimation(world, args.waiting_estimation, outputFolder=folder)
-
     verbose = int(args.verbose)
 
     for t in range(args.train):
@@ -71,10 +67,9 @@ def main():
     parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
     parser.add_argument('-t', '--train', type=int, help='the number of trainings to be performed.', required=False, default="1")
     parser.add_argument('-v', '--verbose', type=int, help='the verboseness between 0 and 4.', required=False, default="0")
-    parser.add_argument('-a', '--animation', action='store_true', default=False,
-                        help='toggles saving the final results as a GIF animation.')
+    parser.add_argument('-a', '--animation', action='store_true', default=False, help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
-    parser.add_argument('-w', '--waiting_estimation', type=str, choices=["baseline_zero", "neural_network"], help='The estimation model to be used for predicting charger waiting time.', required=False, default="neural_network")
+    parser.add_argument('-w', '--waiting_estimation', type=str, choices=["none","baseline_zero", "neural_network"], help='The estimation model to be used for predicting charger waiting time.', required=False, default="neural_network")
     args = parser.parse_args()
 
     number = args.number
