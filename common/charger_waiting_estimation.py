@@ -3,11 +3,13 @@ Charger waiting time estimation
 """
 
 
-def getChargerWaitingTimeEstimation(world, estimationType, outputFolder):
+def getChargerWaitingTimeEstimation(world, args, outputFolder):
     # TODO(MT): the imports need to be here in order to prevent circular references, we should probably redo this in a better way by creating a class for the ChargerWaitingTimeEstimation
     import math
     from common.components import DroneState
     from common.estimator import BaselineEstimation, FloatFeature, IntEnumFeature, NeuralNetworkTimeEstimation
+
+    estimationType = args.waiting_estimation
 
     estimationInputs = {
         'drone_battery': FloatFeature(0, 1),
@@ -18,9 +20,9 @@ def getChargerWaitingTimeEstimation(world, estimationType, outputFolder):
     }
 
     if estimationType == "baseline_zero":
-        return BaselineEstimation(estimationInputs)
+        return BaselineEstimation(estimationInputs, outputFolder)
     elif estimationType == "neural_network":
-        return NeuralNetworkTimeEstimation(estimationInputs, outputFolder)
+        return NeuralNetworkTimeEstimation(estimationInputs, outputFolder, args.hidden_layers)
     else:
         raise NotImplementedError(f"Estimation '{estimationType}' not implemented.")
 

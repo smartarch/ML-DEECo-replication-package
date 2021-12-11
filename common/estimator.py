@@ -18,15 +18,20 @@ import tensorflow as tf
 
 class Estimation(abc.ABC):
 
-    def __init__(self, inputs):
+    def __init__(self, inputs, outputFolder):
         """
+        Estimation class for managing the estimators to generate the estimates.
 
         Parameters
         ----------
         inputs : dict[str, Feature]
+            Features used for the estimation.
+        outputFolder : str
+            Name of the folder to save the logs.
         """
 
         self._inputs = inputs
+        self._outputFolder = outputFolder
         self._estimators = []
 
     def createEstimator(self):
@@ -54,11 +59,6 @@ class Estimation(abc.ABC):
         """
         return
 
-    @abc.abstractmethod
-    def endIteration(self, iteration):
-        """Called at the end of the iteration. We want to start the training now."""
-        pass
-
     def collectData(self, clear=True):
         all_x, all_y = [], []
         for estimator in self._estimators:
@@ -83,16 +83,87 @@ class Estimation(abc.ABC):
     def save(self):
         pass
 
-
-class Estimator(abc.ABC):
-
-    def __init__(self, inputs):
+    def train(self, x, y):
         """
 
         Parameters
         ----------
+        x : np.ndarray
+            Inputs.
+        y : np.ndarray
+            Target outputs.
+
+        Returns
+        -------
+
+        """
+        pass
+
+    def evaluate(self, x, y, iteration):
+        """
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Inputs, shape [batch, features].
+        y : np.ndarray
+            Target outputs, shape [batch, 1].
+        iteration : int
+        """
+        predictions = self._evaluate_predict(x)
+
+        dataLog = Log(["target", "prediction"])
+
+        for t, p in zip(y, predictions):
+            dataLog.register(list(t) + list(p))
+
+        dataLog.export(f"{self._outputFolder}/waiting-time-{iteration}-evaluation.csv")
+
+    @abc.abstractmethod
+    def _evaluate_predict(self, x):
+        """
+        Generate predictions for evaluation.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Inputs, shape is [batch, features]
+
+        Returns
+        -------
+        np.ndarray
+            Predictions with shape [batch, 1].
+        """
+        return np.zeros((x.shape[0], 1))
+
+    def endIteration(self, iteration):
+        """Called at the end of the iteration. We want to do the training now."""
+        x, y = self.collectData()
+        self.dumpData(f"{self._outputFolder}/waiting-time-{iteration}.csv", x, y)
+
+        # TODO: set verbosity level
+        print(f"Starting training {iteration + 1} with {len(x)} records")
+
+        x = np.array(x)
+        y = np.array(y)
+
+        self.train(x, y)
+        self.evaluate(x, y, iteration)
+
+        self._estimators = []
+
+
+class Estimator(abc.ABC):
+
+    def __init__(self, estimation, inputs):
+        """
+
+        Parameters
+        ----------
+        estimation : Estimation
         inputs : dict[str, Feature]
         """
+        self._estimation = estimation
         self.dataCollector = self.createDataCollector(inputs)
 
     @abc.abstractmethod
@@ -131,13 +202,10 @@ class BaselineTimeEstimator(Estimator):
 class BaselineEstimation(Estimation):
 
     def _createEstimator(self, inputs):
-        return BaselineTimeEstimator(inputs)
+        return BaselineTimeEstimator(self, inputs)
 
-    def endIteration(self, iteration):
-        # TODO: set verbosity level (or remove this completely as it is only for debugging)
-        x, _ = self.collectData()
-        print(f"BaselineEstimation.endIteration({iteration}), collected {len(x)} records")
-        self._estimators = []
+    def _evaluate_predict(self, x):
+        return np.zeros((x.shape[0], 1))
 
 
 ################
@@ -147,10 +215,9 @@ class BaselineEstimation(Estimation):
 
 class NeuralNetworkTimeEstimator(Estimator):
 
-    def __init__(self, inputs, model):
-        super().__init__(inputs)
+    def __init__(self, estimation, inputs):
+        super().__init__(estimation, inputs)
         self._inputs = inputs
-        self._model = model  # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
 
     def predict(self, observation):
         record = np.concatenate([
@@ -158,7 +225,8 @@ class NeuralNetworkTimeEstimator(Estimator):
             for featureName, feature in self._inputs.items()
         ]).reshape((1, -1))
 
-        predictions = self._model(record).numpy()[0]
+        # noinspection PyUnresolvedReferences
+        predictions = self._estimation.model(record).numpy()[0]
         return predictions[0]
 
     def createDataCollector(self, inputs):
@@ -167,23 +235,31 @@ class NeuralNetworkTimeEstimator(Estimator):
 
 class NeuralNetworkTimeEstimation(Estimation):
 
-    def __init__(self, inputs, outputFolder):
-        super().__init__(inputs)
-
-        self._outputFolder = outputFolder
+    def __init__(self, inputs, outputFolder, hidden_layers):
+        super().__init__(inputs, outputFolder)
 
         self._numFeatures = 0
         for feature in self._inputs.values():
             self._numFeatures += feature.getNumFeatures()
 
-        self._model = self.constructModel()
+        self.model = self.constructModel(hidden_layers)  # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
 
-    def constructModel(self):
+    def constructModel(self, hidden_layers):
+        """
 
-        hidden_layer = 20
+        Parameters
+        ----------
+        hidden_layers : list[int]
+
+        Returns
+        -------
+        tf.keras.Model
+        """
 
         inputs = tf.keras.layers.Input([self._numFeatures])
-        hidden = tf.keras.layers.Dense(hidden_layer, activation=tf.keras.activations.relu)(inputs)
+        hidden = inputs
+        for layer_size in hidden_layers:
+            hidden = tf.keras.layers.Dense(layer_size, activation=tf.keras.activations.relu)(hidden)
         output = tf.keras.layers.Dense(1, activation=tf.keras.activations.exponential)(hidden)
 
         model = tf.keras.Model(inputs=[inputs], outputs=[output])
@@ -196,44 +272,20 @@ class NeuralNetworkTimeEstimation(Estimation):
         return model
 
     def train(self, x, y):
-        x = np.array(x)
-        y = np.array(y)
-        print (x)
-
-        self._model.fit(x, y,
-                        epochs=30,
-                        validation_split=0.2,
-                        callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)],
-                        verbose=2)
-
-    def evaluate(self, x, y, iteration):
-        x = np.array(x)
-        predictions = self._model.predict(x)
-        dataLog = Log(["target", "prediction"])
-
-        for t, p in zip(y, predictions):
-            dataLog.register(list(t) + list(p))
-
-        dataLog.export(f"{self._outputFolder}/waiting-time-{iteration}-evaluation.csv")
+        self.model.fit(x, y,
+                       epochs=30,
+                       validation_split=0.2,
+                       callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)],
+                       verbose=2)
 
     def _createEstimator(self, inputs):
-        return NeuralNetworkTimeEstimator(inputs, self._model)
+        return NeuralNetworkTimeEstimator(self, inputs)
 
-    def endIteration(self, iteration):
-        """Called at the end of the iteration. We want to start the training now."""
-        x, y = self.collectData()
-        self.dumpData(f"{self._outputFolder}/waiting-time-{iteration}.csv", x, y)
-
-        # TODO: set verbosity level (or remove this completely as it is only for debugging)
-        print(f"NeuralNetwork.endIteration({iteration}), collected {len(x)} records")
-
-        self.train(x, y)
-        self.evaluate(x, y, iteration)
-
-        self._estimators = []
+    def _evaluate_predict(self, x):
+        return self.model(x).numpy()
 
     def save(self):
-        self._model.save(f"{self._outputFolder}/waiting-time-model.h5")
+        self.model.save(f"{self._outputFolder}/waiting-time-model.h5")
 
 
 ###################
@@ -351,22 +403,6 @@ class FloatFeature(Feature):
     def preprocess(self, value):
         normalized = (value - self.min) / (self.max - self.min)
         return np.array([normalized])
-
-
-
-
-# empty Model for start, to avoid errors
-
-class EmptyEstimator(Estimator):
-
-    def __init__(self):
-        self.dataCollector = TimeDataCollector({})
-
-    def predict(self, observation):
-        return 0
-
-    def createDataCollector(self, inputs):
-        return TimeDataCollector(inputs)
 
 
 # https://www.tensorflow.org/api_docs/python/tf/keras/layers/CategoryEncoding

@@ -1,7 +1,7 @@
 import random
 from common.components import Agent, Bird, Drone, Point, Field, Charger, Component, DroneState, BirdState
 from common.tasks import getPotentialEnsembles 
-from common.timetasks import getNewAlertChangingEnsembles
+# from common.timetasks import getNewAlertChangingEnsembles
 from common.serialization import Log
 from common.visualizers import Visualizer
 

@@ -2,7 +2,6 @@ import math
 import random
 from enum import Enum, IntEnum
 from common.charger_waiting_estimation import generateFeatures
-from common.estimator import EmptyEstimator
 
 class Point:
     """
@@ -651,8 +650,8 @@ class Charger(Component):
         self.chargingDrones.remove(drone)
 
     def droneDied(self, drone):
-        # TODO(MT): Think about it later
-        self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
+        # TODO(MT): Think about it later. It is possible that the drone dies and collectRecordStart was not called, so we need a way to ignore such records.
+        # self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
         if drone in self.chargingDrones:
             self.chargingDrones.remove(drone)
 
