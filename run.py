@@ -51,7 +51,7 @@ def run(args):
             estimation, newLog = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", estimation, verbose)
             log.register(newLog)
 
-        estimation.endIteration(t)
+        estimation.endIteration()
 
     estimation.save()
 

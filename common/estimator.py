@@ -5,9 +5,13 @@ General code for estimators
 import os
 import numpy as np
 import abc
+
+from matplotlib import pyplot as plt
+
 from common.serialization import Log
+
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # disable GPU in TF
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 
 
@@ -32,6 +36,7 @@ class Estimation(abc.ABC):
 
         self._inputs = inputs
         self._outputFolder = outputFolder
+        self._iteration = 1
         self._estimators = []
 
     def createEstimator(self):
@@ -99,7 +104,7 @@ class Estimation(abc.ABC):
         """
         pass
 
-    def evaluate(self, x, y, iteration):
+    def evaluate(self, x, y):
         """
 
         Parameters
@@ -108,7 +113,6 @@ class Estimation(abc.ABC):
             Inputs, shape [batch, features].
         y : np.ndarray
             Target outputs, shape [batch, 1].
-        iteration : int
         """
         predictions = self._evaluate_predict(x)
 
@@ -117,7 +121,30 @@ class Estimation(abc.ABC):
         for t, p in zip(y, predictions):
             dataLog.register(list(t) + list(p))
 
-        dataLog.export(f"{self._outputFolder}/waiting-time-{iteration}-evaluation.csv")
+        dataLog.export(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation.csv")
+
+        mse = np.mean(np.square(y - predictions))
+        # TODO: set verbosity level
+        print("Train MSE:", mse)
+
+        self._eval_plot(y, predictions)
+
+    def _eval_plot(self, y_true, y_pred):
+        mse = np.mean(np.square(y_true - y_pred))
+
+        lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
+
+        plt.figure(figsize=(10, 10))
+        plt.axes(aspect='equal')
+        plt.scatter(y_true, y_pred)
+        plt.xlabel('True Values')
+        plt.ylabel('Predictions')
+        plt.title(f"Iteration {self._iteration}\nTrain MSE: {mse:.3f}")
+        plt.xlim(lims)
+        plt.ylim(lims)
+        plt.plot(lims, lims)
+        plt.savefig(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation.png")
+        plt.clf()
 
     @abc.abstractmethod
     def _evaluate_predict(self, x):
@@ -136,21 +163,25 @@ class Estimation(abc.ABC):
         """
         return np.zeros((x.shape[0], 1))
 
-    def endIteration(self, iteration):
+    def endIteration(self):
         """Called at the end of the iteration. We want to do the training now."""
         x, y = self.collectData()
-        self.dumpData(f"{self._outputFolder}/waiting-time-{iteration}.csv", x, y)
+        self.dumpData(f"{self._outputFolder}/waiting-time-{self._iteration}.csv", x, y)
 
         # TODO: set verbosity level
-        print(f"Starting training {iteration + 1} with {len(x)} records")
+        print(f"Starting training {self._iteration} with {len(x)} records")
 
-        x = np.array(x)
-        y = np.array(y)
+        if len(x) > 0:
+            x = np.array(x)
+            y = np.array(y)
 
-        self.train(x, y)
-        self.evaluate(x, y, iteration)
+            # TODO(MT): split data to train and test
+
+            self.train(x, y)
+            self.evaluate(x, y)
 
         self._estimators = []
+        self._iteration += 1
 
 
 class Estimator(abc.ABC):
@@ -242,7 +273,8 @@ class NeuralNetworkTimeEstimation(Estimation):
         for feature in self._inputs.values():
             self._numFeatures += feature.getNumFeatures()
 
-        self.model = self.constructModel(hidden_layers)  # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
+        self.model = self.constructModel(
+            hidden_layers)  # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
 
     def constructModel(self, hidden_layers):
         """
@@ -272,11 +304,17 @@ class NeuralNetworkTimeEstimation(Estimation):
         return model
 
     def train(self, x, y):
-        self.model.fit(x, y,
-                       epochs=30,
-                       validation_split=0.2,
-                       callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)],
-                       verbose=2)
+        epochs = 30
+        history = self.model.fit(x, y,
+                                 epochs=epochs,
+                                 validation_split=0.2,
+                                 callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)],
+                                 verbose=2)
+
+        trainLog = Log(["epoch", "train_mse", "val_mse"])
+        for row in zip(range(1, epochs + 1), history.history["mean_squared_error"], history.history["val_mean_squared_error"]):
+            trainLog.register(row)
+        trainLog.export(f"{self._outputFolder}/waiting-time-{self._iteration}-training.csv")
 
     def _createEstimator(self, inputs):
         return NeuralNetworkTimeEstimator(self, inputs)
@@ -349,7 +387,8 @@ class TimeDataCollector(DataCollector):
 
     def collectRecordEnd(self, recordId, timeStep):
         if recordId not in self._records:
-            raise KeyError(f"RecordId {recordId} not found. The record collection must be first started using the 'collectRecordStart' method.")
+            raise KeyError(
+                f"RecordId {recordId} not found. The record collection must be first started using the 'collectRecordStart' method.")
 
         record = self._records[recordId]
         del self._records[recordId]
@@ -403,7 +442,6 @@ class FloatFeature(Feature):
     def preprocess(self, value):
         normalized = (value - self.min) / (self.max - self.min)
         return np.array([normalized])
-
 
 # https://www.tensorflow.org/api_docs/python/tf/keras/layers/CategoryEncoding
 # https://www.tensorflow.org/api_docs/python/tf/keras/layers/IntegerLookup
