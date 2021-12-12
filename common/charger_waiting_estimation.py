@@ -59,13 +59,13 @@ class BaselineZeroChargerWaitingTimeEstimation(BaselineEstimation):
         return BaselineZeroChargerWaitingTimeEstimator(self, inputs)
 
 
-######################################
-# Baseline: time to charge the queue #
-######################################
+####################################################
+# Baseline: missing battery of drones in the queue #
+####################################################
 # This estimate is obviously underestimating as it doesn't take into account energy consumed by the drones while they are waiting in the queue.
 
 
-class QueueSumWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimator):
+class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimator):
 
     def createDataCollector(self, inputs):
         return TimeDataCollector(inputs)
@@ -95,7 +95,7 @@ class QueueSumWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimator):
         return self.sumQueueEnergyRequired(charger) / self.chargerChargingCapacity(charger)
 
 
-class QueueSumWaitingTimeEstimation(Estimation):
+class QueueMissingBatteryWaitingTimeEstimation(Estimation):
 
     def __init__(self, outputFolder):
 
@@ -113,7 +113,7 @@ class QueueSumWaitingTimeEstimation(Estimation):
         super().__init__(estimationInputs, outputFolder)
 
     def _createEstimator(self, inputs):
-        return QueueSumWaitingTimeEstimator(self, inputs)
+        return QueueMissingBatteryWaitingTimeEstimator(self, inputs)
 
     def _evaluate_predict(self, x):
         # same computation as QueueSumWaitingTimeEstimator.predict
@@ -179,7 +179,7 @@ def getChargerWaitingTimeEstimation(world, args, outputFolder):
         return BaselineZeroChargerWaitingTimeEstimation(outputFolder)
     elif estimationType == "neural_network":
         return NeuralNetworkChargerWaitingTimeEstimation(outputFolder, args.hidden_layers, world)
-    elif estimationType == "queue_energy_sum":
-        return QueueSumWaitingTimeEstimation(outputFolder)
+    elif estimationType == "queue_missing_battery":
+        return QueueMissingBatteryWaitingTimeEstimation(outputFolder)
     else:
         raise NotImplementedError(f"Estimation '{estimationType}' not implemented.")
