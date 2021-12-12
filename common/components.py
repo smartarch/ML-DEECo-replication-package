@@ -1,6 +1,8 @@
 import math
 import random
 from enum import Enum, IntEnum
+from typing import List
+
 
 class Point:
     """
@@ -627,8 +629,8 @@ class Charger(Component):
         Component.__init__(self, location, world, Charger.Count)
 
         self.energyConsumed = 0
-        self.chargingQueue = []
-        self.chargingDrones = []
+        self.chargingQueue: List[Drone] = []
+        self.chargingDrones: List[Drone] = []
 
         from common.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
         # the estimator is assigned later using assignWaitingTimeEstimator

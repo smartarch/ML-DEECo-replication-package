@@ -420,6 +420,12 @@ class Feature(abc.ABC):
         return np.empty([])
 
 
+class NumberFeature(Feature):
+
+    def preprocess(self, value):
+        return np.array([value])
+
+
 class IntEnumFeature(Feature):
 
     def __init__(self, enumClass):

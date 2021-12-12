@@ -4,8 +4,8 @@ Charger waiting time estimation
 import abc
 import math
 
-from common.components import DroneState
-from common.estimator import BaselineTimeEstimator, BaselineEstimation, NeuralNetworkTimeEstimation, NeuralNetworkTimeEstimator, FloatFeature, IntEnumFeature
+from common.components import DroneState, Drone, Charger
+from common.estimator import *
 
 
 class ChargerWaitingTimeEstimator(abc.ABC):
@@ -20,12 +20,22 @@ class ChargerWaitingTimeEstimator(abc.ABC):
 
     @abc.abstractmethod
     def predict(self, charger, drone):
+        """
+        Parameters
+        ----------
+        charger : Charger
+        drone : Drone
+
+        Returns
+        -------
+        float
+        """
         return
 
 
-##############
-# Baseline 0 #
-##############
+###############
+# Baseline: 0 #
+###############
 
 
 class BaselineZeroChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, BaselineTimeEstimator):
@@ -47,6 +57,67 @@ class BaselineZeroChargerWaitingTimeEstimation(BaselineEstimation):
 
     def _createEstimator(self, inputs):
         return BaselineZeroChargerWaitingTimeEstimator(self, inputs)
+
+
+######################################
+# Baseline: time to charge the queue #
+######################################
+# This estimate is obviously underestimating as it doesn't take into account energy consumed by the drones while they are waiting in the queue.
+
+
+class QueueSumWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimator):
+
+    def createDataCollector(self, inputs):
+        return TimeDataCollector(inputs)
+
+    def collectRecordStart(self, recordId, charger, drone, timeStep, **kwargs):
+        self.dataCollector.collectRecordStart(recordId, {
+            'queue_energy_required_sum': self.sumQueueEnergyRequired(charger),
+            'charger_charging_capacity': self.chargerChargingCapacity(charger),
+
+            # just for logging
+            'queue_length': len(charger.chargingQueue),
+            'charging_drones': len(charger.chargingDrones),
+        }, timeStep, **kwargs)
+
+    def collectRecordEnd(self, recordId, timeStep):
+        self.dataCollector.collectRecordEnd(recordId, timeStep)
+
+    @staticmethod
+    def sumQueueEnergyRequired(charger):
+        return sum([1 - d.battery for d in charger.chargingQueue + charger.chargingDrones])
+
+    @staticmethod
+    def chargerChargingCapacity(charger):
+        return charger.chargingRate * charger.chargerCapacity
+
+    def predict(self, charger, drone):
+        return self.sumQueueEnergyRequired(charger) / self.chargerChargingCapacity(charger)
+
+
+class QueueSumWaitingTimeEstimation(Estimation):
+
+    def __init__(self, outputFolder):
+
+        # these are not used to compute the estimates during simulation,
+        # they are saved for evaluation
+        estimationInputs = {
+            'queue_energy_required_sum': NumberFeature(),
+            'charger_charging_capacity': NumberFeature(),
+
+            # just for logging
+            'queue_length': NumberFeature(),
+            'charging_drones': NumberFeature(),
+        }
+
+        super().__init__(estimationInputs, outputFolder)
+
+    def _createEstimator(self, inputs):
+        return QueueSumWaitingTimeEstimator(self, inputs)
+
+    def _evaluate_predict(self, x):
+        # same computation as QueueSumWaitingTimeEstimator.predict
+        return (x[:, 0] / x[:, 1]).reshape((-1, 1))
 
 
 ##################
@@ -108,5 +179,7 @@ def getChargerWaitingTimeEstimation(world, args, outputFolder):
         return BaselineZeroChargerWaitingTimeEstimation(outputFolder)
     elif estimationType == "neural_network":
         return NeuralNetworkChargerWaitingTimeEstimation(outputFolder, args.hidden_layers, world)
+    elif estimationType == "queue_energy_sum":
+        return QueueSumWaitingTimeEstimation(outputFolder)
     else:
         raise NotImplementedError(f"Estimation '{estimationType}' not implemented.")

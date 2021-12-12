@@ -69,7 +69,7 @@ def main():
     parser.add_argument('-v', '--verbose', type=int, help='the verboseness between 0 and 4.', required=False, default="0")
     parser.add_argument('-a', '--animation', action='store_true', default=False, help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
-    parser.add_argument('-w', '--waiting_estimation', type=str, choices=["baseline_zero", "neural_network"], help='The estimation model to be used for predicting charger waiting time.', required=False, default="neural_network")
+    parser.add_argument('-w', '--waiting_estimation', type=str, choices=["baseline_zero", "neural_network", "queue_energy_sum"], help='The estimation model to be used for predicting charger waiting time.', required=False, default="neural_network")
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[20], help='Number of neurons in hidden layers.')
     args = parser.parse_args()
 
