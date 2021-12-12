@@ -72,7 +72,7 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
 
     def collectRecordStart(self, recordId, charger, drone, timeStep, **kwargs):
         self.dataCollector.collectRecordStart(recordId, {
-            'queue_energy_required_sum': self.sumQueueEnergyRequired(charger),
+            'queue_missing_battery_sum': self.sumQueueMissingBattery(charger),
             'charger_charging_capacity': self.chargerChargingCapacity(charger),
 
             # just for logging
@@ -84,7 +84,7 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
         self.dataCollector.collectRecordEnd(recordId, timeStep)
 
     @staticmethod
-    def sumQueueEnergyRequired(charger):
+    def sumQueueMissingBattery(charger):
         return sum([1 - d.battery for d in charger.chargingQueue + charger.chargingDrones])
 
     @staticmethod
@@ -92,7 +92,7 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
         return charger.chargingRate * charger.chargerCapacity
 
     def predict(self, charger, drone):
-        return self.sumQueueEnergyRequired(charger) / self.chargerChargingCapacity(charger)
+        return self.sumQueueMissingBattery(charger) / self.chargerChargingCapacity(charger)
 
 
 class QueueMissingBatteryWaitingTimeEstimation(Estimation):
@@ -102,7 +102,7 @@ class QueueMissingBatteryWaitingTimeEstimation(Estimation):
         # these are not used to compute the estimates during simulation,
         # they are saved for evaluation
         estimationInputs = {
-            'queue_energy_required_sum': NumberFeature(),
+            'queue_missing_battery_sum': NumberFeature(),
             'charger_charging_capacity': NumberFeature(),
 
             # just for logging
@@ -118,6 +118,89 @@ class QueueMissingBatteryWaitingTimeEstimation(Estimation):
     def _evaluate_predict(self, x):
         # same computation as QueueSumWaitingTimeEstimator.predict
         return (x[:, 0] / x[:, 1]).reshape((-1, 1))
+
+
+########################################
+# Baseline: charging time of the queue #
+########################################
+# This includes an estimate of the energy consumed by the drones while waiting in the queue (assuming the Drone.droneMovingEnergyConsumption).
+
+
+class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimator):
+
+    def createDataCollector(self, inputs):
+        return TimeDataCollector(inputs)
+
+    def collectRecordStart(self, recordId, charger, drone, timeStep, **kwargs):
+        self.dataCollector.collectRecordStart(recordId, {
+            'queue_charging_time': self.computeQueueChargingTime(charger, drone.droneMovingEnergyConsumption),
+
+            # just for logging
+            'queue_missing_battery_sum': QueueMissingBatteryWaitingTimeEstimator.sumQueueMissingBattery(charger),
+            'charger_charging_capacity': QueueMissingBatteryWaitingTimeEstimator.chargerChargingCapacity(charger),
+            'queue_length': len(charger.chargingQueue),
+            'charging_drones': len(charger.chargingDrones),
+        }, timeStep, **kwargs)
+
+    def collectRecordEnd(self, recordId, timeStep):
+        self.dataCollector.collectRecordEnd(recordId, timeStep)
+
+    @staticmethod
+    def computeQueueChargingTime(charger: Charger, energyConsumptionRate: float):
+        queue = [d.battery for d in charger.chargingQueue]
+        charging = [d.battery for d in charger.chargingDrones]
+        chargingRate = charger.chargingRate
+
+        # if there are free slots, move the drones from the queue
+        freeSlots = charger.chargerCapacity - len(charging)
+        charging.extend(queue[:freeSlots])
+        del queue[:freeSlots]
+
+        # compute the charging time
+        chargingTime = 0
+
+        while len(charging) > 0:
+            maxBattery = max(charging)
+            timeUntilCharged = (1 - maxBattery) / chargingRate
+            chargingTime += timeUntilCharged
+
+            queue = [bat - energyConsumptionRate * chargingTime for bat in queue]
+
+            charging.remove(maxBattery)
+            if len(queue) > 0:
+                charging.append(queue[0])
+                del queue[0]
+
+        return chargingTime
+
+    def predict(self, charger, drone):
+        return self.computeQueueChargingTime(charger, drone.droneMovingEnergyConsumption)
+
+
+class QueueChargingTimeWaitingTimeEstimation(Estimation):
+
+    def __init__(self, outputFolder):
+
+        # these are not used to compute the estimates during simulation,
+        # they are saved for evaluation
+        estimationInputs = {
+            'queue_charging_time': NumberFeature(),
+
+            # just for logging
+            'queue_missing_battery_sum': NumberFeature(),
+            'charger_charging_capacity': NumberFeature(),
+            'queue_length': NumberFeature(),
+            'charging_drones': NumberFeature(),
+        }
+
+        super().__init__(estimationInputs, outputFolder)
+
+    def _createEstimator(self, inputs):
+        return QueueChargingTimeWaitingTimeEstimator(self, inputs)
+
+    def _evaluate_predict(self, x):
+        # use the value computed at the time of saving the datum
+        return x[:, 0].reshape((-1, 1))
 
 
 ##################
@@ -181,5 +264,7 @@ def getChargerWaitingTimeEstimation(world, args, outputFolder):
         return NeuralNetworkChargerWaitingTimeEstimation(outputFolder, args.hidden_layers, world)
     elif estimationType == "queue_missing_battery":
         return QueueMissingBatteryWaitingTimeEstimation(outputFolder)
+    elif estimationType == "queue_charging_time":
+        return QueueChargingTimeWaitingTimeEstimation(outputFolder)
     else:
         raise NotImplementedError(f"Estimation '{estimationType}' not implemented.")
