@@ -3,10 +3,10 @@ General code for estimators
 """
 
 import os
-import numpy as np
 import abc
-
+from datetime import datetime
 from matplotlib import pyplot as plt
+import numpy as np
 
 from common.serialization import Log
 
@@ -22,7 +22,7 @@ import tensorflow as tf
 
 class Estimation(abc.ABC):
 
-    def __init__(self, inputs, outputFolder):
+    def __init__(self, inputs, *, outputFolder, args):
         """
         Estimation class for managing the estimators to generate the estimates.
 
@@ -36,8 +36,14 @@ class Estimation(abc.ABC):
 
         self._inputs = inputs
         self._outputFolder = outputFolder
+        self._args = args
         self._iteration = 1
         self._estimators = []
+
+    @property
+    @abc.abstractmethod
+    def name(self):
+        return ""
 
     def createEstimator(self):
         """
@@ -104,7 +110,7 @@ class Estimation(abc.ABC):
         """
         pass
 
-    def evaluate(self, x, y):
+    def evaluate(self, x, y, label):
         """
 
         Parameters
@@ -113,6 +119,7 @@ class Estimation(abc.ABC):
             Inputs, shape [batch, features].
         y : np.ndarray
             Target outputs, shape [batch, 1].
+        label : str
         """
         predictions = self._evaluate_predict(x)
 
@@ -121,15 +128,15 @@ class Estimation(abc.ABC):
         for t, p in zip(y, predictions):
             dataLog.register(list(t) + list(p))
 
-        dataLog.export(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation.csv")
+        dataLog.export(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation-{label}.csv")
 
         mse = np.mean(np.square(y - predictions))
-        # TODO: set verbosity level
-        print("Train MSE:", mse)
+        if self._args.verbose > 1:
+            print(f"    {label} MSE: {mse}")
 
-        self._eval_plot(y, predictions)
+        self._eval_plot(y, predictions, label)
 
-    def _eval_plot(self, y_true, y_pred):
+    def _eval_plot(self, y_true, y_pred, label):
         mse = np.mean(np.square(y_true - y_pred))
 
         lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
@@ -139,11 +146,11 @@ class Estimation(abc.ABC):
         plt.scatter(y_true, y_pred)
         plt.xlabel('True Values')
         plt.ylabel('Predictions')
-        plt.title(f"Iteration {self._iteration}\nTrain MSE: {mse:.3f}")
+        plt.title(f"{self.name}\nIteration {self._iteration}\n{label} MSE: {mse:.3f}")
         plt.xlim(lims)
         plt.ylim(lims)
         plt.plot(lims, lims)
-        plt.savefig(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation.png")
+        plt.savefig(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation-{label}.png")
         plt.clf()
 
     @abc.abstractmethod
@@ -166,19 +173,31 @@ class Estimation(abc.ABC):
     def endIteration(self):
         """Called at the end of the iteration. We want to do the training now."""
         x, y = self.collectData()
+        count = len(x)
         self.dumpData(f"{self._outputFolder}/waiting-time-{self._iteration}.csv", x, y)
 
-        # TODO: set verbosity level
-        print(f"Starting training {self._iteration} with {len(x)} records")
+        if self._args.verbose > 0:
+            print(f"    Iteration {self._iteration} collected {count} records.")
 
-        if len(x) > 0:
+        if count > 0:
             x = np.array(x)
             y = np.array(y)
 
-            # TODO(MT): split data to train and test
+            indices = np.random.permutation(count)
+            test_size = int(self._args.test_split * count)
+            train_x = x[indices[:-test_size], :]
+            train_y = y[indices[:-test_size], :]
+            test_x = x[indices[-test_size:], :]
+            test_y = y[indices[-test_size:], :]
 
-            self.train(x, y)
-            self.evaluate(x, y)
+            if self._args.verbose > 0:
+                print(f"Training {self._iteration} started at {datetime.now()}: ")
+            if self._args.verbose > 1:
+                print(f"    Train data shape: {train_x.shape}, test data shape: {test_x.shape}.")
+
+            self.train(train_x, train_y)
+            self.evaluate(train_x, train_y, label="Train")
+            self.evaluate(test_x, test_y, label="Test")
 
         self._estimators = []
         self._iteration += 1
@@ -232,6 +251,10 @@ class BaselineTimeEstimator(Estimator):
 
 class BaselineEstimation(Estimation):
 
+    @property
+    def name(self):
+        return "Baseline 0"
+
     def _createEstimator(self, inputs):
         return BaselineTimeEstimator(self, inputs)
 
@@ -266,13 +289,18 @@ class NeuralNetworkTimeEstimator(Estimator):
 
 class NeuralNetworkTimeEstimation(Estimation):
 
-    def __init__(self, inputs, outputFolder, hidden_layers):
-        super().__init__(inputs, outputFolder)
+    @property
+    def name(self):
+        return f"Neural network {self._hidden_layers}"
+
+    def __init__(self, inputs, hidden_layers, **kwargs):
+        super().__init__(inputs, **kwargs)
 
         self._numFeatures = 0
         for feature in self._inputs.values():
             self._numFeatures += feature.getNumFeatures()
 
+        self._hidden_layers = hidden_layers
         # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
         self.model = self.constructModel(hidden_layers)
 
@@ -304,12 +332,12 @@ class NeuralNetworkTimeEstimation(Estimation):
         return model
 
     def train(self, x, y):
-        epochs = 30
+        epochs = 50
         history = self.model.fit(x, y,
                                  epochs=epochs,
                                  validation_split=0.2,
-                                 callbacks=[tf.keras.callbacks.EarlyStopping(patience=5)],
-                                 verbose=2)
+                                 callbacks=[tf.keras.callbacks.EarlyStopping(patience=10)],
+                                 verbose=2 if self._args.verbose > 1 else 0)
 
         trainLog = Log(["epoch", "train_mse", "val_mse"])
         for row in zip(range(1, epochs + 1), history.history["mean_squared_error"], history.history["val_mean_squared_error"]):

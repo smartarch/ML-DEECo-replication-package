@@ -52,8 +52,8 @@ class BaselineZeroChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, Basel
 
 class BaselineZeroChargerWaitingTimeEstimation(BaselineEstimation):
 
-    def __init__(self, outputFolder):
-        super().__init__({}, outputFolder)
+    def __init__(self, **kwargs):
+        super().__init__({}, **kwargs)
 
     def _createEstimator(self, inputs):
         return BaselineZeroChargerWaitingTimeEstimator(self, inputs)
@@ -97,7 +97,11 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
 
 class QueueMissingBatteryWaitingTimeEstimation(Estimation):
 
-    def __init__(self, outputFolder):
+    @property
+    def name(self):
+        return "Queue missing battery"
+
+    def __init__(self, **kwargs):
 
         # these are not used to compute the estimates during simulation,
         # they are saved for evaluation
@@ -110,7 +114,7 @@ class QueueMissingBatteryWaitingTimeEstimation(Estimation):
             'charging_drones': NumberFeature(),
         }
 
-        super().__init__(estimationInputs, outputFolder)
+        super().__init__(estimationInputs, **kwargs)
 
     def _createEstimator(self, inputs):
         return QueueMissingBatteryWaitingTimeEstimator(self, inputs)
@@ -179,7 +183,11 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
 
 class QueueChargingTimeWaitingTimeEstimation(Estimation):
 
-    def __init__(self, outputFolder):
+    @property
+    def name(self):
+        return "Queue charging time"
+
+    def __init__(self, **kwargs):
 
         # these are not used to compute the estimates during simulation,
         # they are saved for evaluation
@@ -193,7 +201,7 @@ class QueueChargingTimeWaitingTimeEstimation(Estimation):
             'charging_drones': NumberFeature(),
         }
 
-        super().__init__(estimationInputs, outputFolder)
+        super().__init__(estimationInputs, **kwargs)
 
     def _createEstimator(self, inputs):
         return QueueChargingTimeWaitingTimeEstimator(self, inputs)
@@ -232,7 +240,7 @@ class NeuralNetworkChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, Neur
 
 class NeuralNetworkChargerWaitingTimeEstimation(NeuralNetworkTimeEstimation):
 
-    def __init__(self, outputFolder, hidden_layers, world):
+    def __init__(self, hidden_layers, world, **kwargs):
 
         estimationInputs = {
             'drone_battery': FloatFeature(0, 1),
@@ -243,7 +251,7 @@ class NeuralNetworkChargerWaitingTimeEstimation(NeuralNetworkTimeEstimation):
             'charging_drones': FloatFeature(0, world.chargerCapacity),  # number of drones currently being charged
         }
 
-        super().__init__(estimationInputs, outputFolder, hidden_layers)
+        super().__init__(estimationInputs, hidden_layers, **kwargs)
 
     def _createEstimator(self, inputs):
         return NeuralNetworkChargerWaitingTimeEstimator(self, inputs)
@@ -257,14 +265,18 @@ class NeuralNetworkChargerWaitingTimeEstimation(NeuralNetworkTimeEstimation):
 def getChargerWaitingTimeEstimation(world, args, outputFolder):
 
     estimationType = args.waiting_estimation
+    kwargs = {
+        'outputFolder': outputFolder,
+        'args': args,
+    }
 
     if estimationType == "baseline_zero":
-        return BaselineZeroChargerWaitingTimeEstimation(outputFolder)
+        return BaselineZeroChargerWaitingTimeEstimation(**kwargs)
     elif estimationType == "neural_network":
-        return NeuralNetworkChargerWaitingTimeEstimation(outputFolder, args.hidden_layers, world)
+        return NeuralNetworkChargerWaitingTimeEstimation(args.hidden_layers, world, **kwargs)
     elif estimationType == "queue_missing_battery":
-        return QueueMissingBatteryWaitingTimeEstimation(outputFolder)
+        return QueueMissingBatteryWaitingTimeEstimation(**kwargs)
     elif estimationType == "queue_charging_time":
-        return QueueChargingTimeWaitingTimeEstimation(outputFolder)
+        return QueueChargingTimeWaitingTimeEstimation(**kwargs)
     else:
         raise NotImplementedError(f"Estimation '{estimationType}' not implemented.")
