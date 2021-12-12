@@ -273,8 +273,8 @@ class NeuralNetworkTimeEstimation(Estimation):
         for feature in self._inputs.values():
             self._numFeatures += feature.getNumFeatures()
 
-        self.model = self.constructModel(
-            hidden_layers)  # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
+        # For the sake of simulation, we use the same model in all the estimators. In practice, each NeuralNetworkTimeEstimator could have its own model and the train method of the NeuralNetworkTimeEstimation could update all the models.
+        self.model = self.constructModel(hidden_layers)
 
     def constructModel(self, hidden_layers):
         """
@@ -308,7 +308,7 @@ class NeuralNetworkTimeEstimation(Estimation):
         history = self.model.fit(x, y,
                                  epochs=epochs,
                                  validation_split=0.2,
-                                 callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)],
+                                 callbacks=[tf.keras.callbacks.EarlyStopping(patience=5)],
                                  verbose=2)
 
         trainLog = Log(["epoch", "train_mse", "val_mse"])
@@ -347,10 +347,13 @@ class DataCollector:
         self._data_y = []
 
     def collectRecord(self, x, y):
-        record = np.concatenate([
-            feature.preprocess(x[featureName])
-            for featureName, feature in self._inputs.items()
-        ])
+        if self._inputs:
+            record = np.concatenate([
+                feature.preprocess(x[featureName])
+                for featureName, feature in self._inputs.items()
+            ])
+        else:
+            record = np.empty((0,))
 
         self._data_x.append(record)
         self._data_y.append(np.array([y]))

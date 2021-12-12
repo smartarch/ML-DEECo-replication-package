@@ -130,7 +130,7 @@ class Simulation:
         components.extend(self.world.chargers)
 
         for charger in self.world.chargers:
-            charger.waitingTimeEstimator = estimation.createEstimator()
+            charger.assignWaitingTimeEstimator(estimation.createEstimator())
 
         potentialEnsembles = getPotentialEnsembles(self.world)
 

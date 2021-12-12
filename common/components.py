@@ -1,7 +1,6 @@
 import math
 import random
 from enum import Enum, IntEnum
-from common.charger_waiting_estimation import generateFeatures
 
 class Point:
     """
@@ -425,7 +424,7 @@ class Drone(Agent):
         return futureBattery < self.alert
 
     def batteryAfterGetToCharger(self, charger):
-        value = self.battery - self.energyRequiredToCharge(charger.location)
+        value = self.battery - self.energyRequiredToGetToCharger(charger.location)
         if value < 0.0001:  # not feasible to get to this charger
             return 0
         else:
@@ -631,16 +630,27 @@ class Charger(Component):
         self.chargingQueue = []
         self.chargingDrones = []
 
-        self.waitingTimeEstimator = None  # TODO: We don't have the estimator when the Charger is created, we currently obtain it only in the 'run' function of the simulation. It is probably fine this way for now.
+        from common.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
+        # the estimator is assigned later using assignWaitingTimeEstimator
+        # noinspection PyTypeChecker
+        self.waitingTimeEstimator: ChargerWaitingTimeEstimator = None
+
+    def assignWaitingTimeEstimator(self, estimator):
+        """
+        Parameters
+        ----------
+        estimator : common.charger_waiting_estimation.NeuralNetworkChargerWaitingTimeEstimation
+        """
+        self.waitingTimeEstimator = estimator
 
     def addToQueue(self, drone):
         # this is the event when a drone is added to a queue
-        self.waitingTimeEstimator.dataCollector.collectRecordStart(drone.id, generateFeatures(self, drone), self.world.currentTimeStep)
+        self.waitingTimeEstimator.collectRecordStart(drone.id, self, drone, self.world.currentTimeStep)
         self.chargingQueue.append(drone)
 
     def startCharging(self, drone):
         # this is the event when a drone is starting to charge (accepted)
-        self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
+        self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
 
         self.chargingQueue.remove(drone)
         self.chargingDrones.append(drone)
@@ -659,7 +669,7 @@ class Charger(Component):
             self.chargingQueue.remove(drone)
 
     def estimateWaitingTime(self, drone):
-        return self.waitingTimeEstimator.predict(generateFeatures(self, drone))
+        return self.waitingTimeEstimator.predict(self, drone)
 
     def randomNearLocation(self):
         return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))
