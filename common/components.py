@@ -2,7 +2,7 @@ import math
 import random
 from enum import Enum, IntEnum
 from typing import List
-
+import numpy as np
 
 class Point:
     """
@@ -525,9 +525,12 @@ class Charger(Component):
         # the estimator is assigned later using assignWaitingTimeEstimator
         # noinspection PyTypeChecker
         self.waitingTimeEstimator: ChargerWaitingTimeEstimator = None
+        self.waitingTimeEstimateCache = np.array([])
+        self.waitingTimeEstimateCacheVersion = -1
 
-    def decide(self,drone):
-        if drone not in self.chargingQueue and drone.needsCharging():
+
+    def decide(self, drone):
+        if drone not in self.chargingQueue+self.chargingDrones and drone.needsCharging():
             self.addToQueue(drone)
    
     def assignWaitingTimeEstimator(self, estimator):
@@ -564,7 +567,15 @@ class Charger(Component):
             self.chargingQueue.remove(drone)
 
     def estimateWaitingTime(self, drone):
-        return self.waitingTimeEstimator.predict(self, drone)
+        if self.waitingTimeEstimateCacheVersion != self.world.currentTimeStep:
+            self.updateWaitingTimeEstimateCache()
+        droneIndex = self.potentialDrones.index(drone)
+        return self.waitingTimeEstimateCache[droneIndex]
+
+    def updateWaitingTimeEstimateCache(self):
+        self.waitingTimeEstimateCache = self.waitingTimeEstimator.predictBatch(self, self.potentialDrones)
+        self.waitingTimeEstimateCacheVersion = self.world.currentTimeStep
+
 
     def randomNearLocation(self):
         return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))

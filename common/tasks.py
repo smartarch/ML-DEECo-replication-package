@@ -25,11 +25,10 @@ class FieldProtection(Ensemble):
     # choose this if not selected
     @drones.select
     def drones(self, drone, otherEnsembles):
-        return all([
-            not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones),
-            drone.state == DroneState.IDLE,  # drones that are ready to protect
-            len(self.field.places) > len(self.field.protectingDrones)  # do not assign too many drones
-        ])
+        return not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones) and\
+            drone.state == DroneState.IDLE and\
+            len(self.field.places) > len(self.field.protectingDrones) 
+        
 
     @drones.priority
     def drones(self, drone):
@@ -58,13 +57,11 @@ class DroneCharger(Ensemble):
 
     @drone.select
     def drone(self, drone, otherEnsembles):
-        return all([
-            #drone.needsCharging(),  # checks if the drone is dead or alive, and if needs charging
-            drone in self.charger.potentialDrones,  #drone.closestCharger(),  # if this is the closest charger
-            not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone),
-            drone not in self.charger.chargingQueue,  # if the drone is not already chargingQueue (simplified)
-            drone not in self.charger.chargingDrones,  # if the drone is not already being charged (can be asked in drone.needsCharging() too.)
-        ])
+        return drone in self.charger.potentialDrones and\
+            not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
+            drone not in self.charger.chargingQueue and\
+            drone not in self.charger.chargingDrones  # if the drone is not already being charged (can be asked in drone.needsCharging() too.)
+        
 
     @drone.priority
     def drone(self, drone):
@@ -106,7 +103,7 @@ class ChargerFinder(Ensemble):
     # choose this if not selected
     @charger.select
     def charger(self, charger, otherEnsembles):
-        return self.drone not in charger.potentialDrones #and charger not in self.chargers
+        return True
 
     @charger.priority
     def charger(self, charger):
