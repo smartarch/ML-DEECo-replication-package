@@ -32,21 +32,6 @@ class ChargerWaitingTimeEstimator(abc.ABC):
         """
         return
 
-    def predictBatch(self, charger, drones):
-        """
-        Parameters
-        ----------
-        charger : Charger
-        drones : list[Drone]
-            The batch of drones: batch_size = len(drones)
-
-        Returns
-        -------
-        np.ndarray
-            Shape [batch_size]
-        """
-        return np.array([self.predict(charger, drone) for drone in drones])
-
 
 ###############
 # Baseline: 0 #
@@ -251,9 +236,6 @@ class NeuralNetworkChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, Neur
 
     def predict(self, charger, drone):
         return NeuralNetworkTimeEstimator.predict(self, self.generateFeatures(charger, drone))
-
-    def predictBatch(self, charger, drones):
-        return NeuralNetworkTimeEstimator.predictBatch(self, [self.generateFeatures(charger, d) for d in drones])
 
 
 class NeuralNetworkChargerWaitingTimeEstimation(NeuralNetworkTimeEstimation):

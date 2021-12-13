@@ -124,6 +124,7 @@ class ChargerFinder(Ensemble):
             print(f"            Charger Ensemble: adding {self.drone.id} to {closestCharger.id}")
         
 
+
 def getPotentialEnsembles(world):
     potentialEnsembles = []
     for field in world.fields:
