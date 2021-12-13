@@ -1,5 +1,6 @@
 import math
 import random
+import numpy as np
 from enum import Enum, IntEnum
 from typing import List
 
@@ -518,6 +519,7 @@ class Charger(Component):
         self.chargingQueue: List[Drone] = []
         self.chargingDrones: List[Drone] = []
         self.potentialDrones: List[Drone] = []
+
         from common.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
         # the estimator is assigned later using assignWaitingTimeEstimator
         # noinspection PyTypeChecker
@@ -561,7 +563,14 @@ class Charger(Component):
             self.chargingQueue.remove(drone)
 
     def estimateWaitingTime(self, drone):
-        return self.waitingTimeEstimator.predict(self, drone)
+        if self.waitingTimeEstimateCacheVersion != self.world.currentTimeStep:
+            self.updateWaitingTimeEstimateCache()
+        droneIndex = self.potentialDrones.index(drone)
+        return self.waitingTimeEstimateCache[droneIndex]
+
+    def updateWaitingTimeEstimateCache(self):
+        self.waitingTimeEstimateCache = self.waitingTimeEstimator.predictBatch(self, self.potentialDrones)
+        self.waitingTimeEstimateCacheVersion = self.world.currentTimeStep
 
     def randomNearLocation(self):
         return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))
@@ -592,6 +601,7 @@ class Charger(Component):
 
     def report(self, iteration):
         pass
+
 
 class BirdState(Enum):
     """
