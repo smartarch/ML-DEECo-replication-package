@@ -12,6 +12,7 @@ COLORS ={
     'charger': [204, 204, 0], 
     'grid': [255, 255, 255],
     'text' : (237, 230, 211), 
+    'line' : [0,255,255],
 }
 
 SIZES = {
@@ -21,7 +22,8 @@ SIZES = {
     'charger': 5, 
 }
 
-
+LEGNED_SIZE = 200
+TEXT_MARGIN = 10
 
 class Visualizer:
     
@@ -29,10 +31,10 @@ class Visualizer:
     def __init__ (self, world):
         self.world = world
         self.cellSize =  SIZES['field']
-        self.width = world.mapWidth *self.cellSize
+        self.width = world.mapWidth *self.cellSize + LEGNED_SIZE # 150 for legends
 
         self.height = world.mapHeight *self.cellSize
-        
+
         self.images = []
         self.grid = {}
 
@@ -67,8 +69,38 @@ class Visualizer:
             self.grid[field] = filedPoints
             for point in filedPoints:
                 self.drawRectangle(self.background ,point,'field')
+        # draw a line
+        legendStartPoint = self.width - LEGNED_SIZE 
+        for i in range(self.height):
+            self.background[i][legendStartPoint] = COLORS['line']
+
+    def getLegends(self):
+
+        text = "-- WORLD STATUS --"
+        text = f"{text}\niteration: {self.world.currentTimeStep+1}"
+        text = f"{text}\nalive drones: {len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED])}"
+        text = f"{text}\nchargers: {len(self.world.chargers)}"
+        text = f"{text}\ncharger capacity: {self.world.chargerCapacity}"
+        text = f"{text}\nCharger Queues:"
+        for charger in self.world.chargers:
+            text = f"{text}\n-{charger.id}, A: {len(charger.potentialDrones)}, W: {len(charger.chargingQueue)}, C: {len(charger.chargingDrones)}"
+            for drone in charger.potentialDrones:         
+                if drone in charger.chargingQueue:
+                    text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - W"
+                elif drone in charger.chargingDrones:
+                    text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - C"
+                else:
+                    text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - A"
+
+        return text
 
 
+    def drawLegends(self,draw):
+        
+        legendStartPoint = self.width - LEGNED_SIZE 
+        text = self.getLegends()
+        draw.text((legendStartPoint+TEXT_MARGIN,TEXT_MARGIN),text,COLORS['text'])
+        return draw   
 
     def drawComponents (self, iteration=0):
 
@@ -81,7 +113,7 @@ class Visualizer:
             self.grid[drone] = self.drawRectangle(array,drone.location,'drone')
 
         for charger in self.world.chargers:
-            self.drawRectangle(array,charger.location,'charger')
+            self.grid[charger] =self.drawRectangle(array,charger.location,'charger')
 
         image = Image.fromarray(array.astype(np.uint8), 'RGB')
         draw = ImageDraw.Draw(image)
@@ -92,9 +124,12 @@ class Visualizer:
             self.drawCircle(draw,drone.protectRadius())
             draw.text((self.grid[drone]),f"{drone.battery:.2f}\n{drone.id}",COLORS['text']) 
  
-
-        titleText = f"iteration: {iteration}"
-        draw.text((self.width-200,20),titleText,COLORS['text'])   
+        for charger in self.world.chargers:
+            draw.text((self.grid[charger]),f"{charger.id}",COLORS['text']) 
+ 
+        
+        
+        draw = self.drawLegends(draw)
         self.images.append(image)
 
 
