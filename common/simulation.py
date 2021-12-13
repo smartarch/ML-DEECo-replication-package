@@ -143,7 +143,7 @@ class Simulation:
 
         for i in range(self.world.maxSteps):
             if verbose > 2:
-                print(f"        iteration {i + 1}:")
+                print(f"        Step {i + 1}:")
             self.world.currentTimeStep = i
             for component in components:
                 component.actuate()

@@ -273,15 +273,25 @@ class NeuralNetworkTimeEstimator(Estimator):
         super().__init__(estimation, inputs)
         self._inputs = inputs
 
-    def predict(self, observation):
-        record = np.concatenate([
+    def preprocess(self, observation):
+        return np.concatenate([
             feature.preprocess(observation[featureName])
             for featureName, feature in self._inputs.items()
-        ]).reshape((1, -1))
+        ])
+
+    def predict(self, observation):
+        record = self.preprocess(observation)
 
         # noinspection PyUnresolvedReferences
-        predictions = self._estimation.model(record).numpy()[0]
+        predictions = self._estimation.model([record]).numpy()[0]
         return predictions[0]
+
+    def predictBatch(self, observations):
+        records = np.array([self.preprocess(o) for o in observations])
+        # noinspection PyUnresolvedReferences
+        predictions = self._estimation.model(records).numpy()
+        return predictions[:, 0]
+
 
     def createDataCollector(self, inputs):
         return TimeDataCollector(inputs)

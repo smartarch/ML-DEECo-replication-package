@@ -86,7 +86,6 @@ class DroneCharger(Ensemble):
         self.charger.decide(self.drone)
 
 
-
 class ChargerFinder(Ensemble):
     drone: Drone
 
@@ -123,7 +122,6 @@ class ChargerFinder(Ensemble):
         if verbose > 3:
             print(f"            Charger Ensemble: adding {self.drone.id} to {closestCharger.id}")
         
-
 
 def getPotentialEnsembles(world):
     potentialEnsembles = []
