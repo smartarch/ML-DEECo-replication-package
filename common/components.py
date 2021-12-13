@@ -396,17 +396,17 @@ class Drone(Agent):
         self.target = None
         self.targetField = None
         self.targetCharger = None
-
-        self.alert = 0.4
+        self.closestCharger = None
+        self.alert = 0.2
         self.world = world
 
         Drone.Count = Drone.Count + 1
         Agent.__init__(self, location, self.droneSpeed, world, Drone.Count)
 
-    def closestCharger(self):
-        distances = [[charger, charger.location.distance(self.location)] for charger in self.world.chargers]
-        distances = sorted(distances, key=lambda x: x[1])
-        return distances[0][0]
+    # def findClosestCharger(self,chargers):
+    #     distances = [[charger, charger.location.distance(self.location)] for charger in chargers]
+    #     distances = sorted(distances, key=lambda x: x[1])
+    #     return distances[0][0]
 
     def energyRequiredToGetToCharger(self, chargerLocation):
         return chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
@@ -418,19 +418,18 @@ class Drone(Agent):
     def needsCharging(self):
         if self.state == DroneState.TERMINATED:
             return False
-        closestCharger = self.closestCharger()
-        futureBattery = self.battery - self.energyRequiredToGetToCharger(closestCharger.location) - self.estimateWaitingEnergy(closestCharger)
+        futureBattery = self.battery - self.energyRequiredToGetToCharger(self.closestCharger.location) - self.estimateWaitingEnergy(self.closestCharger)
         if futureBattery < 0:
             return False
 
         return futureBattery < self.alert
 
-    def batteryAfterGetToCharger(self, charger):
-        value = self.battery - self.energyRequiredToGetToCharger(charger.location)
-        if value < 0.0001:  # not feasible to get to this charger
-            return 0
-        else:
-            return 1 - value
+    # def batteryAfterGetToCharger(self, charger):
+    #     value = self.battery - self.energyRequiredToGetToCharger(charger.location)
+    #     if value < 0.0001:  # not feasible to get to this charger
+    #         return 0
+    #     else:
+    #         return 1 - value
 
     # def isBatteryCritical(self,chargerLocation):
     #     return self.battery - self.energyRequiredToCharge(chargerLocation) <= self.alert
@@ -439,6 +438,9 @@ class Drone(Agent):
         if self.battery <= 0:
             self.battery = 0
             self.state = DroneState.TERMINATED
+            if self.targetField is not None:
+                self.targetField.unassign(self)
+                
             if self.targetCharger is not None:
                 self.targetCharger.droneDied(self)
 
@@ -484,9 +486,6 @@ class Drone(Agent):
         return (self.state == DroneState.PROTECTING or self.state == DroneState.MOVING_TO_FIELD) and self.location.distance(
             point) <= self.droneRadius
 
-        # startX,startY,endX,endY = self.protectRadius()
-        # return point[0] >= startX and  point[0] < endX and point[1] >= startY and  point[1] < endY
-
     def protectRadius(self):
         startX = self.location.x - self.droneRadius
         endX = self.location.x + self.droneRadius
@@ -501,6 +500,105 @@ class Drone(Agent):
     def __str__(self):
         return f"{self.id}: state= {str(self.state)}, battery= {self.battery}"
 
+
+class Charger(Component):
+    """
+
+    """
+    # static Counter
+    Count = 0
+
+    def __init__(
+            self,
+            location,
+            world):
+        self.chargingRate = world.chargingRate
+        self.chargerCapacity = world.chargerCapacity
+        Charger.Count = Charger.Count + 1
+        Component.__init__(self, location, world, Charger.Count)
+
+        self.energyConsumed = 0
+        self.chargingQueue: List[Drone] = []
+        self.chargingDrones: List[Drone] = []
+        self.potentialDrones: List[Drone] = []
+        from common.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
+        # the estimator is assigned later using assignWaitingTimeEstimator
+        # noinspection PyTypeChecker
+        self.waitingTimeEstimator: ChargerWaitingTimeEstimator = None
+
+    def decide(self,drone):
+        if drone not in self.chargingQueue and drone.needsCharging():
+            self.addToQueue(drone)
+   
+    def assignWaitingTimeEstimator(self, estimator):
+        """
+        Parameters
+        ----------
+        estimator : common.charger_waiting_estimation.NeuralNetworkChargerWaitingTimeEstimation
+        """
+        self.waitingTimeEstimator = estimator
+
+    def addToQueue(self, drone):
+        # this is the event when a drone is added to a queue
+        self.waitingTimeEstimator.collectRecordStart(drone.id, self, drone, self.world.currentTimeStep)
+        self.chargingQueue.append(drone)
+
+    def startCharging(self, drone):
+        # this is the event when a drone is starting to charge (accepted)
+        self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
+
+        self.chargingQueue.remove(drone)
+        self.chargingDrones.append(drone)
+
+    def doneCharging(self, drone):
+        drone.battery = 1
+        self.chargingDrones.remove(drone)
+
+    def droneDied(self, drone):
+        # TODO(MT): Think about it later. It is possible that the drone dies and collectRecordStart was not called, so we need a way to ignore such records.
+        # self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
+        if drone in self.chargingDrones:
+            self.chargingDrones.remove(drone)
+
+        if drone in self.chargingQueue:
+            self.chargingQueue.remove(drone)
+
+    def estimateWaitingTime(self, drone):
+        return self.waitingTimeEstimator.predict(self, drone)
+
+    def randomNearLocation(self):
+        return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))
+
+    def provideLocation(self, drone):
+        if drone in self.chargingDrones:
+            return self.location
+        else:
+            return self.randomNearLocation()
+
+    def actuate(self):
+
+        for drone in self.chargingQueue:
+            drone.targetCharger = self
+        # TODO: Should we really set the charger immediately when the drone is added to the queue? It makes all the drones in the queue useless, right?
+
+        emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
+        for i in range(emptyPlaces):
+            if len(self.chargingQueue) > 0:
+                drone = self.chargingQueue[0]
+                self.startCharging(drone)
+
+        for drone in self.chargingDrones:
+            if drone.state == DroneState.CHARGING:
+                drone.battery = drone.battery + self.chargingRate
+                self.energyConsumed = self.energyConsumed + self.chargingRate
+                if drone.battery >= 1:
+                    self.doneCharging(drone)
+
+    def __str__(self):
+        return f"{self.id}: ChargingNow= {len(self.chargingDrones)}, QueueLength= {len(self.chargingDrones)}"
+
+    def report(self, iteration):
+        pass
 
 class BirdState(Enum):
     """
@@ -611,98 +709,3 @@ class Bird(Agent):
     def __str__(self):
         return f"{self.id}: state= {self.state}, Total Ate= {self.ate}"
 
-
-class Charger(Component):
-    """
-
-    """
-    # static Counter
-    Count = 0
-
-    def __init__(
-            self,
-            location,
-            world):
-        self.chargingRate = world.chargingRate
-        self.chargerCapacity = world.chargerCapacity
-        Charger.Count = Charger.Count + 1
-        Component.__init__(self, location, world, Charger.Count)
-
-        self.energyConsumed = 0
-        self.chargingQueue: List[Drone] = []
-        self.chargingDrones: List[Drone] = []
-
-        from common.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
-        # the estimator is assigned later using assignWaitingTimeEstimator
-        # noinspection PyTypeChecker
-        self.waitingTimeEstimator: ChargerWaitingTimeEstimator = None
-
-    def assignWaitingTimeEstimator(self, estimator):
-        """
-        Parameters
-        ----------
-        estimator : common.charger_waiting_estimation.NeuralNetworkChargerWaitingTimeEstimation
-        """
-        self.waitingTimeEstimator = estimator
-
-    def addToQueue(self, drone):
-        # this is the event when a drone is added to a queue
-        self.waitingTimeEstimator.collectRecordStart(drone.id, self, drone, self.world.currentTimeStep)
-        self.chargingQueue.append(drone)
-
-    def startCharging(self, drone):
-        # this is the event when a drone is starting to charge (accepted)
-        self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
-
-        self.chargingQueue.remove(drone)
-        self.chargingDrones.append(drone)
-
-    def doneCharging(self, drone):
-        drone.battery = 1
-        self.chargingDrones.remove(drone)
-
-    def droneDied(self, drone):
-        # TODO(MT): Think about it later. It is possible that the drone dies and collectRecordStart was not called, so we need a way to ignore such records.
-        # self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
-        if drone in self.chargingDrones:
-            self.chargingDrones.remove(drone)
-
-        if drone in self.chargingQueue:
-            self.chargingQueue.remove(drone)
-
-    def estimateWaitingTime(self, drone):
-        return self.waitingTimeEstimator.predict(self, drone)
-
-    def randomNearLocation(self):
-        return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))
-
-    def provideLocation(self, drone):
-        if drone in self.chargingDrones:
-            return self.location
-        else:
-            return self.randomNearLocation()
-
-    def actuate(self):
-
-        for drone in self.chargingQueue:
-            drone.targetCharger = self
-        # TODO: Should we really set the charger immediately when the drone is added to the queue? It makes all the drones in the queue useless, right?
-
-        emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
-        for i in range(emptyPlaces):
-            if len(self.chargingQueue) > 0:
-                drone = self.chargingQueue[0]
-                self.startCharging(drone)
-
-        for drone in self.chargingDrones:
-            if drone.state == DroneState.CHARGING:
-                drone.battery = drone.battery + self.chargingRate
-                self.energyConsumed = self.energyConsumed + self.chargingRate
-                if drone.battery >= 1:
-                    self.doneCharging(drone)
-
-    def __str__(self):
-        return f"{self.id}: ChargingNow= {len(self.chargingDrones)}, QueueLength= {len(self.chargingDrones)}"
-
-    def report(self, iteration):
-        pass
