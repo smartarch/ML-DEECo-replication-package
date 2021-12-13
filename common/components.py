@@ -425,12 +425,12 @@ class Drone(Agent):
 
         return futureBattery < self.alert
 
-    def batteryAfterGetToCharger(self):
-        value = self.battery - self.energyRequiredToGetToCharger(self.closestCharger.location)
-        if value < 0.0001:  # not feasible to get to this charger
-            return 1
-        else:
-            return  value
+    # def batteryAfterGetToCharger(self, charger):
+    #     value = self.battery - self.energyRequiredToGetToCharger(charger.location)
+    #     if value < 0.0001:  # not feasible to get to this charger
+    #         return 0
+    #     else:
+    #         return 1 - value
 
     # def isBatteryCritical(self,chargerLocation):
     #     return self.battery - self.energyRequiredToCharge(chargerLocation) <= self.alert
@@ -441,6 +441,9 @@ class Drone(Agent):
             self.state = DroneState.TERMINATED
             if self.targetField is not None:
                 self.targetField.unassign(self)
+                
+            if self.targetCharger is not None:
+                self.targetCharger.droneDied(self)
 
     def move(self):
         self.battery = self.battery - self.droneMovingEnergyConsumption
@@ -524,6 +527,10 @@ class Charger(Component):
         # the estimator is assigned later using assignWaitingTimeEstimator
         # noinspection PyTypeChecker
         self.waitingTimeEstimator: ChargerWaitingTimeEstimator = None
+
+    def decide(self,drone):
+        if drone not in self.chargingQueue and drone.needsCharging():
+            self.addToQueue(drone)
    
     def assignWaitingTimeEstimator(self, estimator):
         """
@@ -541,13 +548,12 @@ class Charger(Component):
     def startCharging(self, drone):
         # this is the event when a drone is starting to charge (accepted)
         self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
-        drone.targetCharger = self
+
         self.chargingQueue.remove(drone)
         self.chargingDrones.append(drone)
 
     def doneCharging(self, drone):
         drone.battery = 1
-        drone.closestCharger= None
         self.chargingDrones.remove(drone)
 
     def droneDied(self, drone):
@@ -555,9 +561,6 @@ class Charger(Component):
         # self.waitingTimeEstimator.dataCollector.collectRecordEnd(drone.id, self.world.currentTimeStep)
         if drone in self.chargingDrones:
             self.chargingDrones.remove(drone)
-        
-        if drone in self.potentialDrones:
-            self.potentialDrones.remove(drone)
 
         if drone in self.chargingQueue:
             self.chargingQueue.remove(drone)
@@ -582,14 +585,18 @@ class Charger(Component):
             return self.randomNearLocation()
 
     def actuate(self):
-        if len(self.chargingDrones)< self.chargerCapacity:
-            if len(self.chargingQueue)>0:
-                self.startCharging(self.chargingQueue[0])
+
+        for drone in self.chargingQueue:
+            drone.targetCharger = self
+        # TODO: Should we really set the charger immediately when the drone is added to the queue? It makes all the drones in the queue useless, right?
+
+        emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
+        for i in range(emptyPlaces):
+            if len(self.chargingQueue) > 0:
+                drone = self.chargingQueue[0]
+                self.startCharging(drone)
 
         for drone in self.chargingDrones:
-            if drone.state == DroneState.TERMINATED:
-                self.droneDied(drone)
-
             if drone.state == DroneState.CHARGING:
                 drone.battery = drone.battery + self.chargingRate
                 self.energyConsumed = self.energyConsumed + self.chargingRate
