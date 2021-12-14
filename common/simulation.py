@@ -116,7 +116,7 @@ class Simulation:
 
     def collectStatistics(self):
         return [
-            len([drone for drone in self.world.drones if drone != DroneState.TERMINATED]),
+            len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED]),
             sum([bird.ate for bird in self.world.birds]),
             sum([charger.energyConsumed for charger in self.world.chargers])
         ]
