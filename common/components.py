@@ -397,7 +397,7 @@ class Drone(Agent):
         self.targetField = None
         self.targetCharger = None
         self.closestCharger = None
-        self.alert = 0.2
+        self.alert = 0.4
         self.world = world
 
         Drone.Count = Drone.Count + 1
@@ -424,12 +424,12 @@ class Drone(Agent):
 
         return futureBattery < self.alert
 
-    # def batteryAfterGetToCharger(self, charger):
-    #     value = self.battery - self.energyRequiredToGetToCharger(charger.location)
-    #     if value < 0.0001:  # not feasible to get to this charger
-    #         return 0
-    #     else:
-    #         return 1 - value
+    def batteryAfterGetToCharger(self, charger):
+        value = self.battery - self.energyRequiredToGetToCharger(charger.location)
+        if value < 0.0001:  # not feasible to get to this charger
+            return 1
+        else:
+            return 1 - value
 
     # def isBatteryCritical(self,chargerLocation):
     #     return self.battery - self.energyRequiredToCharge(chargerLocation) <= self.alert
@@ -441,8 +441,8 @@ class Drone(Agent):
             if self.targetField is not None:
                 self.targetField.unassign(self)
                 
-            if self.targetCharger is not None:
-                self.targetCharger.droneDied(self)
+            # if self.closestCharger is not None:
+            #     self.closestCharger.droneDied(self)
 
     def move(self):
         self.battery = self.battery - self.droneMovingEnergyConsumption
@@ -529,10 +529,6 @@ class Charger(Component):
         self.waitingTimeEstimateCacheVersion = -1
 
 
-    def decide(self, drone):
-        if drone not in self.chargingQueue+self.chargingDrones and drone.needsCharging():
-            self.addToQueue(drone)
-   
     def assignWaitingTimeEstimator(self, estimator):
         """
         Parameters
@@ -549,9 +545,10 @@ class Charger(Component):
     def startCharging(self, drone):
         # this is the event when a drone is starting to charge (accepted)
         self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
-
+        drone.targetCharger = self
         self.chargingQueue.remove(drone)
         self.chargingDrones.append(drone)
+
 
     def doneCharging(self, drone):
         drone.battery = 1
@@ -588,10 +585,6 @@ class Charger(Component):
 
     def actuate(self):
 
-        for drone in self.chargingQueue:
-            drone.targetCharger = self
-        # TODO: Should we really set the charger immediately when the drone is added to the queue? It makes all the drones in the queue useless, right?
-
         emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
         for i in range(emptyPlaces):
             if len(self.chargingQueue) > 0:
@@ -606,7 +599,7 @@ class Charger(Component):
                     self.doneCharging(drone)
 
     def __str__(self):
-        return f"{self.id}: ChargingNow= {len(self.chargingDrones)}, QueueLength= {len(self.chargingDrones)}"
+        return f"{self.id}: ChargingNow= {len(self.chargingDrones)}, QueueLength= {len(self.chargingQueue)}, All={len(self.potentialDrones)}"
 
     def report(self, iteration):
         pass
