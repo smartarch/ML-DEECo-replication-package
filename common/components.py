@@ -1,8 +1,9 @@
 import math
 import random
 from enum import Enum, IntEnum
-from typing import List
+from typing import List, Optional
 import numpy as np
+
 
 class Point:
     """
@@ -151,13 +152,13 @@ class Field:
 
     def assingPlace(self, drone):
         if drone not in self.protectingDrones:
-            listOfEmptyPlaces = [place for place in self.places if place not in [self.protectingDrones[d] for d in self.protectingDrones]]
-            if len(listOfEmptyPlaces)<=0 :
+            listOfEmptyPlaces = [place for place in self.places if
+                                 place not in [self.protectingDrones[d] for d in self.protectingDrones]]
+            if len(listOfEmptyPlaces) <= 0:
                 return random.choice(self.places)
             self.protectingDrones[drone] = random.choice(listOfEmptyPlaces)
-            
-        return self.protectingDrones[drone]
 
+        return self.protectingDrones[drone]
 
     def unassign(self, drone):
         if drone in self.protectingDrones:
@@ -395,9 +396,9 @@ class Drone(Agent):
 
         self.target = None
         self.targetField = None
-        self.targetCharger = None
-        self.closestCharger = None
-        self.alert = 0.4
+        self.targetCharger: Optional[Charger] = None
+        self.closestCharger: Optional[Charger] = None
+        self.alert = 0.2
         self.world = world
 
         Drone.Count = Drone.Count + 1
@@ -412,18 +413,27 @@ class Drone(Agent):
         return chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
 
     def estimateWaitingEnergy(self, charger):
-        #TODO (MA): Change or Find a way for the drone to wait (Energy)
+        # TODO (MA): Change or Find a way for the drone to wait (Energy)
         return charger.estimateWaitingTime(self) * self.droneProtectingEnergyConsumption
+
+    # TODO: give this function a better name
+    def computeFutureBattery(self):
+        return self.battery \
+               - self.energyRequiredToGetToCharger(self.closestCharger.location) \
+               - self.estimateWaitingEnergy(self.closestCharger)
 
     def needsCharging(self):
         if self.state == DroneState.TERMINATED:
             return False
-        futureBattery = self.battery - self.energyRequiredToGetToCharger(self.closestCharger.location) - self.estimateWaitingEnergy(self.closestCharger)
+
+        futureBattery = self.computeFutureBattery()
+
         if futureBattery < 0:
             return False
 
         return futureBattery < self.alert
 
+    # TODO: this is wrong: why `1 - value` ?
     def batteryAfterGetToCharger(self, charger):
         value = self.battery - self.energyRequiredToGetToCharger(charger.location)
         if value < 0.0001:  # not feasible to get to this charger
@@ -440,7 +450,7 @@ class Drone(Agent):
             self.state = DroneState.TERMINATED
             if self.targetField is not None:
                 self.targetField.unassign(self)
-                
+
             # if self.closestCharger is not None:
             #     self.closestCharger.droneDied(self)
 
@@ -528,7 +538,6 @@ class Charger(Component):
         self.waitingTimeEstimateCache = np.array([])
         self.waitingTimeEstimateCacheVersion = -1
 
-
     def assignWaitingTimeEstimator(self, estimator):
         """
         Parameters
@@ -548,7 +557,6 @@ class Charger(Component):
         drone.targetCharger = self
         self.chargingQueue.remove(drone)
         self.chargingDrones.append(drone)
-
 
     def doneCharging(self, drone):
         drone.battery = 1
@@ -572,7 +580,6 @@ class Charger(Component):
     def updateWaitingTimeEstimateCache(self):
         self.waitingTimeEstimateCache = self.waitingTimeEstimator.predictBatch(self, self.potentialDrones)
         self.waitingTimeEstimateCacheVersion = self.world.currentTimeStep
-
 
     def randomNearLocation(self):
         return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))
@@ -603,6 +610,7 @@ class Charger(Component):
 
     def report(self, iteration):
         pass
+
 
 class BirdState(Enum):
     """
@@ -712,4 +720,3 @@ class Bird(Agent):
 
     def __str__(self):
         return f"{self.id}: state= {self.state}, Total Ate= {self.ate}"
-

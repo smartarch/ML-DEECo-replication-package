@@ -54,7 +54,7 @@ class FieldProtection(Ensemble):
 # Step 1: (DroneCharger) Add the drone to the waiting list (drone will keep protecting).
 # Step 2: Set drone's Target Charger (drone will move toward the charger).
 # Step 3: If drone arrived to the charger, it will remove it from waiting list and add it to the charging drones.
-# Step 4: When drone is done charging, the Target Charger will be None and it will be removed from charging list.
+# Step 4: When drone is done charging, the Target Charger will be None, and it will be removed from charging list.
 
 
 class DroneCharger(Ensemble):
@@ -91,7 +91,7 @@ class DroneCharger(Ensemble):
 
     @drones.priority
     def drones(self, drone):
-        return drone.batteryAfterGetToCharger(self.charger)
+        return -drone.computeFutureBattery()
 
     def actuate(self, verbose):
 
@@ -104,22 +104,21 @@ class DroneCharger(Ensemble):
 
 
 class ChargerFinder(Ensemble):
+
     drone: Drone
 
     def __init__(self, drone):
         self.drone = drone
-        # stateless ensemble
+
+    def priority(self):
+        return -1000  # It is necessary to run this before DroneCharger. The order of ChargerFinder ensembles can be arbitrary as they don't influence each other.
+
+    # TODO: we could add something like this to make a "select" for the ensemble itself
+    # def select(self):
+    #     return self.drone.state != DroneState.TERMINATED
 
     charger: Charger = oneOf(Charger)
 
-    def priority(self):
-        return - self.drone.battery
-
-    # @chargers.cardinality
-    # def chargers(self):
-    #     return 2    # find top two closest chargers 
-
-    # choose this if not selected
     @charger.select
     def charger(self, charger, otherEnsembles):
         return True
@@ -128,6 +127,8 @@ class ChargerFinder(Ensemble):
     def charger(self, charger):
         return -self.drone.location.distance(charger.location)
 
+    # TODO: go through this and think about it again
+    # we could just empty the potentialDrones in each time step and construct them from scratch instead of adding and removing drones
     def actuate(self, verbose):
 
         if self.drone.closestCharger is not None:
@@ -137,11 +138,12 @@ class ChargerFinder(Ensemble):
                 pass
 
         if self.drone.state == DroneState.TERMINATED:
-            self.charger.droneDied(self.drone)
+            self.charger.droneDied(self.drone)  # TODO: should we notify `self.charger` charger or `self.drone.closestCharger`?
             self.drone.closestCharger = None
             return
 
-        if self.drone in self.charger.chargingDrones + self.charger.chargingQueue:
+        if self.drone.closestCharger is not None and \
+                self.drone in self.drone.closestCharger.chargingDrones + self.drone.closestCharger.chargingQueue:
             return
 
         closestCharger = self.charger

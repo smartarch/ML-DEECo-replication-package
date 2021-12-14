@@ -1,5 +1,6 @@
 import operator
 from collections import defaultdict
+from typing import Dict, Any
 
 
 class someOf():
@@ -15,7 +16,7 @@ class someOf():
         self.selectFn = None
         self.priorityFn = None
 
-        self.selections = defaultdict(lambda: None)
+        self.selections: Dict[Ensemble, Any] = defaultdict(lambda: None)
 
     def __get__(self, instance, owner):
         return self.selections[instance]
@@ -29,6 +30,7 @@ class someOf():
         return self
 
     def priority(self, priorityFn):
+        """Bigger number -> earlier selection"""
         self.priorityFn = priorityFn
         return self
 
@@ -86,10 +88,12 @@ class Ensemble:
                 
         return allOk
     
-    def actuate(self,verbose):
+    def actuate(self, verbose):
         pass
 
-    def priority(self):
+    # TODO: make this same as someOf.priority
+    def priority(self) -> float:
+        """Smaller number -> earlier materialization"""
         return 1
 
     def __lt__(self, other):
