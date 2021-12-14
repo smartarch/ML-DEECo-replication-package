@@ -184,6 +184,7 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
             chargingTime += timeUntilCharged
 
             queue = [bat - energyConsumptionRate * chargingTime for bat in queue]
+            queue = [bat for bat in queue if bat > 0]
 
             charging.remove(maxBattery)
             if len(queue) > 0:
