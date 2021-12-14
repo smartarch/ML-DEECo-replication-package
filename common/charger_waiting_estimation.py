@@ -90,7 +90,7 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
             'queue_missing_battery_sum': self.sumQueueMissingBattery(charger),
             'charger_charging_capacity': self.chargerChargingCapacity(charger),
 
-            # just for logging
+            # just for logging TODO: remove these when logging of the queue is done in a different way globally
             'queue_length': len(charger.chargingQueue),
             'charging_drones': len(charger.chargingDrones),
         }, timeStep, **kwargs)
@@ -124,7 +124,7 @@ class QueueMissingBatteryWaitingTimeEstimation(Estimation):
             'queue_missing_battery_sum': NumberFeature(),
             'charger_charging_capacity': NumberFeature(),
 
-            # just for logging
+            # just for logging TODO: remove these when logging of the queue is done in a different way globally
             'queue_length': NumberFeature(),
             'charging_drones': NumberFeature(),
         }
@@ -154,7 +154,7 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
         self.dataCollector.collectRecordStart(recordId, {
             'queue_charging_time': self.computeQueueChargingTime(charger, drone.droneMovingEnergyConsumption),
 
-            # just for logging
+            # just for logging TODO: remove these when logging of the queue is done in a different way globally
             'queue_missing_battery_sum': QueueMissingBatteryWaitingTimeEstimator.sumQueueMissingBattery(charger),
             'charger_charging_capacity': QueueMissingBatteryWaitingTimeEstimator.chargerChargingCapacity(charger),
             'queue_length': len(charger.chargingQueue),
@@ -210,7 +210,7 @@ class QueueChargingTimeWaitingTimeEstimation(Estimation):
         estimationInputs = {
             'queue_charging_time': NumberFeature(),
 
-            # just for logging
+            # just for logging TODO: remove these when logging of the queue is done in a different way globally
             'queue_missing_battery_sum': NumberFeature(),
             'charger_charging_capacity': NumberFeature(),
             'queue_length': NumberFeature(),
