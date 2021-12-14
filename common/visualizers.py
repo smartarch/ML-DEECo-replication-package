@@ -84,13 +84,16 @@ class Visualizer:
         text = f"{text}\nCharger Queues:"
         for charger in self.world.chargers:
             text = f"{text}\n-{charger.id}, A: {len(charger.potentialDrones)}, W: {len(charger.chargingQueue)}, C: {len(charger.chargingDrones)}"
+            for drone in charger.chargingDrones:         
+                text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - C"
+            for drone in charger.chargingQueue:         
+                text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - W"
             for drone in charger.potentialDrones:         
-                if drone in charger.chargingQueue:
-                    text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - W"
-                elif drone in charger.chargingDrones:
-                    text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - C"
-                else:
-                    text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - A"
+                text = f"{text}\n--{drone.id}, battery:{drone.battery:.2f} - A"
+        text = f"{text}\n Dead Drones:"
+        for drone in self.world.drones:
+            if drone.state == DroneState.TERMINATED:
+                text = f"{text}\n-{drone.id}"
 
         return text
 
