@@ -50,27 +50,39 @@ class DroneCharger(Ensemble):
         self.charger = charger
         # stateless ensemble
 
-    drone: Drone = oneOf(Drone)
+    drones: List[Drone] = someOf(Drone)
+    
+    @drones.cardinality
+    def drones(self):
+        return (1,len(self.charger.potentialDrones))
 
     def priority(self):
         return len(self.charger.chargingDrones)
 
-    @drone.select
-    def drone(self, drone, otherEnsembles):
-        return drone in self.charger.potentialDrones and\
-            not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
-            drone not in self.charger.chargingQueue and\
-            drone not in self.charger.chargingDrones  # if the drone is not already being charged (can be asked in drone.needsCharging() too.)
+    @drones.select
+    def drones(self, drone, otherEnsembles):
+        return drone.state != DroneState.TERMINATED and\
+                drone in self.charger.potentialDrones and\
+                drone.needsCharging() and\
+                drone not in self.drones and\
+                drone not in self.charger.chargingQueue and\
+                drone not in self.charger.chargingDrones
+
+        #not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
+        # return drone.state != DroneState.TERMINATED and\
+        #     drone in self.charger.potentialDrones and\
+        #     not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
+        #     drone not in self.charger.chargingQueue and\
+        #     drone not in self.charger.chargingDrones  # if the drone is not already being charged (can be asked in drone.needsCharging() too.)
         
 
-    @drone.priority
-    def drone(self, drone):
-        return drone.location.distance(self.charger.location)
+    @drones.priority
+    def drones(self, drone):
+        return drone.batteryAfterGetToCharger(self.charger)
 
     def actuate(self, verbose):
         # only for printing
-        if verbose > 3:
-            print(f"            Charging Ensemble: assigned {self.drone.id} to {self.charger.id}")
+
 
         # TODO: MT, the charger decides for the drone
         # Step 0: (Done on the drone side), the drone is added to Charger's Potential List
@@ -80,9 +92,14 @@ class DroneCharger(Ensemble):
         # it to the charging drones
         # Step 4: when drone is done charging, the Target Charger will be None and
         # it will be removed from charging list
-        self.charger.decide(self.drone)
 
+        if verbose > 3:
+                print(f"            Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}")
 
+        for drone in self.drones:
+
+            self.charger.addToQueue(drone)
+     
 
 class ChargerFinder(Ensemble):
     drone: Drone
@@ -111,14 +128,25 @@ class ChargerFinder(Ensemble):
 
     def actuate(self, verbose):
 
-        closestCharger = self.charger
         if self.drone.closestCharger is not None:
-            self.drone.closestCharger.potentialDrones.remove(self.drone)
+            try:
+                self.drone.closestCharger.potentialDrones.remove(self.drone)
+            except ValueError:
+                pass
         
+        if self.drone.state == DroneState.TERMINATED:
+            self.charger.droneDied(self.drone)
+            self.drone.closestCharger = None
+            return
+
+        if self.drone in self.charger.chargingDrones + self.charger.chargingQueue:
+            return
+
+        closestCharger = self.charger
         self.drone.closestCharger = closestCharger
         closestCharger.potentialDrones.append(self.drone)
         if verbose > 3:
-            print(f"            Charger Ensemble: adding {self.drone.id} to {closestCharger.id}")
+            print(f"            Charger Finder: adding {self.drone.id} to {closestCharger.id}")
         
 
 
@@ -129,6 +157,7 @@ def getPotentialEnsembles(world):
 
     for charger in world.chargers:
         potentialEnsembles.append(DroneCharger(charger))
+
 
     for drone in world.drones:
         potentialEnsembles.append(ChargerFinder(drone))
