@@ -58,7 +58,7 @@ def run(args):
 
             currentWorld = copy.deepcopy(world)
             newSimulation = Simulation(currentWorld, folder, visualize=args.animation)
-            estimation, newLog = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", estimation, verbose)
+            estimation, newLog = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", estimation, verbose, args)
             log.register(newLog)
 
         estimation.endIteration()
@@ -80,6 +80,7 @@ def main():
     parser.add_argument('-a', '--animation', action='store_true', default=False, help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
     parser.add_argument('-w', '--waiting_estimation', type=str, choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"], help='The estimation model to be used for predicting charger waiting time.', required=False, default="neural_network")
+    parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False, default="fifo")
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[20], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)

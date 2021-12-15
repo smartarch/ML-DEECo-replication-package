@@ -121,7 +121,7 @@ class Simulation:
             sum([charger.energyConsumed for charger in self.world.chargers])
         ]
 
-    def run(self, filename, estimation, verbose):
+    def run(self, filename, estimation, verbose, args):
 
         components = []
 
@@ -132,7 +132,7 @@ class Simulation:
         for charger in self.world.chargers:
             charger.assignWaitingTimeEstimator(estimation.createEstimator())
 
-        potentialEnsembles = getPotentialEnsembles(self.world)
+        potentialEnsembles = getPotentialEnsembles(self.world, args.queue_type)
 
         # masterCharger = MasterCharger(self.world, droneWaitingTimeEstimator)
         # masterCharger.materialize()

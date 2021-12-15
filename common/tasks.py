@@ -103,6 +103,44 @@ class DroneCharger(Ensemble):
             self.charger.addToQueue(drone)
 
 
+class DroneChargerPriority(Ensemble):
+    charger: Charger
+
+    def __init__(self, charger):
+        self.charger = charger
+
+    drones: List[Drone] = someOf(Drone)
+
+    @drones.cardinality
+    def drones(self):
+        return 1, self.charger.acceptedCapacity - len(self.charger.acceptedDrones)  # free slots in the acceptedDrones
+
+    def priority(self):
+        return 1
+
+    @drones.select
+    def drones(self, drone, otherEnsembles):
+        return drone.state != DroneState.TERMINATED and \
+               drone in self.charger.potentialDrones and \
+               drone.needsCharging() and \
+               drone not in self.drones and \
+               drone not in self.charger.waitingDrones and \
+               drone not in self.charger.chargingDrones
+
+    @drones.priority
+    def drones(self, drone):
+        return -drone.timeToDoneCharging()
+
+    def actuate(self, verbose):
+
+        # only for printing
+        if verbose > 3:
+            print(f"            Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}")
+
+        for drone in self.drones:
+            self.charger.addToQueue(drone)  # we add the drone to the waiting queue, it should be immediately moved to the acceptedDrones by the charger
+
+
 class ChargerFinder(Ensemble):
     charger: Charger
 
@@ -204,13 +242,16 @@ class ChargerFinder(Ensemble):
 #######################
 
 
-def getPotentialEnsembles(world):
+def getPotentialEnsembles(world, queue_type):
     potentialEnsembles = []
     for field in world.fields:
         potentialEnsembles.append(FieldProtection(field))
 
     for charger in world.chargers:
-        potentialEnsembles.append(DroneCharger(charger))
+        if queue_type == "fifo":
+            potentialEnsembles.append(DroneCharger(charger))
+        elif queue_type == "priority":
+            potentialEnsembles.append(DroneChargerPriority(charger))
         potentialEnsembles.append(ChargerFinder(charger))
 
     return potentialEnsembles
