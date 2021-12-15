@@ -91,13 +91,12 @@ class Ensemble:
     def actuate(self, verbose):
         pass
 
-    # TODO: make this same as someOf.priority
     def priority(self) -> float:
-        """Smaller number -> earlier materialization"""
+        """Bigger number -> earlier materialization"""
         return 1
 
     def __lt__(self, other):
-        return self.priority() < other.priority()
+        return self.priority() > other.priority()
 
 
 

@@ -400,14 +400,25 @@ class Drone(Agent):
         self.closestCharger: Optional[Charger] = None
         self.alert = 0.2
         self.world = world
+        self.waiting = False
 
         Drone.Count = Drone.Count + 1
         Agent.__init__(self, location, self.droneSpeed, world, Drone.Count)
 
-    # def findClosestCharger(self,chargers):
-    #     distances = [[charger, charger.location.distance(self.location)] for charger in chargers]
-    #     distances = sorted(distances, key=lambda x: x[1])
-    #     return distances[0][0]
+    def findClosestCharger(self):
+        distances = [[charger, charger.location.distance(self.location)] for charger in self.world.chargers]
+        distances = sorted(distances, key=lambda x: x[1])
+        return distances[0][0]
+
+
+    # def newClosestCharger(self,charger):
+    #     if charger == self.closestCharger:
+    #         return
+    #     if self.closestCharger is not None:
+    #         if self in self.closestCharger.chargingQueue + self.closestCharger.chargingDrones:
+    #             return
+    #     self.closestCharger = charger
+
 
     def energyRequiredToGetToCharger(self, chargerLocation):
         return chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
@@ -549,12 +560,14 @@ class Charger(Component):
     def addToQueue(self, drone):
         # this is the event when a drone is added to a queue
         self.waitingTimeEstimator.collectRecordStart(drone.id, self, drone, self.world.currentTimeStep)
+        drone.waiting = True
         self.chargingQueue.append(drone)
 
     def startCharging(self, drone):
         # this is the event when a drone is starting to charge (accepted)
         self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
         drone.targetCharger = self
+        drone.waiting = False
         self.chargingQueue.remove(drone)
         self.chargingDrones.append(drone)
 
@@ -591,6 +604,9 @@ class Charger(Component):
             return self.randomNearLocation()
 
     def actuate(self):
+        
+        self.chargingDrones = [d for d in self.chargingDrones if d.state != DroneState.TERMINATED]
+        self.chargingQueue = [d for d in self.chargingQueue if d.state != DroneState.TERMINATED]
 
         emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
         for i in range(emptyPlaces):
