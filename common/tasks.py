@@ -120,12 +120,16 @@ class DroneChargerPriority(Ensemble):
 
     @drones.select
     def drones(self, drone, otherEnsembles):
-        return drone.state != DroneState.TERMINATED and \
+        cond = drone.state != DroneState.TERMINATED and \
                drone in self.charger.potentialDrones and \
                drone.needsCharging() and \
                drone not in self.drones and \
                drone not in self.charger.waitingDrones and \
                drone not in self.charger.chargingDrones
+        if cond:
+            # TODO(MT): move the estimator to the ensemble
+            self.charger.waitingTimeEstimator.collectRecordStart(drone.id, self.charger, drone, self.charger.world.currentTimeStep)
+        return cond
 
     @drones.priority
     def drones(self, drone):

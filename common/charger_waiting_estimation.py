@@ -252,8 +252,12 @@ class NeuralNetworkChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, Neur
             'drone_battery': drone.battery,
             'drone_state': int(drone.state),
             'charger_distance': charger.location.distance(drone.location),
-            'queue_length': len(charger.waitingDrones) / charger.chargerCapacity,
-            'charging_drones': len(charger.chargingDrones),
+            'potential_drones_length': len(charger.potentialDrones),
+            'waiting_drones_length': len(charger.waitingDrones) / charger.chargerCapacity,
+            'accepted_drones_length': len(charger.acceptedDrones),
+            'accepted_drones_battery': sum([drone.battery for drone in charger.acceptedDrones]),
+            'charging_drones_length': len(charger.chargingDrones),
+            'charging_drones_battery': sum([drone.battery for drone in charger.chargingDrones]),
         }
 
     def collectRecordStart(self, recordId, charger, drone, timeStep, **kwargs):
@@ -277,9 +281,12 @@ class NeuralNetworkChargerWaitingTimeEstimation(NeuralNetworkTimeEstimation):
             'drone_battery': FloatFeature(0, 1),
             'drone_state': IntEnumFeature(DroneState),
             'charger_distance': FloatFeature(0, math.sqrt(world.mapWidth ** 2 + world.mapHeight ** 2)),
-            'queue_length': FloatFeature(0, len(world.drones) / world.chargerCapacity),
-            # number of drones in the waiting queue divided by the number of drones which can be charged simultaneously
-            'charging_drones': FloatFeature(0, world.chargerCapacity),  # number of drones currently being charged
+            'potential_drones_length': FloatFeature(0, len(world.drones)),
+            'waiting_drones_length': FloatFeature(0, len(world.drones)),
+            'accepted_drones_length': FloatFeature(0, world.chargerCapacity),
+            'accepted_drones_battery': FloatFeature(0, world.chargerCapacity),
+            'charging_drones_length': FloatFeature(0, world.chargerCapacity),
+            'charging_drones_battery': FloatFeature(0, world.chargerCapacity),
         }
 
         super().__init__(estimationInputs, hidden_layers, **kwargs)
