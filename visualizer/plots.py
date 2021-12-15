@@ -7,8 +7,8 @@ font = {'size'   : 12}
 
 matplotlib.rc('font', **font)
 
-def createLogPlot(log, filename):
-    fig, axs = plt.subplots(2,2)
+def createLogPlot(log, filename, title):
+    fig, axs = plt.subplots(2,2, figsize=(10,10))
     
     colors = [
         'blue',
@@ -44,6 +44,7 @@ def createLogPlot(log, filename):
         axs[1,1].set_ylabel("Rate")
 
     axs[1,1].legend()
+    fig.suptitle(title, fontsize=16)
     fig.tight_layout()
     plt.savefig(filename)
     plt.show()

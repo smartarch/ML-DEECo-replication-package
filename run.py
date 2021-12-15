@@ -67,7 +67,7 @@ def run(args):
 
     log.export(f"{folder}\\{yamlFileName}.csv")
     if args.chart:
-        plots.createLogPlot(log.records, f"{folder}\\{yamlFileName}.png")
+        plots.createLogPlot(log.records, f"{folder}\\{yamlFileName}.png",estimation.name)
 
 
 def main():

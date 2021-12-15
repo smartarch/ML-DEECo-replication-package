@@ -140,7 +140,7 @@ class Estimation(abc.ABC):
         mse = np.mean(np.square(y_true - y_pred))
 
         lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
-
+        plt.ioff()
         plt.figure(figsize=(10, 10))
         plt.axes(aspect='equal')
         plt.scatter(y_true, y_pred)

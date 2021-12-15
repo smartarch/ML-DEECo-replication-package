@@ -433,6 +433,12 @@ class Drone(Agent):
                - self.energyRequiredToGetToCharger(self.closestCharger.location) \
                - self.estimateWaitingEnergy(self.closestCharger)
 
+    def timeToDoneCharging(self):
+        timeToGetToCharger = self.closestCharger.location.distance(self.location) / self.speed
+        batteryWhenGetToCharger = self.battery - timeToGetToCharger * self.droneMovingEnergyConsumption
+        timeToCharge = (1-batteryWhenGetToCharger)*self.closestCharger.chargingRate
+        return timeToGetToCharger + timeToCharge
+
     def needsCharging(self):
         if self.state == DroneState.TERMINATED:
             return False
@@ -443,14 +449,13 @@ class Drone(Agent):
             return False
 
         return futureBattery < self.alert
-
-    # TODO: this is wrong: why `1 - value` ?
-    def batteryAfterGetToCharger(self, charger):
-        value = self.battery - self.energyRequiredToGetToCharger(charger.location)
-        if value < 0.0001:  # not feasible to get to this charger
-            return 1
-        else:
-            return 1 - value
+    # # TODO: this is wrong: why `1 - value` ?
+    # def batteryAfterGetToCharger(self, charger):
+    #     value = self.battery - self.energyRequiredToGetToCharger(charger.location)
+    #     if value < 0.0001:  # not feasible to get to this charger
+    #         return 1
+    #     else:
+    #         return 1 - value
 
     # def isBatteryCritical(self,chargerLocation):
     #     return self.battery - self.energyRequiredToCharge(chargerLocation) <= self.alert

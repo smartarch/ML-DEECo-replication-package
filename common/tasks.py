@@ -91,7 +91,7 @@ class DroneCharger(Ensemble):
 
     @drones.priority
     def drones(self, drone):
-        return -drone.computeFutureBattery()
+        return -drone.timeToDoneCharging()
 
     def actuate(self, verbose):
 
