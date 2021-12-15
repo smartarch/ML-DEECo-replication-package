@@ -410,7 +410,6 @@ class Drone(Agent):
         distances = sorted(distances, key=lambda x: x[1])
         return distances[0][0]
 
-
     # def newClosestCharger(self,charger):
     #     if charger == self.closestCharger:
     #         return
@@ -418,7 +417,6 @@ class Drone(Agent):
     #         if self in self.closestCharger.chargingQueue + self.closestCharger.chargingDrones:
     #             return
     #     self.closestCharger = charger
-
 
     def energyRequiredToGetToCharger(self, chargerLocation):
         return chargerLocation.distance(self.location) * self.droneMovingEnergyConsumption
@@ -436,7 +434,7 @@ class Drone(Agent):
     def timeToDoneCharging(self):
         timeToGetToCharger = self.closestCharger.location.distance(self.location) / self.speed
         batteryWhenGetToCharger = self.battery - timeToGetToCharger * self.droneMovingEnergyConsumption
-        timeToCharge = (1-batteryWhenGetToCharger)*self.closestCharger.chargingRate
+        timeToCharge = (1 - batteryWhenGetToCharger) * self.closestCharger.chargingRate
         return timeToGetToCharger + timeToCharge
 
     def needsCharging(self):
@@ -449,6 +447,13 @@ class Drone(Agent):
             return False
 
         return futureBattery < self.alert
+
+    def isChargingOrWaiting(self):
+        """True if the drone is being charged, or it is already assigned to a charger queue and is waiting."""
+        return self.waiting or \
+               self.state == DroneState.CHARGING or \
+               self.state == DroneState.MOVING_TO_CHARGER
+
     # # TODO: this is wrong: why `1 - value` ?
     # def batteryAfterGetToCharger(self, charger):
     #     value = self.battery - self.energyRequiredToGetToCharger(charger.location)
@@ -491,9 +496,7 @@ class Drone(Agent):
 
         if self.state == DroneState.MOVING_TO_CHARGER:
             self.target = self.targetCharger.provideLocation(self)
-            if self.location == self.targetCharger.location:
-                self.state = DroneState.CHARGING
-            else:
+            if self.location != self.targetCharger.location:
                 self.move()
 
         if self.state == DroneState.MOVING_TO_FIELD:
@@ -523,8 +526,8 @@ class Drone(Agent):
         endY = self.world.mapHeight - 1 if endY >= self.world.mapHeight else endY
         return (startX, startY, endX, endY)
 
-    def __str__(self):
-        return f"{self.id}: state= {str(self.state)}, battery= {self.battery}"
+    def __repr__(self):
+        return f"{self.id}: state={str(self.state)}, battery={self.battery}"
 
 
 class Charger(Component):
@@ -538,19 +541,23 @@ class Charger(Component):
             self,
             location,
             world):
-        self.chargingRate = world.chargingRate
-        self.chargerCapacity = world.chargerCapacity
         Charger.Count = Charger.Count + 1
         Component.__init__(self, location, world, Charger.Count)
 
+        self.chargingRate = world.chargingRate
+        self.chargerCapacity = world.chargerCapacity
+        self.acceptedCapacity = world.chargerCapacity
+
         self.energyConsumed = 0
-        self.chargingQueue: List[Drone] = []
-        self.chargingDrones: List[Drone] = []
-        self.potentialDrones: List[Drone] = []
+
+        self.potentialDrones: List[Drone] = []  # these belong to this charger and are not waiting or being charged
+        self.waitingDrones: List[Drone] = []    # queue of waiting drone to be accepted, they keep protecting
+        self.acceptedDrones: List[Drone] = []   # drones accepted for charging, they move to the charger
+        self.chargingDrones: List[Drone] = []   # drones currently being charged
+
         from common.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
         # the estimator is assigned later using assignWaitingTimeEstimator
-        # noinspection PyTypeChecker
-        self.waitingTimeEstimator: ChargerWaitingTimeEstimator = None
+        self.waitingTimeEstimator: Optional[ChargerWaitingTimeEstimator] = None
         self.waitingTimeEstimateCache = np.array([])
         self.waitingTimeEstimateCacheVersion = -1
 
@@ -563,18 +570,31 @@ class Charger(Component):
         self.waitingTimeEstimator = estimator
 
     def addToQueue(self, drone):
+        """Add to waiting queue."""
         # this is the event when a drone is added to a queue
         self.waitingTimeEstimator.collectRecordStart(drone.id, self, drone, self.world.currentTimeStep)
+
         drone.waiting = True
-        self.chargingQueue.append(drone)
+        self.waitingDrones.append(drone)
+
+    def acceptForCharging(self, drone):
+        """Add to accepted queue -> drone starts moving towards charger."""
+        # this is the event when a drone is accepted
+        self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
+
+        drone.targetCharger = self
+        self.waitingDrones.remove(drone)
+        self.acceptedDrones.append(drone)
+
+    def allowCharging(self, drone):
+        """Drone is added to the chargingDrones and the charger waits until it gets to the correct location."""
+        self.acceptedDrones.remove(drone)
+        self.chargingDrones.append(drone)
 
     def startCharging(self, drone):
-        # this is the event when a drone is starting to charge (accepted)
-        self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
-        drone.targetCharger = self
+        """Drone is in the correct location and starts charging"""
         drone.waiting = False
-        self.chargingQueue.remove(drone)
-        self.chargingDrones.append(drone)
+        drone.state = DroneState.CHARGING
 
     def doneCharging(self, drone):
         drone.battery = 1
@@ -586,8 +606,11 @@ class Charger(Component):
         if drone in self.chargingDrones:
             self.chargingDrones.remove(drone)
 
-        if drone in self.chargingQueue:
-            self.chargingQueue.remove(drone)
+        if drone in self.acceptedDrones:
+            self.acceptedDrones.remove(drone)
+
+        if drone in self.waitingDrones:
+            self.waitingDrones.remove(drone)
 
     def estimateWaitingTime(self, drone):
         if self.waitingTimeEstimateCacheVersion != self.world.currentTimeStep:
@@ -600,7 +623,7 @@ class Charger(Component):
         self.waitingTimeEstimateCacheVersion = self.world.currentTimeStep
 
     def randomNearLocation(self):
-        return Point(self.location.x + random.randint(1, 5), self.location.y + random.randint(1, 5))
+        return Point(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))
 
     def provideLocation(self, drone):
         if drone in self.chargingDrones:
@@ -609,16 +632,12 @@ class Charger(Component):
             return self.randomNearLocation()
 
     def actuate(self):
-        
+
         self.chargingDrones = [d for d in self.chargingDrones if d.state != DroneState.TERMINATED]
-        self.chargingQueue = [d for d in self.chargingQueue if d.state != DroneState.TERMINATED]
+        self.acceptedDrones = [d for d in self.acceptedDrones if d.state != DroneState.TERMINATED]
+        self.waitingDrones = [d for d in self.waitingDrones if d.state != DroneState.TERMINATED]
 
-        emptyPlaces = self.chargerCapacity - len(self.chargingDrones)
-        for i in range(emptyPlaces):
-            if len(self.chargingQueue) > 0:
-                drone = self.chargingQueue[0]
-                self.startCharging(drone)
-
+        # charge the drones
         for drone in self.chargingDrones:
             if drone.state == DroneState.CHARGING:
                 drone.battery = drone.battery + self.chargingRate
@@ -626,8 +645,27 @@ class Charger(Component):
                 if drone.battery >= 1:
                     self.doneCharging(drone)
 
-    def __str__(self):
-        return f"{self.id}: ChargingNow= {len(self.chargingDrones)}, QueueLength= {len(self.chargingQueue)}, All={len(self.potentialDrones)}"
+        # move drones from accepted to charging
+        freeChargingPlaces = self.chargerCapacity - len(self.chargingDrones)
+        for i in range(freeChargingPlaces):
+            if len(self.acceptedDrones) > 0:
+                drone = self.acceptedDrones[0]
+                self.allowCharging(drone)
+
+        # when drone arrives, start charging it
+        for drone in self.chargingDrones:
+            if drone.location == self.location:
+                self.startCharging(drone)
+
+        # move drones from queue to accepted
+        freeAcceptedPlaces = self.acceptedCapacity - len(self.acceptedDrones)
+        for i in range(freeAcceptedPlaces):
+            if len(self.waitingDrones) > 0:
+                drone = self.waitingDrones[0]
+                self.acceptForCharging(drone)
+
+    def __repr__(self):
+        return f"{self.id}: C={len(self.chargingDrones)}, A={len(self.acceptedDrones)}, W={len(self.waitingDrones)}, P={len(self.potentialDrones)}"
 
     def report(self, iteration):
         pass
@@ -739,5 +777,5 @@ class Bird(Agent):
                     self.moveToNoField()
                     self.state = BirdState.FLEEING
 
-    def __str__(self):
-        return f"{self.id}: state= {self.state}, Total Ate= {self.ate}"
+    def __repr__(self):
+        return f"{self.id}: state={self.state}, Total Ate={self.ate}"

@@ -91,7 +91,7 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
             'charger_charging_capacity': self.chargerChargingCapacity(charger),
 
             # just for logging TODO: remove these when logging of the queue is done in a different way globally
-            'queue_length': len(charger.chargingQueue),
+            'queue_length': len(charger.waitingDrones),
             'charging_drones': len(charger.chargingDrones),
         }, timeStep, **kwargs)
 
@@ -100,7 +100,7 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
 
     @staticmethod
     def sumQueueMissingBattery(charger):
-        return sum([1 - d.battery for d in charger.chargingQueue + charger.chargingDrones])
+        return sum([1 - d.battery for d in charger.waitingDrones + charger.chargingDrones])
 
     @staticmethod
     def chargerChargingCapacity(charger):
@@ -157,7 +157,7 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
             # just for logging TODO: remove these when logging of the queue is done in a different way globally
             'queue_missing_battery_sum': QueueMissingBatteryWaitingTimeEstimator.sumQueueMissingBattery(charger),
             'charger_charging_capacity': QueueMissingBatteryWaitingTimeEstimator.chargerChargingCapacity(charger),
-            'queue_length': len(charger.chargingQueue),
+            'queue_length': len(charger.waitingDrones),
             'charging_drones': len(charger.chargingDrones),
         }, timeStep, **kwargs)
 
@@ -165,12 +165,21 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
         self.dataCollector.collectRecordEnd(recordId, timeStep)
 
     @staticmethod
-    def computeQueueChargingTime(charger: Charger, energyConsumptionRate: float):
-        queue = [d.battery for d in charger.chargingQueue]
+    def computeQueueChargingTime(charger: Charger, energyConsumptionRate: float, untilAcceptance=True):
+        """
+        Parameters
+        ----------
+        charger
+        energyConsumptionRate
+        untilAcceptance : bool
+            If ``True``, compute time until there is at least one free spot in ``charger.acceptedDrones``, i.e. the new drone will be accepted.
+            If ``False``, compute time to charge the whole queue.
+        """
+        queue = [d.battery for d in charger.acceptedDrones + charger.waitingDrones]
         charging = [d.battery for d in charger.chargingDrones]
         chargingRate = charger.chargingRate
 
-        # if there are free slots, move the drones from the queue
+        # if there are free slots, move the drones from the queue (assume they start charging immediately)
         freeSlots = charger.chargerCapacity - len(charging)
         charging.extend(queue[:freeSlots])
         del queue[:freeSlots]
@@ -179,6 +188,9 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
         chargingTime = 0
 
         while len(charging) > 0:
+            if untilAcceptance and len(queue) < charger.acceptedCapacity:  # there is a free spot in the acceptedDrones
+                break
+
             maxBattery = max(charging)
             timeUntilCharged = (1 - maxBattery) / chargingRate
             chargingTime += timeUntilCharged
@@ -240,7 +252,7 @@ class NeuralNetworkChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, Neur
             'drone_battery': drone.battery,
             'drone_state': int(drone.state),
             'charger_distance': charger.location.distance(drone.location),
-            'queue_length': len(charger.chargingQueue) / charger.chargerCapacity,
+            'queue_length': len(charger.waitingDrones) / charger.chargerCapacity,
             'charging_drones': len(charger.chargingDrones),
         }
 

@@ -19,9 +19,9 @@ class FieldProtection(Ensemble):
 
     def priority(self):
         if len(self.field.protectingDrones) == 0:
-            return  len(self.field.places)
+            return len(self.field.places)
         # if there is no drone assigned, it tries to assign at least one
-        return len(self.field.places)/ len(self.field.protectingDrones)
+        return len(self.field.places) / len(self.field.protectingDrones)
 
     @drones.cardinality
     def drones(self):
@@ -79,7 +79,7 @@ class DroneCharger(Ensemble):
                drone in self.charger.potentialDrones and \
                drone.needsCharging() and \
                drone not in self.drones and \
-               drone not in self.charger.chargingQueue and \
+               drone not in self.charger.waitingDrones and \
                drone not in self.charger.chargingDrones
 
         # not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
@@ -117,17 +117,15 @@ class ChargerFinder(Ensemble):
         return 0, len(self.charger.world.drones)
 
     def priority(self):
-        return 2 # It is necessary to run this before DroneCharger. The order of ChargerFinder ensembles can be arbitrary as they don't influence each other.
+        return 2  # It is necessary to run this before DroneCharger. The order of ChargerFinder ensembles can be arbitrary as they don't influence each other.
 
     @drones.select
     def drones(self, drone, otherEnsembles):
         return drone.state != DroneState.TERMINATED and \
                not any(ens for ens in otherEnsembles if isinstance(ens, ChargerFinder) and drone in ens.drones) and \
                drone not in self.drones and \
-               not drone.waiting and\
-               drone.state != DroneState.CHARGING and\
-               drone.state != DroneState.MOVING_TO_CHARGER and\
-               drone.findClosestCharger()==self.charger
+               not drone.isChargingOrWaiting() and \
+               drone.findClosestCharger() == self.charger
 
         # not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
         # return drone.state != DroneState.TERMINATED and\
@@ -149,7 +147,6 @@ class ChargerFinder(Ensemble):
         
         if verbose > 3:
             print(f"            Charger Finder: assigned {len(self.drones)} to {self.charger.id}")
-
 
 
 # class ChargerFinder(Ensemble):
