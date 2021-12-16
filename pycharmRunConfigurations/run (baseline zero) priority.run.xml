@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/en2-drone-charging/run.py" />
-    <option name="PARAMETERS" value="experiments/small.yaml -n 10 -t 3 -o small_baseline_zero_priority -v 2 -a -c --waiting_estimation=baseline_zero -q=priority" />
+    <option name="PARAMETERS" value="experiments/small.yaml -n 10 -t 1 -o small_baseline_zero -v 2 -c --waiting_estimation=baseline_zero -q=priority" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
