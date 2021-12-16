@@ -83,19 +83,19 @@ class World:
                 self.emptyPoints.append(p)
 
         self.chargerLog = Log([
-                    "drone_id",
-                    "battery",
-                    "future_battery",
-                    "estimated_waiting",
-                    "energy_needed_to_charge",
-                    "time_to_charge",
-                    "charger",
-                    "potential_drones_length",
-                    "waiting_drones_length",
-                    "accepted_queues_length",
-                    "charging_drones_length"
-
-                ])
+            "current_time_step",
+            "drone_id",
+            "battery",
+            "future_battery",
+            "estimated_waiting",
+            "energy_needed_to_charge",
+            "time_to_charge",
+            "charger",
+            "potential_drones_length",
+            "waiting_drones_length",
+            "accepted_queues_length",
+            "charging_drones_length",
+        ])
 
         self.chargerLogs = []
         for charger in self.chargers:

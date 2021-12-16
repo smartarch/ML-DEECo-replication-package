@@ -17,8 +17,8 @@ from common.simulation import World, Simulation
 from common.serialization import Log
 from common.charger_waiting_estimation import getChargerWaitingTimeEstimation
 
-def run(args):
 
+def run(args):
     # Fix random seeds
     import random
     import numpy as np
@@ -39,7 +39,7 @@ def run(args):
     estFolder = f"{folder}\\{args.waiting_estimation}"
     if not os.path.exists(estFolder):
         os.makedirs(estFolder)
-    
+
     if not os.path.exists(f"{folder}\\animations"):
         os.makedirs(f"{folder}\\animations")
 
@@ -69,9 +69,9 @@ def run(args):
 
             if args.chart:
                 plots.createChargerPlot(
-                        chargerLogs,
-                         f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                         f"World: {yamlFileName}\nEstimator: {estimation.name}\nQueue Type: {args.queue_type}\n Run: {i+1} in training {t+1}\nCharger Queues")
+                    chargerLogs,
+                    f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
+                    f"World: {yamlFileName}\nEstimator: {estimation.name}\nQueue Type: {args.queue_type}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
             totalLog.register(newLog)
 
         estimation.endIteration()
@@ -84,7 +84,8 @@ def run(args):
             totalLog.records,
             f"{folder}\\{yamlFileName}.png",
             f"World: {yamlFileName}\nEstimator: {estimation.name}\nQueue Type: {args.queue_type}",
-            (args.number,args.train))
+            (args.number, args.train)
+        )
 
 
 def main():
@@ -94,12 +95,17 @@ def main():
     parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
     parser.add_argument('-t', '--train', type=int, help='the number of trainings to be performed.', required=False, default="1")
     parser.add_argument('-v', '--verbose', type=int, help='the verboseness between 0 and 4.', required=False, default="0")
-    parser.add_argument('-a', '--animation', action='store_true', default=False, help='toggles saving the final results as a GIF animation.')
+    parser.add_argument('-a', '--animation', action='store_true', default=False,
+                        help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
-    parser.add_argument('-w', '--waiting_estimation', type=str, choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"], help='The estimation model to be used for predicting charger waiting time.', required=False, default="neural_network")
-    parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False, default="fifo")
+    parser.add_argument('-w', '--waiting_estimation', type=str,
+                        choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"],
+                        help='The estimation model to be used for predicting charger waiting time.', required=False,
+                        default="neural_network")
+    parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False,
+                        default="fifo")
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
-    parser.add_argument('--hidden_layers', nargs="+", type=int, default=[20], help='Number of neurons in hidden layers.')
+    parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
     args = parser.parse_args()
 
