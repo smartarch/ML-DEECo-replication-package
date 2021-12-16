@@ -77,7 +77,11 @@ def run(args):
 
     totalLog.export(f"{folder}\\log_{args.waiting_estimation}.csv")
     if args.chart:
-        plots.createLogPlot(totalLog.records, f"{folder}\\{yamlFileName}.png",f"{yamlFileName}\n{estimation.name}\n{args.queue_type}")
+        plots.createLogPlot(
+            totalLog.records,
+            f"{folder}\\{yamlFileName}.png",
+            f"World: {yamlFileName}\nEstimator: {estimation.name}\nQueue Type: {args.queue_type}",
+            (args.number,args.train))
 
 
 def main():
