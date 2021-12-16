@@ -17,7 +17,6 @@ from common.simulation import World, Simulation
 from common.serialization import Log
 from common.charger_waiting_estimation import getChargerWaitingTimeEstimation
 
-
 def run(args):
 
     # Fix random seeds
@@ -66,9 +65,13 @@ def run(args):
 
             currentWorld = copy.deepcopy(world)
             newSimulation = Simulation(currentWorld, folder, visualize=args.animation)
-            estimation, newLog = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", estimation, verbose, args)
+            estimation, newLog, chargerLogs = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", estimation, verbose, args)
 
-
+            if args.chart:
+                plots.createChargerPlot(
+                        chargerLogs,
+                         f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
+                         f"World: {yamlFileName}\nEstimator: {estimation.name}\nQueue Type: {args.queue_type}\n Run: {i+1} in training {t+1}\nCharger Queues")
             totalLog.register(newLog)
 
         estimation.endIteration()

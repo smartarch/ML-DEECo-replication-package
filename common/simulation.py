@@ -97,9 +97,14 @@ class World:
 
                 ])
 
-        self.worldLog = Log([
-            
-        ])
+        self.chargerLogs = []
+        for charger in self.chargers:
+            self.chargerLogs.append(Log([
+                "Charging Drones",
+                "Accepted Drones",
+                "Waiting Drones",
+                "Potential Drones",
+            ]))
 
 
     def isProtectedByDrone(self, point):
@@ -180,6 +185,18 @@ class Simulation:
                     initializedEnsembles.append(ens)
                     ens.actuate(verbose)
 
+            for chargerIndex in range(len(self.world.chargers)):
+                charger = self.world.chargers[chargerIndex]
+                potentialDrones = len(charger.potentialDrones) if len(charger.potentialDrones)>0 else 1
+                self.world.chargerLogs[chargerIndex].register([
+                    #sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
+                    len(charger.chargingDrones),
+                    len(charger.acceptedDrones),
+                    len(charger.waitingDrones),
+                    potentialDrones,
+
+                ])
+
             if self.visualize:
                 visualizer.drawComponents(i + 1)
 
@@ -189,7 +206,7 @@ class Simulation:
         self.world.chargerLog.export(f"{self.folder}/charger_logs/{filename}.csv")
         totalLog = self.collectStatistics()
 
-        return estimation, totalLog 
+        return estimation, totalLog , self.world.chargerLogs
 
     def actuateEnsembles(self,potentialEnsembles,components):
         initializedEnsembles = []
