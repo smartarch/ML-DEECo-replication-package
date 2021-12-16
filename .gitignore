@@ -1,13 +1,13 @@
 # GIT ignore configruation
-# The environment is ignored
+# The environment and result folder are ignored
 env/
+results/
 .vscode/
 *.gif
-log.yaml
 *.csv
 *.png
-out.yaml
 *.h5
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
