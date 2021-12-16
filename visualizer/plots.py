@@ -19,7 +19,6 @@ def createLogPlot(log, filename, title, size):
 
     x = np.arange(1,len(log))
     xtickLabels = (np.arange(0,size[0]*size[1]) % size[0] + 1).tolist()
-    print (xtickLabels)
     labels = log[0]
     array = np.array(log[1:])
     width = 0.35
