@@ -582,7 +582,10 @@ class Charger(Component):
         self.waitingTimeEstimator.collectRecordEnd(drone.id, self.world.currentTimeStep)
 
         drone.targetCharger = self
-        self.waitingDrones.remove(drone)
+        if drone in self.waitingDrones:
+            self.waitingDrones.remove(drone)
+        else:
+            drone.waiting = True
         self.acceptedDrones.append(drone)
 
     def allowCharging(self, drone):

@@ -175,7 +175,7 @@ class DroneChargerPriority(Ensemble):
             print(f"            Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}")
 
         for drone in self.drones:
-            self.charger.addToQueue(drone)  # we add the drone to the waiting queue, it should be immediately moved to the acceptedDrones by the charger
+            self.charger.acceptForCharging(drone)
 
 
 class ChargerFinder(Ensemble):
