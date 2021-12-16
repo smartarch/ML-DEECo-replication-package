@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="run (nn 256) priority" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="run (nn 256) priority" type="PythonConfigurationType" factoryName="Python" folderName="Small priority">
     <module name="2022-SEAMS" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
