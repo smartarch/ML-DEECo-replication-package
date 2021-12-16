@@ -36,16 +36,24 @@ def run(args):
     conf = yamlObject
     world = World(conf)
 
-    folder = f"results\\{args.output}"
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    log = Log([
+    folder = f"results\\{args.output}\\{args.queue_type}"
+    estFolder = f"{folder}\\{args.waiting_estimation}"
+    if not os.path.exists(estFolder):
+        os.makedirs(estFolder)
+    
+    if not os.path.exists(f"{folder}\\animations"):
+        os.makedirs(f"{folder}\\animations")
+
+    if not os.path.exists(f"{folder}\\charger_logs"):
+        os.makedirs(f"{folder}\\charger_logs")
+
+    totalLog = Log([
         'Active Drones',
         'Total Damage',
         'Energy Consumed',
     ])
 
-    estimation = getChargerWaitingTimeEstimation(world, args, outputFolder=folder)
+    estimation = getChargerWaitingTimeEstimation(world, args, outputFolder=estFolder)
     verbose = int(args.verbose)
 
     for t in range(args.train):
@@ -59,15 +67,17 @@ def run(args):
             currentWorld = copy.deepcopy(world)
             newSimulation = Simulation(currentWorld, folder, visualize=args.animation)
             estimation, newLog = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", estimation, verbose, args)
-            log.register(newLog)
+
+
+            totalLog.register(newLog)
 
         estimation.endIteration()
 
     estimation.save()
 
-    log.export(f"{folder}\\{yamlFileName}.csv")
+    totalLog.export(f"{folder}\\log_{args.waiting_estimation}.csv")
     if args.chart:
-        plots.createLogPlot(log.records, f"{folder}\\{yamlFileName}.png",estimation.name)
+        plots.createLogPlot(totalLog.records, f"{folder}\\{yamlFileName}.png",f"{yamlFileName}\n{estimation.name}\n{args.queue_type}")
 
 
 def main():

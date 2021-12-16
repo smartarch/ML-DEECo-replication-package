@@ -99,8 +99,41 @@ class DroneCharger(Ensemble):
         if verbose > 3:
             print(f"            Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}")
 
+
+            """
+                chargerLog = Log([
+                        "drone_id",
+                        "battery",
+                        "future_battery",
+                        "estimated_waiting",
+                        "energy_needed_to_charge",
+                        "time_to_charge",
+                        "charger",
+                        "potential_drones_length",
+                        "waiting_drones_length",
+                        "accepted_queues_length",
+                        "charging_drones_length"
+
+                    ])
+            """
         for drone in self.drones:
+            self.charger.world.chargerLog.register([
+                drone.id,
+                drone.battery,
+                drone.computeFutureBattery(),
+                drone.estimateWaitingEnergy(drone.closestCharger),
+                drone.energyRequiredToGetToCharger(drone.closestCharger.location),
+                drone.timeToDoneCharging(),
+                self.charger.id,
+                len(self.charger.potentialDrones),
+                len(self.charger.waitingDrones),
+                len(self.charger.acceptedDrones),
+                len(self.charger.chargingDrones),
+
+
+            ])
             self.charger.addToQueue(drone)
+            
 
 
 class DroneChargerPriority(Ensemble):
