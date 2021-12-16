@@ -56,9 +56,9 @@ class someOf():
         sel = selectComponents()
         for idx in range(cardinalityMax):
             if len(sel) > 0:
-                _, comp = max(sel, key=operator.itemgetter(0))
+                priority, comp = max(sel, key=operator.itemgetter(0))
                 self.selections[instance].append(comp)
-            sel = selectComponents()
+                sel.remove((priority, comp))
 
         if len(self.selections[instance]) < cardinalityMin:
             return False

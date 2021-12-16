@@ -25,7 +25,7 @@ class FieldProtection(Ensemble):
 
     @drones.cardinality
     def drones(self):
-        return len(self.field.places)
+        return (1,len(self.field.places))
 
     # choose this if not selected
     @drones.select

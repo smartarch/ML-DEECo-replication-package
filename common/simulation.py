@@ -97,6 +97,10 @@ class World:
 
                 ])
 
+        self.worldLog = Log([
+            
+        ])
+
 
     def isProtectedByDrone(self, point):
         for drone in self.drones:
