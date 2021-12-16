@@ -4,7 +4,6 @@ from enum import Enum, IntEnum
 from typing import List, Optional
 import numpy as np
 
-
 class Point:
     """
         The class represents a point on the world. X and Y are values from 0 to width or height.

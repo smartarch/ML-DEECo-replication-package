@@ -22,7 +22,7 @@ class Report:
 class Log:
     def __init__(self,header):
         self.records = [ header ]
-
+        
     def register (self,newData):
         self.records.append(newData)
     
