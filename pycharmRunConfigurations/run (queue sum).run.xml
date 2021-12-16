@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="run (queue missing battery)" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="run (queue missing battery)" type="PythonConfigurationType" factoryName="Python" folderName="Small FIFO">
     <module name="2022-SEAMS" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
