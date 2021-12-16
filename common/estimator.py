@@ -140,8 +140,8 @@ class Estimation(abc.ABC):
         mse = np.mean(np.square(y_true - y_pred))
 
         lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
-        plt.ioff()
-        plt.figure(figsize=(10, 10))
+        #plt.ioff()
+        fig = plt.figure(figsize=(10, 10))
         plt.axes(aspect='equal')
         plt.scatter(y_true, y_pred)
         plt.xlabel('True Values')
@@ -151,7 +151,7 @@ class Estimation(abc.ABC):
         plt.ylim(lims)
         plt.plot(lims, lims)
         plt.savefig(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation-{label}.png")
-        plt.clf()
+        plt.close(fig)
 
     @abc.abstractmethod
     def _evaluate_predict(self, x):
