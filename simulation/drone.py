@@ -104,31 +104,12 @@ class Drone(Agent):
 
         return futureBattery < self.alert
 
-    def isChargingOrWaiting(self):
-        """True if the drone is being charged, or it is already assigned to a charger queue and is waiting."""
-        return self.state == DroneState.CHARGING or \
-               self.state == DroneState.MOVING_TO_CHARGER
-
-    # # TODO: this is wrong: why `1 - value` ?
-    # def batteryAfterGetToCharger(self, charger):
-    #     value = self.battery - self.energyRequiredToGetToCharger(charger.location)
-    #     if value < 0.0001:  # not feasible to get to this charger
-    #         return 1
-    #     else:
-    #         return 1 - value
-
-    # def isBatteryCritical(self,chargerLocation):
-    #     return self.battery - self.energyRequiredToCharge(chargerLocation) <= self.alert
-
     def checkBattery(self):
         if self.battery <= 0:
             self.battery = 0
             self.state = DroneState.TERMINATED
             if self.targetField is not None:
                 self.targetField.unassign(self)
-
-            # if self.closestCharger is not None:
-            #     self.closestCharger.droneDied(self)
 
     def move(self):
         self.battery = self.battery - self.droneMovingEnergyConsumption
@@ -179,7 +160,7 @@ class Drone(Agent):
         startY = 0 if startY < 0 else startY
         endX = self.world.mapWidth - 1 if endX >= self.world.mapWidth else endX
         endY = self.world.mapHeight - 1 if endY >= self.world.mapHeight else endY
-        return (startX, startY, endX, endY)
+        return startX, startY, endX, endY
 
     def __repr__(self):
         return f"{self.id}: state={str(self.state)}, battery={self.battery}"

@@ -14,7 +14,7 @@ class someOf():
 
         self.cardinalityFn = None
         self.selectFn = None
-        self.priorityFn = None
+        self.priorityFn = lambda _ens, _comp: 0
 
         self.selections: Dict[Ensemble, Any] = defaultdict(lambda: None)
 
@@ -95,7 +95,7 @@ class Ensemble:
                 
         return allOk
     
-    def actuate(self, verbose):
+    def actuate(self):
         pass
 
     def priority(self) -> float:

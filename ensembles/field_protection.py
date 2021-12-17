@@ -7,6 +7,8 @@ from simulation.ensemble import Ensemble, someOf
 from simulation.simulation import WORLD
 from typing import List
 
+from utils.verbose import verbosePrint
+
 
 class FieldProtection(Ensemble):
 
@@ -39,12 +41,10 @@ class FieldProtection(Ensemble):
     def drones(self, drone):
         return - self.field.closestDistanceToDrone(drone)
 
-    def actuate(self, verbose):
+    def actuate(self):
 
         for drone in self.drones:
-            # only for printing
-            if verbose > 3:
-                print(f"            Protecting Ensemble: assigning {drone.id} to {self.field.id}")
+            verbosePrint(f"Protecting Ensemble: assigning {drone.id} to {self.field.id}", 4)
             drone.targetField = self.field
 
 

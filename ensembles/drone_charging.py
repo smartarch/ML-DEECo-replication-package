@@ -1,8 +1,10 @@
+from typing import List
+
 from simulation.charger import Charger
 from simulation.drone import DroneState, Drone
 from simulation.ensemble import Ensemble, someOf
 from simulation.simulation import WORLD
-from typing import List
+from utils.verbose import verbosePrint
 
 
 class PotentialDronesAssignment(Ensemble):
@@ -11,7 +13,9 @@ class PotentialDronesAssignment(Ensemble):
 
     def __init__(self, charger):
         self.charger = charger
-        # stateless ensemble
+
+    def priority(self):
+        return 2  # It is necessary to run this before DroneCharger. The order of ChargerFinder ensembles can be arbitrary as they don't influence each other.
 
     drones: List[Drone] = someOf(Drone)
 
@@ -19,30 +23,18 @@ class PotentialDronesAssignment(Ensemble):
     def drones(self):
         return 0, len(self.charger.world.drones)
 
-    def priority(self):
-        return 2  # It is necessary to run this before DroneCharger. The order of ChargerFinder ensembles can be arbitrary as they don't influence each other.
-
     @drones.select
     def drones(self, drone, otherEnsembles):
-        return drone.state != DroneState.TERMINATED and \
-               not any(ens for ens in otherEnsembles if isinstance(ens, PotentialDronesAssignment) and drone in ens.drones) and \
-               drone not in self.drones and \
-               not drone.isChargingOrWaiting() and \
+        return drone.state not in (DroneState.TERMINATED, DroneState.MOVING_TO_CHARGER, DroneState.CHARGING) and \
                drone.findClosestCharger() == self.charger
 
-    @drones.priority
-    def drones(self, drone):
-        return -drone.location.distance(self.charger.location)
+    def actuate(self):
 
-    def actuate(self, verbose):
-
-        # only for printing
         self.charger.potentialDrones = self.drones
         for drone in self.drones:
             drone.closestCharger = self.charger
 
-        if verbose > 3:
-            print(f"            Charger Finder: assigned {len(self.drones)} to {self.charger.id}")
+        verbosePrint(f"Charger Finder: assigned {len(self.drones)} to {self.charger.id}", 4)
 
 
 class AcceptedDronesAssignment(Ensemble):
@@ -84,11 +76,9 @@ class AcceptedDronesAssignment(Ensemble):
             return 1  # keep the accepted drones from previous time steps  # TODO: think about this later
         return -drone.timeToDoneCharging()
 
-    def actuate(self, verbose):
+    def actuate(self):
 
-        # only for printing
-        if verbose > 3:
-            print(f"            Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}")
+        verbosePrint(f"Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}", 4)
 
         for drone in self.drones:
             # TODO(MT): move the estimator to the ensemble

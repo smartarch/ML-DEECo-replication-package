@@ -3,6 +3,8 @@
 """
 from yaml import load
 
+from utils.verbose import setVerboseLevel, verbosePrint
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -56,12 +58,10 @@ def run(args):
     verbose = int(args.verbose)
 
     for t in range(args.train):
-        if verbose > 0:
-            print(f"Iteration {t + 1} started at {datetime.now()}: ")
+        verbosePrint(f"Iteration {t + 1} started at {datetime.now()}:", 1)
 
         for i in range(args.number):
-            if verbose > 1:
-                print(f"    Run {i + 1} started at {datetime.now()}: ")
+            verbosePrint(f"Run {i + 1} started at {datetime.now()}:", 2)
 
             currentWorld = copy.deepcopy(world)
             newSimulation = Simulation(currentWorld, folder, visualize=args.animation)
@@ -110,6 +110,7 @@ def main():
     args = parser.parse_args()
 
     number = args.number
+    setVerboseLevel(args.verbose)
 
     if number <= 0:
         raise argparse.ArgumentTypeError(f"{number} is an invalid positive int value")

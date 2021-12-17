@@ -2,6 +2,7 @@ from simulation.components import Bird, Point, Field
 from simulation.charger import Charger
 from simulation.drone import DroneState, Drone
 from utils.serialization import Log
+from utils.verbose import verbosePrint
 from utils.visualizers import Visualizer
 
 CLASSNAMES = {
@@ -168,14 +169,11 @@ class Simulation:
             visualizer.drawFields()
 
         for i in range(self.world.maxSteps):
-            if verbose > 2:
-                print(f"        Step {i + 1}:")
+            verbosePrint(f"Step {i + 1}:", 3)
             self.world.currentTimeStep = i
             for component in components:
                 component.actuate()
-
-                if verbose > 3:
-                    print(f"            {component}")
+                verbosePrint(f"{component}", 4)
 
             initializedEnsembles = []
 
@@ -184,7 +182,7 @@ class Simulation:
             for ens in potentialEnsembles:
                 if ens.materialize(components, initializedEnsembles):
                     initializedEnsembles.append(ens)
-                    ens.actuate(verbose)
+                    ens.actuate()
 
             for chargerIndex in range(len(self.world.chargers)):
                 charger = self.world.chargers[chargerIndex]
@@ -213,4 +211,4 @@ class Simulation:
         for ens in potentialEnsembles:
             if ens.materialize(components, initializedEnsembles):
                 initializedEnsembles.append(ens)
-                ens.actuate(0)
+                ens.actuate()
