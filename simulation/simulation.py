@@ -1,4 +1,6 @@
-from simulation.components import Bird, Drone, Point, Field, Charger, DroneState
+from simulation.components import Bird, Point, Field
+from simulation.charger import Charger
+from simulation.drone import DroneState, Drone
 from utils.serialization import Log
 from utils.visualizers import Visualizer
 

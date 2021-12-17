@@ -1,7 +1,8 @@
 """
 Field protection ensembles
 """
-from simulation.components import Drone, Field, DroneState
+from simulation.components import Field
+from simulation.drone import DroneState, Drone
 from simulation.ensemble import Ensemble, someOf
 from simulation.simulation import WORLD
 from typing import List

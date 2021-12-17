@@ -1,6 +1,6 @@
 from PIL import Image , ImageDraw
 import numpy as np
-from simulation.components import DroneState
+from simulation.drone import DroneState
 
 
 COLORS ={

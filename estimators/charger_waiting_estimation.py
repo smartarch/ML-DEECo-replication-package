@@ -3,7 +3,8 @@ Charger waiting time estimation
 """
 import math
 
-from simulation.components import DroneState, Charger
+from simulation.charger import Charger
+from simulation.drone import DroneState
 from estimators.estimator import *
 
 

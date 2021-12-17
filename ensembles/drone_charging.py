@@ -1,4 +1,5 @@
-from simulation.components import Drone, Charger, DroneState
+from simulation.charger import Charger
+from simulation.drone import DroneState, Drone
 from simulation.ensemble import Ensemble, someOf
 from simulation.simulation import WORLD
 from typing import List
