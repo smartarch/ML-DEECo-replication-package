@@ -54,7 +54,7 @@ def getEnsembles(WORLD):
 
         @drones.cardinality
         def drones(self):
-            return 1, self.charger.acceptedCapacity - len(self.charger.acceptedDrones)  # free slots in the acceptedDrones
+            return 0, self.charger.acceptedCapacity
 
         @drones.select
         def drones(self, drone, otherEnsembles):
@@ -84,6 +84,8 @@ def getEnsembles(WORLD):
             verbosePrint(f"Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}", 4)
 
             for drone in self.drones:
+                if drone in self.charger.acceptedDrones:
+                    continue
                 # TODO(MT): move the estimator to the ensemble
                 self.charger.waitingTimeEstimator.collectRecordEnd(drone.id, WORLD.currentTimeStep)
                 self.charger.world.chargerLog.register([
