@@ -15,7 +15,7 @@ class PotentialDronesAssignment(Ensemble):
         self.charger = charger
 
     def priority(self):
-        return 2  # It is necessary to run this before DroneCharger. The order of ChargerFinder ensembles can be arbitrary as they don't influence each other.
+        return 2  # It is necessary to run this before AcceptedDronesAssignment. The order of PotentialDronesAssignment ensembles can be arbitrary as they don't influence each other.
 
     drones: List[Drone] = someOf(Drone)
 
@@ -44,14 +44,14 @@ class AcceptedDronesAssignment(Ensemble):
     def __init__(self, charger):
         self.charger = charger
 
+    def priority(self):
+        return 1  # The order of AcceptedDronesAssignment ensembles can be arbitrary as they don't influence each other.
+
     drones: List[Drone] = someOf(Drone)
 
     @drones.cardinality
     def drones(self):
         return 1, self.charger.acceptedCapacity - len(self.charger.acceptedDrones)  # free slots in the acceptedDrones
-
-    def priority(self):
-        return 1
 
     @drones.select
     def drones(self, drone, otherEnsembles):
