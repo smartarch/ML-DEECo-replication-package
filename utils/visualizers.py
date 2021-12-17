@@ -1,8 +1,6 @@
-from PIL import Image , ImageFont,ImageDraw
+from PIL import Image , ImageDraw
 import numpy as np
-import pandas as pd
-from random import randint
-from common.components import BirdState , DroneState
+from simulation.components import DroneState
 
 
 COLORS ={

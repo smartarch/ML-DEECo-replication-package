@@ -555,7 +555,7 @@ class Charger(Component):
         self.acceptedDrones: List[Drone] = []   # drones accepted for charging, they move to the charger
         self.chargingDrones: List[Drone] = []   # drones currently being charged
 
-        from common.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
+        from estimators.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
         # the estimator is assigned later using assignWaitingTimeEstimator
         self.waitingTimeEstimator: Optional[ChargerWaitingTimeEstimator] = None
         self.waitingTimeEstimateCache = np.array([])

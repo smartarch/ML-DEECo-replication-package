@@ -1,11 +1,10 @@
 """
 Charger waiting time estimation
 """
-import abc
 import math
 
-from common.components import DroneState, Drone, Charger
-from common.estimator import *
+from simulation.components import DroneState, Charger
+from estimators.estimator import *
 
 
 class ChargerWaitingTimeEstimator(abc.ABC):

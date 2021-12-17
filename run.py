@@ -1,7 +1,7 @@
 """ 
     This file contains a simple experiment run
 """
-from yaml import load, dump
+from yaml import load
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -12,10 +12,10 @@ import os
 import argparse
 import copy
 from datetime import datetime
-from visualizer import plots
-from common.simulation import World, Simulation
-from common.serialization import Log
-from common.charger_waiting_estimation import getChargerWaitingTimeEstimation
+from utils import plots
+from simulation.simulation import World, Simulation
+from utils.serialization import Log
+from estimators.charger_waiting_estimation import getChargerWaitingTimeEstimation
 
 
 def run(args):

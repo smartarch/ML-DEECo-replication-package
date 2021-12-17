@@ -8,7 +8,7 @@ from datetime import datetime
 from matplotlib import pyplot as plt
 import numpy as np
 
-from common.serialization import Log
+from utils.serialization import Log
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.

@@ -1,9 +1,7 @@
-import random
-from common.components import Agent, Bird, Drone, Point, Field, Charger, Component, DroneState, BirdState
-from common.tasks import getPotentialEnsembles 
-# from common.timetasks import getNewAlertChangingEnsembles
-from common.serialization import Log
-from common.visualizers import Visualizer
+from simulation.components import Bird, Drone, Point, Field, Charger, DroneState
+from ensembles.tasks import getPotentialEnsembles
+from utils.serialization import Log
+from utils.visualizers import Visualizer
 
 CLASSNAMES = {
     'drones': Drone,
@@ -106,7 +104,6 @@ class World:
                 "Potential Drones",
             ]))
 
-
     def isProtectedByDrone(self, point):
         for drone in self.drones:
             if drone.isProtecting(point):
@@ -119,18 +116,18 @@ class World:
                 return True
         return False
 
-    def findDrones(self,droneStates):
+    def findDrones(self, droneStates):
         return [drone for drone in self.drones if drone.state in droneStates]
-    
-    def exceptDrones(self,droneStates):
+
+    def exceptDrones(self, droneStates):
         return [drone for drone in self.drones if drone.state not in droneStates]
 
-
-    def findBirds(self,birdStates):
+    def findBirds(self, birdStates):
         return [bird for bird in self.birds if bird.state in birdStates]
-    
-    def exceptBirds(self,birdStates):
+
+    def exceptBirds(self, birdStates):
         return [bird for bird in self.birds if bird.state not in birdStates]
+
 
 class Simulation:
 
@@ -187,9 +184,9 @@ class Simulation:
 
             for chargerIndex in range(len(self.world.chargers)):
                 charger = self.world.chargers[chargerIndex]
-                potentialDrones = len(charger.potentialDrones) if len(charger.potentialDrones)>0 else 1
+                potentialDrones = len(charger.potentialDrones) if len(charger.potentialDrones) > 0 else 1
                 self.world.chargerLogs[chargerIndex].register([
-                    #sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
+                    # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
                     len(charger.chargingDrones),
                     len(charger.acceptedDrones),
                     len(charger.waitingDrones),
@@ -206,54 +203,12 @@ class Simulation:
         self.world.chargerLog.export(f"{self.folder}/charger_logs/{filename}.csv")
         totalLog = self.collectStatistics()
 
-        return estimation, totalLog , self.world.chargerLogs
+        return estimation, totalLog, self.world.chargerLogs
 
-    def actuateEnsembles(self,potentialEnsembles,components):
+    def actuateEnsembles(self, potentialEnsembles, components):
         initializedEnsembles = []
         potentialEnsembles = sorted(potentialEnsembles)
         for ens in potentialEnsembles:
             if ens.materialize(components, initializedEnsembles):
                 initializedEnsembles.append(ens)
                 ens.actuate(0)
-
-    # def timeRun (self,timeModel,timeLog,maxIterations):
-    #     components = []
-
-    #     components.extend(self.world.drones)
-    #     components.extend(self.world.birds)
-    #     components.extend(self.world.chargers)
-    #     totalPlaces = sum([len(field.places) for field in self.world.fields])
-    #     potentialEnsembles = getPotentialEnsembles(self.world)
- 
-    #     timeLog.register([0,0, 0, 0, 0, 0, 0 ])
-
-    #     # collect some statistics before running
-    #     aliveDrones = len(self.world.exceptDrones([DroneState.TERMINATED]))
-    #     if aliveDrones<=0:
-    #         return timeLog
-
-    #     for i in range(maxIterations):
-    #         self.world.currentTimeStep = i
-    #         for component in components:
-    #             component.actuate()
-
-    #         self.actuateEnsembles(potentialEnsembles,components)
-            
-    #         timeLog.add([
-    #             0, # max_time_step max time step doesn't change
-    #             0, # dead_drone_rate can be calculated in O(1) timespace
-    #             0, # charge_alert is constant at this rate
-    #             len(self.world.findDrones([DroneState.PROTECTING,DroneState.MOVING_TO_FIELD]))/(maxIterations*aliveDrones), # average_protecting_time
-    #             len(self.world.findDrones([DroneState.MOVING_TO_CHARGER]))/(maxIterations*aliveDrones), # average_protecting_time
-    #             len(self.world.findDrones([DroneState.CHARGING]))*self.world.chargingRate,
-    #             len(self.world.findBirds([BirdState.EATING])),
-
-    #         ])
-
-    #     timeLog.add([
-    #         maxIterations,
-    #         (aliveDrones - len(self.world.exceptDrones([DroneState.TERMINATED])))/aliveDrones,
-    #         self.world.drones[0].alert,
-    #         0,0,0,0
-    #     ])
-    #     return timeLog
