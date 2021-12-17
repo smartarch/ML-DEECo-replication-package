@@ -1,5 +1,4 @@
 from simulation.components import Bird, Drone, Point, Field, Charger, DroneState
-from ensembles.tasks import getPotentialEnsembles
 from utils.serialization import Log
 from utils.visualizers import Visualizer
 
@@ -129,12 +128,18 @@ class World:
         return [bird for bird in self.birds if bird.state not in birdStates]
 
 
+WORLD = None
+
+
 class Simulation:
 
     def __init__(self, world, folder, visualize):
         self.visualize = visualize
         self.world = world
         self.folder = folder
+
+        global WORLD
+        WORLD = world
 
     def collectStatistics(self):
         return [
@@ -154,10 +159,9 @@ class Simulation:
         for charger in self.world.chargers:
             charger.assignWaitingTimeEstimator(estimation.createEstimator())
 
-        potentialEnsembles = getPotentialEnsembles(self.world, args.queue_type)
-
-        # masterCharger = MasterCharger(self.world, droneWaitingTimeEstimator)
-        # masterCharger.materialize()
+        from ensembles.field_protection import ensembles as fieldProtectionEnsembles
+        from ensembles.drone_charging import ensembles as droneChargingEnsembles
+        potentialEnsembles = fieldProtectionEnsembles + droneChargingEnsembles
 
         if self.visualize:
             visualizer = Visualizer(self.world)
