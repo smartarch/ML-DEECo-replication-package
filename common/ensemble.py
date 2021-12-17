@@ -51,14 +51,16 @@ class someOf():
 
         def selectComponents():
             return [(self.priorityFn(instance, comp), comp) for comp in allComponents if
-                    isinstance(comp, self.compClass) and self.selectFn(instance, comp, otherEnsembles)]
+                    isinstance(comp, self.compClass) and
+                    comp not in self.selections[instance] and
+                    self.selectFn(instance, comp, otherEnsembles)]
 
         sel = selectComponents()
         for idx in range(cardinalityMax):
             if len(sel) > 0:
                 priority, comp = max(sel, key=operator.itemgetter(0))
                 self.selections[instance].append(comp)
-                sel.remove((priority, comp))
+                sel = selectComponents()
 
         if len(self.selections[instance]) < cardinalityMin:
             return False

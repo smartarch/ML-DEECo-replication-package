@@ -57,7 +57,7 @@ class FieldProtection(Ensemble):
 # Step 4: When drone is done charging, the Target Charger will be None, and it will be removed from charging list.
 
 
-class DroneCharger(Ensemble):
+class WaitingDronesAssignment(Ensemble):
     charger: Charger
 
     def __init__(self, charger):
@@ -77,17 +77,7 @@ class DroneCharger(Ensemble):
     def drones(self, drone, otherEnsembles):
         return drone.state != DroneState.TERMINATED and \
                drone in self.charger.potentialDrones and \
-               drone.needsCharging() and \
-               drone not in self.drones and \
-               drone not in self.charger.waitingDrones and \
-               drone not in self.charger.chargingDrones
-
-        # not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
-        # return drone.state != DroneState.TERMINATED and\
-        #     drone in self.charger.potentialDrones and\
-        #     not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
-        #     drone not in self.charger.chargingQueue and\
-        #     drone not in self.charger.chargingDrones  # if the drone is not already being charged (can be asked in drone.needsCharging() too.)
+               drone.needsCharging()
 
     @drones.priority
     def drones(self, drone):
@@ -117,9 +107,9 @@ class DroneCharger(Ensemble):
             ])
         for drone in self.drones:
             self.charger.addToQueue(drone)
-            
 
-class DroneChargerPriority(Ensemble):
+
+class AcceptedDronesAssignment(Ensemble):
     charger: Charger
 
     def __init__(self, charger):
@@ -138,10 +128,8 @@ class DroneChargerPriority(Ensemble):
     def drones(self, drone, otherEnsembles):
         cond = drone.state != DroneState.TERMINATED and \
                drone in self.charger.potentialDrones and \
-               drone.needsCharging() and \
-               drone not in self.drones and \
-               drone not in self.charger.waitingDrones and \
-               drone not in self.charger.chargingDrones
+               drone.needsCharging()
+               # TODO(MT): or self.charger.acceptedDrones
         if cond:
             # TODO(MT): move the estimator to the ensemble
             self.charger.waitingTimeEstimator.collectRecordStart(drone.id, self.charger, drone, self.charger.world.currentTimeStep)
@@ -157,11 +145,13 @@ class DroneChargerPriority(Ensemble):
         if verbose > 3:
             print(f"            Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}")
 
+        # TODO(MT): set the acceptedDrones by the ensemble, don't manage it in the charger
         for drone in self.drones:
             self.charger.acceptForCharging(drone)
 
 
-class ChargerFinder(Ensemble):
+class PotentialDronesAssignment(Ensemble):
+
     charger: Charger
 
     def __init__(self, charger):
@@ -180,17 +170,10 @@ class ChargerFinder(Ensemble):
     @drones.select
     def drones(self, drone, otherEnsembles):
         return drone.state != DroneState.TERMINATED and \
-               not any(ens for ens in otherEnsembles if isinstance(ens, ChargerFinder) and drone in ens.drones) and \
+               not any(ens for ens in otherEnsembles if isinstance(ens, PotentialDronesAssignment) and drone in ens.drones) and \
                drone not in self.drones and \
                not drone.isChargingOrWaiting() and \
                drone.findClosestCharger() == self.charger
-
-        # not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
-        # return drone.state != DroneState.TERMINATED and\
-        #     drone in self.charger.potentialDrones and\
-        #     not any(ens for ens in otherEnsembles if isinstance(ens, DroneCharger) and drone == ens.drone) and\
-        #     drone not in self.charger.chargingQueue and\
-        #     drone not in self.charger.chargingDrones  # if the drone is not already being charged (can be asked in drone.needsCharging() too.)
 
     @drones.priority
     def drones(self, drone):
@@ -207,56 +190,6 @@ class ChargerFinder(Ensemble):
             print(f"            Charger Finder: assigned {len(self.drones)} to {self.charger.id}")
 
 
-# class ChargerFinder(Ensemble):
-
-#     drone: Drone
-
-#     def __init__(self, drone):
-#         self.drone = drone
-
-#     def priority(self):
-#         return 2  # It is necessary to run this before DroneCharger. The order of ChargerFinder ensembles can be arbitrary as they don't influence each other.
-
-#     # TODO: we could add something like this to make a "select" for the ensemble itself
-#     # def select(self):
-#     #     return self.drone.state != DroneState.TERMINATED
-
-#     charger: Charger = oneOf(Charger)
-
-#     @charger.select
-#     def charger(self, charger, otherEnsembles):
-#         return True
-
-#     @charger.priority
-#     def charger(self, charger):
-#         return -self.drone.location.distance(charger.location)
-
-#     # TODO: go through this and think about it again
-#     # we could just empty the potentialDrones in each time step and construct them from scratch instead of adding and removing drones
-#     # def actuate(self, verbose):
-
-#     #     if self.drone.closestCharger is not None:
-#     #         try:
-#     #             self.drone.closestCharger.potentialDrones.remove(self.drone)
-#     #         except ValueError:
-#     #             pass
-
-#     #     if self.drone.state == DroneState.TERMINATED:
-#     #         self.charger.droneDied(self.drone)  # TODO: should we notify `self.charger` charger or `self.drone.closestCharger`?
-#     #         self.drone.closestCharger = None
-#     #         return
-#     #     self.drone.newClosestCharger(self.charger)
-#     #     # if self.drone.closestCharger is not None and \
-#     #     #         self.drone in self.drone.closestCharger.chargingDrones + self.drone.closestCharger.chargingQueue:
-#     #     #     return
-
-#     #     # closestCharger = self.charger
-#     #     # self.drone.closestCharger = closestCharger
-#     #     self.drone.closestCharger.potentialDrones.append(self.drone)
-#     #     if verbose > 3:
-#     #         print(f"            Charger Finder: adding {self.drone.id} to {closestCharger.id}")
-
-
 #######################
 # Potential ensembles #
 #######################
@@ -269,9 +202,9 @@ def getPotentialEnsembles(world, queue_type):
 
     for charger in world.chargers:
         if queue_type == "fifo":
-            potentialEnsembles.append(DroneCharger(charger))
+            potentialEnsembles.append(WaitingDronesAssignment(charger))
         elif queue_type == "priority":
-            potentialEnsembles.append(DroneChargerPriority(charger))
-        potentialEnsembles.append(ChargerFinder(charger))
+            potentialEnsembles.append(AcceptedDronesAssignment(charger))
+        potentialEnsembles.append(PotentialDronesAssignment(charger))
 
     return potentialEnsembles

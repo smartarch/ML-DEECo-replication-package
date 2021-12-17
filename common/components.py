@@ -425,6 +425,7 @@ class Drone(Agent):
         return charger.estimateWaitingTime(self) * self.droneProtectingEnergyConsumption
 
     # TODO: give this function a better name
+    # TODO(MT): move the energyRequiredToGetToCharger inside the estimate -> update "Baseline 0" to "Baseline energyRequiredToGetToCharger"
     def computeFutureBattery(self):
         return self.battery \
                - self.energyRequiredToGetToCharger(self.closestCharger.location) \
