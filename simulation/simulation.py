@@ -129,18 +129,12 @@ class World:
         return [bird for bird in self.birds if bird.state not in birdStates]
 
 
-WORLD = None
-
-
 class Simulation:
 
     def __init__(self, world, folder, visualize):
         self.visualize = visualize
         self.world = world
         self.folder = folder
-
-        global WORLD
-        WORLD = world  # TODO: reset the world instead
 
     def collectStatistics(self):
         return [
@@ -160,9 +154,9 @@ class Simulation:
         for charger in self.world.chargers:
             charger.assignWaitingTimeEstimator(estimation.createEstimator())
 
-        from ensembles.field_protection import ensembles as fieldProtectionEnsembles
-        from ensembles.drone_charging import ensembles as droneChargingEnsembles
-        potentialEnsembles = fieldProtectionEnsembles + droneChargingEnsembles
+        from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
+        from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
+        potentialEnsembles = fieldProtectionEnsembles(self.world) + droneChargingEnsembles(self.world)
 
         if self.visualize:
             visualizer = Visualizer(self.world)
