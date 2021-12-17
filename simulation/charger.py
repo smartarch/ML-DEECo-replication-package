@@ -30,20 +30,6 @@ class Charger(Component):
         self.acceptedDrones: List[Drone] = []  # drones accepted for charging, they move to the charger
         self.chargingDrones: List[Drone] = []  # drones currently being charged
 
-        from estimators.charger_waiting_estimation import ChargerWaitingTimeEstimator  # just for the type annotation
-        # the estimator is assigned later using assignWaitingTimeEstimator
-        self.waitingTimeEstimator: Optional[ChargerWaitingTimeEstimator] = None
-        self.waitingTimeEstimateCache = np.array([])
-        self.waitingTimeEstimateCacheVersion = -1
-
-    def assignWaitingTimeEstimator(self, estimator):
-        """
-        Parameters
-        ----------
-        estimator : common.charger_waiting_estimation.NeuralNetworkChargerWaitingTimeEstimation
-        """
-        self.waitingTimeEstimator = estimator
-
     def startCharging(self, drone):
         """Drone is in the correct location and starts charging"""
         self.acceptedDrones.remove(drone)
@@ -57,16 +43,6 @@ class Charger(Component):
     def timeToDoneCharging(self):
         maxBattery = max(map(lambda d: d.battery, self.chargingDrones), default=1)
         return (1 - maxBattery) / self.chargingRate
-
-    def estimateWaitingTime(self, drone):
-        if self.waitingTimeEstimateCacheVersion != self.world.currentTimeStep:
-            self.updateWaitingTimeEstimateCache()
-        droneIndex = self.potentialDrones.index(drone)
-        return self.waitingTimeEstimateCache[droneIndex]
-
-    def updateWaitingTimeEstimateCache(self):
-        self.waitingTimeEstimateCache = self.waitingTimeEstimator.predictBatch(self, self.potentialDrones)
-        self.waitingTimeEstimateCacheVersion = self.world.currentTimeStep
 
     def randomNearLocation(self):
         return Point(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))

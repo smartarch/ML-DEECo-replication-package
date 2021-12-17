@@ -8,6 +8,7 @@ from datetime import datetime
 from matplotlib import pyplot as plt
 import numpy as np
 
+from estimators.features import Feature
 from utils.serialization import Log
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
@@ -442,54 +443,3 @@ class TimeDataCollector(DataCollector):
             self.x = x
             self.startTime = startTime
 
-
-class Feature(abc.ABC):
-
-    @staticmethod
-    def getNumFeatures():
-        return 1
-
-    @staticmethod
-    def getHeader(featureName):
-        return [featureName]
-
-    @abc.abstractmethod
-    def preprocess(self, value):
-        return np.empty([])
-
-
-class NumberFeature(Feature):
-
-    def preprocess(self, value):
-        return np.array([value])
-
-
-class IntEnumFeature(Feature):
-
-    def __init__(self, enumClass):
-        self.enumClass = enumClass
-        self.numItems = len(self.enumClass)
-
-    def getNumFeatures(self):
-        return self.numItems
-
-    def getHeader(self, featureName):
-        return [f"{featureName}_{item}" for item, _ in self.enumClass.__members__.items()]
-
-    def preprocess(self, value):
-        return tf.one_hot(int(value), self.numItems).numpy()
-
-
-class FloatFeature(Feature):
-
-    def __init__(self, min, max):
-        self.min = min
-        self.max = max
-
-    def preprocess(self, value):
-        normalized = (value - self.min) / (self.max - self.min)
-        return np.array([normalized])
-
-# https://www.tensorflow.org/api_docs/python/tf/keras/layers/CategoryEncoding
-# https://www.tensorflow.org/api_docs/python/tf/keras/layers/IntegerLookup
-# https://www.tensorflow.org/api_docs/python/tf/keras/layers/Concatenate

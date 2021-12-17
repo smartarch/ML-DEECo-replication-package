@@ -2,6 +2,8 @@ import operator
 from collections import defaultdict
 from typing import Dict, Any
 
+from estimators.estimate import addSelectionTimeEstimate
+
 
 class someOf():
     counter = 0
@@ -19,6 +21,9 @@ class someOf():
         self.selections: Dict[Ensemble, Any] = defaultdict(lambda: None)
 
     def __get__(self, instance, owner):
+        return self.get(instance, owner)
+
+    def get(self, instance, owner):
         return self.selections[instance]
 
     def cardinality(self, cardinalityFn):
@@ -67,14 +72,17 @@ class someOf():
 
         return True
 
+    def withSelectionTimeEstimate(self, estimation):
+        return addSelectionTimeEstimate(self, estimation)
+
 
 class oneOf(someOf):
     def __init__(self, compClass):
         super().__init__(compClass)
         self.cardinalityFn = lambda inst: 1
 
-    def __get__(self, instance, owner):
-        sel = super().__get__(instance, owner)
+    def get(self, instance, owner):
+        sel = super().get(instance, owner)
         return sel[0]
 
 

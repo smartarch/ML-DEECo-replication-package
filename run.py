@@ -17,7 +17,6 @@ from datetime import datetime
 from utils import plots
 from simulation.simulation import World, Simulation
 from utils.serialization import Log
-from estimators.charger_waiting_estimation import getChargerWaitingTimeEstimation
 
 
 def run(args):
@@ -54,7 +53,10 @@ def run(args):
         'Energy Consumed',
     ])
 
-    estimation = getChargerWaitingTimeEstimation(world, args, outputFolder=estFolder)
+    # estimation = getChargerWaitingTimeEstimation(world, args, outputFolder=estFolder)
+    class EstimationMock:
+        name = "TODO"
+    estimation = EstimationMock()  # TODO(MT)
     verbose = int(args.verbose)
 
     for t in range(args.train):

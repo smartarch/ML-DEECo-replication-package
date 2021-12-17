@@ -2,6 +2,8 @@ import random
 from enum import IntEnum
 from typing import Optional
 
+from estimators.estimate import Estimate
+from estimators.features import FloatFeature, Feature
 from simulation.components import Agent
 
 
@@ -40,6 +42,8 @@ class Drone(Agent):
     # static Counter
     Count = 0
 
+    BatteryWhenChargingStartsEstimate = Estimate("TODO: estimation method")
+
     def __init__(
             self,
             location,
@@ -51,7 +55,7 @@ class Drone(Agent):
         self.droneProtectingEnergyConsumption = world.droneProtectingEnergyConsumption
 
         self.battery = 1 - (world.droneBatteryRandomize * random.random())
-        self.state = DroneState.IDLE
+        self._state = DroneState.IDLE
 
         self.target = None
         self.targetField = None
@@ -64,6 +68,40 @@ class Drone(Agent):
         Drone.Count = Drone.Count + 1
         Agent.__init__(self, location, self.droneSpeed, world, Drone.Count)
 
+    @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, 1))
+    def battery(self):
+        return self.battery
+
+    # @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, math.sqrt(WORLD.mapWidth ** 2 + WORLD.mapHeight ** 2))) # TODO: world
+    @BatteryWhenChargingStartsEstimate.input()
+    def charger_distance(self):
+        return self.location.distance(self.closestCharger.location)
+
+    # TODO(MT): more features
+
+    @BatteryWhenChargingStartsEstimate.target()
+    def battery(self):
+        return self.battery
+
+    @BatteryWhenChargingStartsEstimate.id
+    def id(self):
+        return self.id
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+        if value == DroneState.CHARGING:
+            self.BatteryWhenChargingStartsEstimate.collect(self)
+
+    def timeToEnergy(self, time, consumptionRate=None):
+        if consumptionRate is None:
+            consumptionRate = self.droneMovingEnergyConsumption
+        return time * consumptionRate
+
     def findClosestCharger(self):
         return min(self.world.chargers, key=lambda charger: self.location.distance(charger.location))
 
@@ -74,35 +112,40 @@ class Drone(Agent):
         return self.location.distance(charger.location) / self.speed
 
     def energyToFlyToCharger(self, charger=None):
-        return self.timeToFlyToCharger(charger) * self.droneMovingEnergyConsumption
+        return self.timeToEnergy(self.timeToFlyToCharger(charger))
 
-    def estimateWaitingEnergy(self, charger):
-        # TODO (MA): Change or Find a way for the drone to wait (Energy)
-        return charger.estimateWaitingTime(self) * self.droneProtectingEnergyConsumption
-
-    # TODO: give this function a better name
-    # TODO(MT): move the energyRequiredToGetToCharger inside the estimate -> update "Baseline 0" to "Baseline energyRequiredToGetToCharger"
-    def computeFutureBattery(self):
-        return self.battery \
-               - self.energyToFlyToCharger() \
-               - self.estimateWaitingEnergy(self.closestCharger)
+    def computeBatteryAfterTime(self, time: int):
+        return self.battery - self.timeToEnergy(time)
 
     def timeToDoneCharging(self):
-        timeToGetToCharger = self.closestCharger.location.distance(self.location) / self.speed
-        batteryWhenGetToCharger = self.battery - timeToGetToCharger * self.droneMovingEnergyConsumption
+        """How long it will take to fly to the closest charger and get fully charged, assuming the charger is free."""
+        batteryWhenGetToCharger = self.battery - self.energyToFlyToCharger()
         timeToCharge = (1 - batteryWhenGetToCharger) * self.closestCharger.chargingRate
-        return timeToGetToCharger + timeToCharge
+        return self.timeToFlyToCharger() + timeToCharge
 
-    def needsCharging(self):
+    def needsCharging(self, timeToStartCharging: int):
         if self.state == DroneState.TERMINATED:
             return False
 
-        futureBattery = self.computeFutureBattery()
+        futureBattery = self.computeBatteryAfterTime(timeToStartCharging)
 
         if futureBattery < 0:
             return False
 
         return futureBattery < self.alert
+
+    def needsChargingWithEstimate(self):
+        if self.state == DroneState.TERMINATED:
+            return False
+
+        futureBattery = self.BatteryWhenChargingStartsEstimate.estimate(self)
+
+        if futureBattery < 0:
+            return False
+
+        return futureBattery < self.alert
+
+    # TODO: collect targets when state changes
 
     def checkBattery(self):
         if self.battery <= 0:

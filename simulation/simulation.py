@@ -151,9 +151,6 @@ class Simulation:
         components.extend(self.world.birds)
         components.extend(self.world.chargers)
 
-        for charger in self.world.chargers:
-            charger.assignWaitingTimeEstimator(estimation.createEstimator())
-
         from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
         from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
         potentialEnsembles = fieldProtectionEnsembles(self.world) + droneChargingEnsembles(self.world)
