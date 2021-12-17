@@ -89,7 +89,6 @@ class World:
             "time_to_charge",
             "charger",
             "potential_drones_length",
-            "waiting_drones_length",
             "accepted_queues_length",
             "charging_drones_length",
         ])
@@ -99,7 +98,6 @@ class World:
             self.chargerLogs.append(Log([
                 "Charging Drones",
                 "Accepted Drones",
-                "Waiting Drones",
                 "Potential Drones",
             ]))
 
@@ -139,7 +137,7 @@ class Simulation:
         self.folder = folder
 
         global WORLD
-        WORLD = world
+        WORLD = world  # TODO: reset the world instead
 
     def collectStatistics(self):
         return [
@@ -193,9 +191,7 @@ class Simulation:
                     # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
                     len(charger.chargingDrones),
                     len(charger.acceptedDrones),
-                    len(charger.waitingDrones),
                     potentialDrones,
-
                 ])
 
             if self.visualize:

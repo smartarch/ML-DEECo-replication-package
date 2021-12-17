@@ -62,17 +62,25 @@ class AcceptedDronesAssignment(Ensemble):
 
     @drones.select
     def drones(self, drone, otherEnsembles):
-        cond = drone.state != DroneState.TERMINATED and \
-               drone in self.charger.potentialDrones and \
-               drone.needsCharging()
-               # TODO(MT): or self.charger.acceptedDrones
+        if drone.state == DroneState.TERMINATED:
+            return False
+
+        # was accepted before or needs charging
+        cond = drone in self.charger.acceptedDrones or \
+            drone in self.charger.potentialDrones and \
+            drone.needsCharging()
+
+        cond = cond and self.charger.timeToDoneCharging() <= drone.timeToFlyToCharger()
+
         if cond:
             # TODO(MT): move the estimator to the ensemble
-            self.charger.waitingTimeEstimator.collectRecordStart(drone.id, self.charger, drone, self.charger.world.currentTimeStep)
+            self.charger.waitingTimeEstimator.collectRecordStart(drone.id, self.charger, drone, WORLD.currentTimeStep)
         return cond
 
     @drones.priority
     def drones(self, drone):
+        if drone in self.charger.acceptedDrones:
+            return 1  # keep the accepted drones from previous time steps  # TODO: think about this later
         return -drone.timeToDoneCharging()
 
     def actuate(self, verbose):
@@ -81,9 +89,24 @@ class AcceptedDronesAssignment(Ensemble):
         if verbose > 3:
             print(f"            Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}")
 
-        # TODO(MT): set the acceptedDrones by the ensemble, don't manage it in the charger
         for drone in self.drones:
-            self.charger.acceptForCharging(drone)
+            # TODO(MT): move the estimator to the ensemble
+            self.charger.waitingTimeEstimator.collectRecordEnd(drone.id, WORLD.currentTimeStep)
+            self.charger.world.chargerLog.register([
+                drone.world.currentTimeStep,
+                drone.id,
+                drone.battery,
+                drone.computeFutureBattery(),
+                drone.estimateWaitingEnergy(drone.closestCharger),
+                drone.energyToFlyToCharger(),
+                drone.timeToDoneCharging(),
+                self.charger.id,
+                len(self.charger.potentialDrones),
+                len(self.charger.acceptedDrones),
+                len(self.charger.chargingDrones),
+            ])
+
+        self.charger.acceptedDrones = self.drones
 
 
 ensembles = \

@@ -88,10 +88,6 @@ class QueueMissingBatteryWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estim
         self.dataCollector.collectRecordStart(recordId, {
             'queue_missing_battery_sum': self.sumQueueMissingBattery(charger),
             'charger_charging_capacity': self.chargerChargingCapacity(charger),
-
-            # just for logging TODO: remove these when logging of the queue is done in a different way globally
-            'queue_length': len(charger.waitingDrones),
-            'charging_drones': len(charger.chargingDrones),
         }, timeStep, **kwargs)
 
     def collectRecordEnd(self, recordId, timeStep):
@@ -122,10 +118,6 @@ class QueueMissingBatteryWaitingTimeEstimation(Estimation):
         estimationInputs = {
             'queue_missing_battery_sum': NumberFeature(),
             'charger_charging_capacity': NumberFeature(),
-
-            # just for logging TODO: remove these when logging of the queue is done in a different way globally
-            'queue_length': NumberFeature(),
-            'charging_drones': NumberFeature(),
         }
 
         super().__init__(estimationInputs, **kwargs)
@@ -152,12 +144,6 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
     def collectRecordStart(self, recordId, charger, drone, timeStep, **kwargs):
         self.dataCollector.collectRecordStart(recordId, {
             'queue_charging_time': self.computeQueueChargingTime(charger, drone.droneMovingEnergyConsumption),
-
-            # just for logging TODO: remove these when logging of the queue is done in a different way globally
-            'queue_missing_battery_sum': QueueMissingBatteryWaitingTimeEstimator.sumQueueMissingBattery(charger),
-            'charger_charging_capacity': QueueMissingBatteryWaitingTimeEstimator.chargerChargingCapacity(charger),
-            'queue_length': len(charger.waitingDrones),
-            'charging_drones': len(charger.chargingDrones),
         }, timeStep, **kwargs)
 
     def collectRecordEnd(self, recordId, timeStep):
@@ -174,7 +160,7 @@ class QueueChargingTimeWaitingTimeEstimator(ChargerWaitingTimeEstimator, Estimat
             If ``True``, compute time until there is at least one free spot in ``charger.acceptedDrones``, i.e. the new drone will be accepted.
             If ``False``, compute time to charge the whole queue.
         """
-        queue = [d.battery for d in charger.acceptedDrones + charger.waitingDrones]
+        queue = [d.battery for d in charger.acceptedDrones]
         charging = [d.battery for d in charger.chargingDrones]
         chargingRate = charger.chargingRate
 
@@ -220,12 +206,6 @@ class QueueChargingTimeWaitingTimeEstimation(Estimation):
         # they are saved for evaluation
         estimationInputs = {
             'queue_charging_time': NumberFeature(),
-
-            # just for logging TODO: remove these when logging of the queue is done in a different way globally
-            'queue_missing_battery_sum': NumberFeature(),
-            'charger_charging_capacity': NumberFeature(),
-            'queue_length': NumberFeature(),
-            'charging_drones': NumberFeature(),
         }
 
         super().__init__(estimationInputs, **kwargs)
@@ -252,7 +232,6 @@ class NeuralNetworkChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, Neur
             'drone_state': int(drone.state),
             'charger_distance': charger.location.distance(drone.location),
             'potential_drones_length': len(charger.potentialDrones),
-            'waiting_drones_length': len(charger.waitingDrones) / charger.chargerCapacity,
             'accepted_drones_length': len(charger.acceptedDrones),
             'accepted_drones_battery': sum([drone.battery for drone in charger.acceptedDrones]),
             'charging_drones_length': len(charger.chargingDrones),
@@ -281,7 +260,6 @@ class NeuralNetworkChargerWaitingTimeEstimation(NeuralNetworkTimeEstimation):
             'drone_state': IntEnumFeature(DroneState),
             'charger_distance': FloatFeature(0, math.sqrt(world.mapWidth ** 2 + world.mapHeight ** 2)),
             'potential_drones_length': FloatFeature(0, len(world.drones)),
-            'waiting_drones_length': FloatFeature(0, len(world.drones)),
             'accepted_drones_length': FloatFeature(0, world.chargerCapacity),
             'accepted_drones_battery': FloatFeature(0, world.chargerCapacity),
             'charging_drones_length': FloatFeature(0, world.chargerCapacity),
