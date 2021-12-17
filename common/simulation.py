@@ -187,13 +187,12 @@ class Simulation:
 
             for chargerIndex in range(len(self.world.chargers)):
                 charger = self.world.chargers[chargerIndex]
-                potentialDrones = len(charger.potentialDrones) if len(charger.potentialDrones)>0 else 1
                 self.world.chargerLogs[chargerIndex].register([
                     #sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
                     len(charger.chargingDrones),
                     len(charger.acceptedDrones),
                     len(charger.waitingDrones),
-                    potentialDrones,
+                    len(charger.potentialDrones),
 
                 ])
 
