@@ -95,10 +95,9 @@ class World:
             "current_time_step",
             "drone_id",
             "battery",
-            "future_battery",
             "estimated_waiting",
-            "energy_needed_to_charge",
-            "time_to_charge",
+            "energy_to_fly_to_charger",
+            "time_to_done_charging",
             "charger",
             "potential_drones_length",
             "accepted_queues_length",
@@ -173,10 +172,8 @@ class Simulation:
         for i in range(self.world.maxSteps):
             verbosePrint(f"Step {i + 1}:", 3)
             self.world.currentTimeStep = i
-            for component in components:
-                component.actuate()
-                verbosePrint(f"{component}", 4)
 
+            # Ensembles
             initializedEnsembles = []
 
             potentialEnsembles = sorted(potentialEnsembles)
@@ -186,6 +183,12 @@ class Simulation:
                     initializedEnsembles.append(ens)
                     ens.actuate()
 
+            # Components
+            for component in components:
+                component.actuate()
+                verbosePrint(f"{component}", 4)
+
+            # Collect statistics
             for chargerIndex in range(len(self.world.chargers)):
                 charger = self.world.chargers[chargerIndex]
                 potentialDrones = len(charger.potentialDrones) if len(charger.potentialDrones) > 0 else 1

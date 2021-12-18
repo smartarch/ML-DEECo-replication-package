@@ -108,24 +108,21 @@ def getEnsembles(WORLD, estimation):
 
             verbosePrint(f"Charging Ensemble: assigned {len(self.drones)} to {self.charger.id}", 4)
 
-            # for drone in self.drones:
-            #     if drone in self.charger.acceptedDrones:
-            #         continue
-            #     # TODO(MT): move the estimator to the ensemble
-            #     self.charger.waitingTimeEstimator.collectRecordEnd(drone.id, WORLD.currentTimeStep)
-            #     self.charger.world.chargerLog.register([
-            #         drone.world.currentTimeStep,
-            #         drone.id,
-            #         drone.battery,
-            #         drone.computeFutureBattery(),
-            #         drone.estimateWaitingEnergy(drone.closestCharger),
-            #         drone.energyToFlyToCharger(),
-            #         drone.timeToDoneCharging(),
-            #         self.charger.id,
-            #         len(self.charger.potentialDrones),
-            #         len(self.charger.acceptedDrones),
-            #         len(self.charger.chargingDrones),
-            #     ])
+            for drone in self.drones:
+                if drone in self.charger.acceptedDrones:
+                    continue
+                self.charger.world.chargerLog.register([
+                    drone.world.currentTimeStep,
+                    drone.id,
+                    drone.battery,
+                    self.drones.selectionTimeEstimate.estimate(self, drone),
+                    drone.energyToFlyToCharger(),
+                    drone.timeToDoneCharging(),
+                    self.charger.id,
+                    len(self.charger.potentialDrones),
+                    len(self.charger.acceptedDrones),
+                    len(self.charger.chargingDrones),
+                ])
 
             self.charger.acceptedDrones = self.drones
 

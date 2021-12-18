@@ -160,8 +160,7 @@ def getDroneClass(WORLD, estimation):
             super().move(self.target)
 
         def actuate(self):
-            if self.closestCharger is not None:
-                self.BatteryWhenChargingStartsEstimate.collectInputs(self)  # TODO(MT) this is just to collect the data
+            self.BatteryWhenChargingStartsEstimate.collectInputs(self)  # TODO(MT) this is just to collect the data
 
             if self.state == DroneState.TERMINATED:
                 return
