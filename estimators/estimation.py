@@ -194,8 +194,8 @@ class Estimation(abc.ABC):
             verbosePrint(f"Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
 
             self.train(train_x, train_y)
-            # self.evaluate(train_x, train_y, label="Train")
-            # self.evaluate(test_x, test_y, label="Test")
+            self.evaluate(train_x, train_y, label="Train")
+            self.evaluate(test_x, test_y, label="Test")
 
         # clear the data
         self.x = []

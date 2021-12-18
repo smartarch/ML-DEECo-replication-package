@@ -143,31 +143,3 @@ class NeuralNetworkTimeEstimation(Estimation):
 
     def save(self):
         self.model.save(f"{self._outputFolder}/waiting-time-model.h5")
-
-
-class TimeDataCollector(DataCollector):
-
-    def __init__(self, inputs):
-        super().__init__(inputs)
-        self._records = {}
-
-    def collectRecordStart(self, recordId, x, timeStep, force_replace=False):
-        if recordId not in self._records or force_replace:
-            self._records[recordId] = TimeDataCollector.TimeRecord(x, timeStep)
-
-    def collectRecordEnd(self, recordId, timeStep):
-        if recordId not in self._records:
-            raise KeyError(
-                f"RecordId {recordId} not found. The record collection must be first started using the 'collectRecordStart' method.")
-
-        record = self._records[recordId]
-        del self._records[recordId]
-
-        timeDifference = timeStep - record.startTime
-        self.collectRecord(record.x, timeDifference)
-
-    class TimeRecord:
-        def __init__(self, x, startTime):
-            self.x = x
-            self.startTime = startTime
-

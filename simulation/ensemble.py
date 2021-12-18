@@ -2,7 +2,7 @@ import operator
 from collections import defaultdict
 from typing import Dict, Any
 
-from estimators.estimate import addSelectionTimeEstimate
+from estimators.estimate import SelectionTimeEstimate, ListWithSelectionTimeEstimate
 
 
 class someOf():
@@ -72,8 +72,42 @@ class someOf():
 
         return True
 
+    def materialized(self, instance):
+        """Called when the ensemble is materialized."""
+        pass
+
     def withSelectionTimeEstimate(self, estimation):
-        return addSelectionTimeEstimate(self, estimation)
+        return someOfWithSelectionTimeEstimate(self.compClass, estimation)
+
+
+class someOfWithSelectionTimeEstimate(someOf):
+
+    def __init__(self, compClass, estimation):
+        super().__init__(compClass)
+        self.selectionTimeEstimate = SelectionTimeEstimate(estimation)
+
+    def select(self, selectFn):
+        def newSelectFn(instance, comp, otherEnsembles):
+            select = selectFn(instance, comp, otherEnsembles)
+            if select:
+                self.selectionTimeEstimate.collectInputs(instance, comp)
+            return select
+
+        self.selectFn = newSelectFn
+        return self
+
+    def get(self, instance, owner):
+        sel = super().get(instance, owner)
+        if isinstance(sel, list):
+            sel = ListWithSelectionTimeEstimate(sel)
+        sel.selectionTimeEstimate = self.selectionTimeEstimate
+        return sel
+
+    def materialized(self, instance):
+        """Called when the ensemble is materialized."""
+        selected = self.get(instance, None)
+        for comp in selected:
+            self.selectionTimeEstimate.collectTargets(instance, comp)
 
 
 class oneOf(someOf):
@@ -84,6 +118,9 @@ class oneOf(someOf):
     def get(self, instance, owner):
         sel = super().get(instance, owner)
         return sel[0]
+
+
+# TODO(MT): someOfWithSelectionTimeEstimate
 
 
 class Ensemble:
@@ -100,6 +137,10 @@ class Ensemble:
         if not allOk:
             for fld in compFields:
                 fld.reset(self)
+
+        if allOk:
+            for fld in compFields:
+                fld.materialized(self)
                 
         return allOk
     

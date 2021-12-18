@@ -28,21 +28,21 @@ class DataCollector:
         self.x = []
         self.y = []
 
-    def collectRecordInputs(self, recordId, x, force_replace=False):
+    def collectRecordInputs(self, recordId, x, extra=None, force_replace=False):
         if recordId not in self._records or force_replace:
             self._records[recordId] = []
 
         records = self._records[recordId]
         if self._mode == DataCollectorMode.All:
-            records.append(x)
+            records.append((x, extra))
         elif self._mode == DataCollectorMode.First:
             if len(records) == 0:
-                records.append(x)
+                records.append((x, extra))
         elif self._mode == DataCollectorMode.Last:
             if len(records) == 0:
-                records.append(x)
+                records.append((x, extra))
             else:
-                records[0] = x
+                records[0] = (x, extra)
 
     def collectRecordTargets(self, recordId, y):
         if recordId not in self._records:
@@ -51,10 +51,10 @@ class DataCollector:
         records = self._records[recordId]
         del self._records[recordId]
 
-        for x in records:
+        for x, extra in records:
             self.x.append(x)
             if callable(y):
-                self.y.append(y(x))
+                self.y.append(y(x, extra))
             else:
                 self.y.append(y)
 
@@ -66,8 +66,10 @@ class Estimate:
         self.estimation: Estimation = estimation
         estimation.assignEstimate(self)
         self.inputs: List[BoundFeature] = []
+        self.extras: List[BoundFeature] = []
         self.targets: List[BoundFeature] = []
         self.idFunction = None
+        self.filterFunction = lambda *args: True
         self.dataCollector = DataCollector()
 
     def input(self, feature=None):
@@ -80,6 +82,11 @@ class Estimate:
             return function
 
         return addInputFunction
+
+    def extra(self, function):
+        """Defines an extra input feature – not given to the prediction model."""
+        self._addExtra(function.__name__, function)
+        return function
 
     def target(self, feature=None):
         """Defines a target value"""
@@ -96,22 +103,24 @@ class Estimate:
         self.idFunction = function
         return function
 
+    def filter(self, function):
+        self.filterFunction = function
+        return function
+
     def _addInput(self, name: str, feature: Feature, function: Callable):
         self.inputs.append(BoundFeature(name, feature, function))
+
+    def _addExtra(self, name: str, function: Callable):
+        self.extras.append(BoundFeature(name, None, function))
 
     def _addTarget(self, name: str, feature: Feature, function: Callable):
         self.targets.append(BoundFeature(name, feature, function))
 
-    def estimate(self, *args):
-        record = []
-        for name, feature, function in self.inputs:
-            value = function(*args)
-            value = feature.preprocess(value)
-            record.append(value)
-        x = np.concatenate(record)
+    def estimate(self, *args, collect=False):
 
-        recordId = self.idFunction(*args)
-        self.dataCollector.collectRecordInputs(recordId, x)
+        x = self.generateRecord(*args)
+        if collect:
+            self.collectInputs(*args, x=x)
 
         prediction = self.estimation.predict(x)
 
@@ -119,13 +128,42 @@ class Estimate:
             prediction = prediction[0]
         return prediction.tolist()
 
-    def collect(self, *args):
+    def generateRecord(self, *args):
+        record = []
+        for name, feature, function in self.inputs:
+            value = function(*args)
+            value = feature.preprocess(value)
+            record.append(value)
+        return np.concatenate(record)
+
+    def collectInputs(self, *args, x=None):
+        if not self.filterFunction(*args):
+            return
+
+        if x is None:
+            x = self.generateRecord(*args)
+
+        extra = {
+            name: function(*args)
+            for name, _, function in self.extras
+        }
+
+        recordId = self.idFunction(*args)
+        self.dataCollector.collectRecordInputs(recordId, x, extra)
+
+    def generateTargets(self, *args):
         record = []
         for name, feature, function in self.targets:
             value = function(*args)
             value = feature.preprocess(value)
             record.append(value)
-        y = np.concatenate(record)
+        return np.concatenate(record)
+
+    def collectTargets(self, *args):
+        if not self.filterFunction(*args):
+            return
+
+        y = self.generateTargets(*args)
 
         recordId = self.idFunction(*args)
         self.dataCollector.collectRecordTargets(recordId, y)
@@ -138,25 +176,51 @@ class SelectionTimeEstimate(Estimate):
 
     def __init__(self, estimation):
         super().__init__(estimation)
-        self.targets.append(BoundFeature("time", Feature(), lambda x: 0))  # TODO(MT)
+        self.timeFunc = lambda _: 0
+        self.idFunction = lambda instance, comp: (instance, comp)
+
+        self.targets = [BoundFeature("time", Feature(), None)]
+
+    def time(self, function):
+        self.timeFunc = function
+        self.extras = [BoundFeature("time", Feature(), self.timeFunc)]
+        return function
+
+    def generateTargets(self, *args):
+        currentTimeStep = self.timeFunc(*args)
+
+        def timeDifference(x, extra):
+            difference = currentTimeStep - extra['time']
+            return np.array([difference])
+
+        return timeDifference
 
 
 class ListWithSelectionTimeEstimate(list):
     selectionTimeEstimate = None
 
 
-def addSelectionTimeEstimate(compSelector, estimation):
-    compSelector.selectionTimeEstimate = SelectionTimeEstimate(estimation)
-    origGet = compSelector.get
-
-    def newGet(self, instance, owner):
-        sel = origGet(instance, owner)
-        if isinstance(sel, list):
-            sel = ListWithSelectionTimeEstimate(sel)
-        sel.selectionTimeEstimate = compSelector.selectionTimeEstimate
-        return sel
-
-    # TODO(MT): modify execute to collect training data
-
-    compSelector.get = MethodType(newGet, compSelector)
-    return compSelector
+# def addSelectionTimeEstimate(compSelector, estimation):
+#     compSelector.selectionTimeEstimate = SelectionTimeEstimate(estimation)
+#     origGet = compSelector.get
+#     origSelectFn = compSelector.selectFn
+#     origExecute = compSelector.execute
+#
+#     def newGet(self, instance, owner):
+#         sel = origGet(instance, owner)
+#         if isinstance(sel, list):
+#             sel = ListWithSelectionTimeEstimate(sel)
+#         sel.selectionTimeEstimate = compSelector.selectionTimeEstimate
+#         return sel
+#
+#     def newSelectFn(instance, comp, otherEnsembles):
+#         select = origSelectFn(instance, comp, otherEnsembles)
+#         if select:
+#             compSelector.selectionTimeEstimate.collectInputs(comp)
+#         return select
+#
+#     # TODO(MT): modify execute to collect training data
+#
+#     compSelector.get = MethodType(newGet, compSelector)
+#     compSelector.selectFn = newSelectFn
+#     return compSelector

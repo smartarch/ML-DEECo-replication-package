@@ -98,7 +98,7 @@ def getDroneClass(WORLD, estimation):
         def state(self, value):
             self._state = value
             if value == DroneState.CHARGING:
-                self.BatteryWhenChargingStartsEstimate.collect(self)
+                self.BatteryWhenChargingStartsEstimate.collectTargets(self)
 
         def timeToEnergy(self, time, consumptionRate=None):
             if consumptionRate is None:
@@ -161,7 +161,7 @@ def getDroneClass(WORLD, estimation):
 
         def actuate(self):
             if self.closestCharger is not None:
-                self.needsChargingWithEstimate()  # TODO(MT) this is just to collect the data
+                self.BatteryWhenChargingStartsEstimate.collectInputs(self)  # TODO(MT) this is just to collect the data
 
             if self.state == DroneState.TERMINATED:
                 return

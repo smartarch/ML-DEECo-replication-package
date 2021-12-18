@@ -7,72 +7,7 @@ from simulation.charger import Charger
 from simulation.drone import DroneState
 from estimators.estimator import *
 
-
-class ChargerWaitingTimeEstimator(abc.ABC):
-
-    @abc.abstractmethod
-    def collectRecordStart(self, recordId, charger, drone, timeStep, **kwargs):
-        pass
-
-    @abc.abstractmethod
-    def collectRecordEnd(self, recordId, timeStep):
-        pass
-
-    @abc.abstractmethod
-    def predict(self, charger, drone):
-        """
-        Parameters
-        ----------
-        charger : Charger
-        drone : Drone
-
-        Returns
-        -------
-        float
-        """
-        return
-
-    def predictBatch(self, charger, drones):
-        """
-        Parameters
-        ----------
-        charger : Charger
-        drones : list[Drone]
-            The batch of drones: batch_size = len(drones)
-
-        Returns
-        -------
-        np.ndarray
-            Shape [batch_size]
-        """
-        return np.array([self.predict(charger, drone) for drone in drones])
-
-
-###############
-# Baseline: 0 #
-###############
-
-
-class BaselineZeroChargerWaitingTimeEstimator(ChargerWaitingTimeEstimator, BaselineTimeEstimator):
-
-    def collectRecordStart(self, recordId, charger, drone, timeStep, **kwargs):
-        self.dataCollector.collectRecordStart(recordId, None, timeStep, **kwargs)
-
-    def collectRecordEnd(self, recordId, timeStep):
-        self.dataCollector.collectRecordEnd(recordId, timeStep)
-
-    def predict(self, charger, drone):
-        return BaselineTimeEstimator.predict(self, None)
-
-
-class BaselineZeroChargerWaitingTimeEstimation(BaselineEstimation):
-
-    def __init__(self, **kwargs):
-        super().__init__({}, **kwargs)
-
-    def _createEstimator(self, inputs):
-        return BaselineZeroChargerWaitingTimeEstimator(self, inputs)
-
+# CURRENTLY UNUSED
 
 ####################################################
 # Baseline: missing battery of drones in the queue #

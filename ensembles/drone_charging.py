@@ -92,9 +92,17 @@ def getEnsembles(WORLD, estimation):
 
         # TODO(MT): more features
 
-        @drones.selectionTimeEstimate.id
-        def id(self, drone):
-            return drone.id
+        # @drones.selectionTimeEstimate.id
+        # def id(self, drone):
+        #     return drone.id
+
+        @drones.selectionTimeEstimate.filter
+        def filter(self, drone):
+            return drone not in self.charger.acceptedDrones  # don't collect the data if the drone was already selected in the previous step
+
+        @drones.selectionTimeEstimate.time
+        def time(self, drone):
+            return WORLD.currentTimeStep
 
         def actuate(self):
 
