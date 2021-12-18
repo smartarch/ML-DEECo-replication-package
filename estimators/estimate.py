@@ -1,18 +1,24 @@
 """
 Estimates
 """
+from collections import namedtuple
 from types import MethodType
-from typing import Callable
+from typing import Callable, List
 
 from estimators.features import Feature
+
+
+BoundFeature = namedtuple('BoundFeature', ('name', 'feature', 'function'))
 
 
 class Estimate:
 
     def __init__(self, estimation):
-        self.estimation = estimation
-        self.inputs = []
-        self.targets = []
+        from estimators.estimation import Estimation  # for type annotation
+        self.estimation: Estimation = estimation
+        estimation.assignEstimate(self)
+        self.inputs: List[BoundFeature] = []
+        self.targets: List[BoundFeature] = []
         self.idFunction = None
 
     def input(self, feature=None):
@@ -42,10 +48,10 @@ class Estimate:
         return function
 
     def _addInput(self, name: str, feature: Feature, function: Callable):
-        self.inputs.append((name, feature, function))
+        self.inputs.append(BoundFeature(name, feature, function))
 
     def _addTarget(self, name: str, feature: Feature, function: Callable):
-        self.targets.append((name, feature, function))
+        self.targets.append(BoundFeature(name, feature, function))
 
     def estimate(self, *args):
         for name, feature, function in self.inputs:
@@ -61,7 +67,7 @@ class SelectionTimeEstimate(Estimate):
 
     def __init__(self, estimation):
         super().__init__(estimation)
-        self.targets.append(("time", Feature(), lambda x: 0))
+        self.targets.append(BoundFeature("time", Feature(), lambda x: 0))  # TODO(MT)
 
     def estimate(self, *args):
         est = super().estimate(*args)

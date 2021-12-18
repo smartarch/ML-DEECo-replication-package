@@ -17,7 +17,7 @@ class World:
     Drone: Optional[Type] = None
     Charger: Optional[Type] = None
 
-    def __init__(self, confDict):
+    def __init__(self, confDict, droneBatteryEstimation):
         """
             initiate a world with a YAML configuration file
             component:X a number or list of points for given component
@@ -37,7 +37,7 @@ class World:
 
         self.currentTimeStep = 0
 
-        self.Drone = getDroneClass(self)
+        self.Drone = getDroneClass(self, droneBatteryEstimation)
         Drone = self.Drone
         self.Charger = getChargerClass(self)
         Charger = self.Charger
@@ -152,7 +152,7 @@ class Simulation:
             sum([charger.energyConsumed for charger in self.world.chargers])
         ]
 
-    def run(self, filename, estimation, verbose, args):
+    def run(self, filename, acceptedDronesSelectionTimeEstimation, verbose, args):
 
         components = []
 
@@ -162,7 +162,9 @@ class Simulation:
 
         from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
         from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
-        potentialEnsembles = fieldProtectionEnsembles(self.world) + droneChargingEnsembles(self.world)
+        potentialEnsembles = fieldProtectionEnsembles(self.world) + droneChargingEnsembles(self.world, acceptedDronesSelectionTimeEstimation)
+
+        acceptedDronesSelectionTimeEstimation.init()
 
         if self.visualize:
             visualizer = Visualizer(self.world)
@@ -203,7 +205,7 @@ class Simulation:
         self.world.chargerLog.export(f"{self.folder}/charger_logs/{filename}.csv")
         totalLog = self.collectStatistics()
 
-        return estimation, totalLog, self.world.chargerLogs
+        return acceptedDronesSelectionTimeEstimation, totalLog, self.world.chargerLogs
 
     def actuateEnsembles(self, potentialEnsembles, components):
         initializedEnsembles = []

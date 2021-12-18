@@ -26,7 +26,7 @@ class DroneState(IntEnum):
     TERMINATED = 5
 
 
-def getDroneClass(WORLD, estimation="TODO"):
+def getDroneClass(WORLD, estimation):
 
     Charger = WORLD.Charger
 

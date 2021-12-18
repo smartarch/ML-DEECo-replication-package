@@ -22,7 +22,7 @@ def getChargerClass(WORLD):
                 location,
                 world):
             Charger.Count = Charger.Count + 1
-            Component.__init__(self, location, world, Charger.Count)  # TODO: self.world can now be replaced by WORLD
+            Component.__init__(self, location, world, Charger.Count)
 
             self.chargingRate = world.chargingRate
             self.chargerCapacity = world.chargerCapacity

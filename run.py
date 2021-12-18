@@ -3,6 +3,7 @@
 """
 from yaml import load
 
+from estimators.estimation import BaselineEstimation
 from utils.verbose import setVerboseLevel, verbosePrint
 
 try:
@@ -33,13 +34,13 @@ def run(args):
 
     yamlFileName = os.path.splitext(os.path.basename(args.source))[0]
 
-    conf = yamlObject
-    world = World(conf)
-
     folder = f"results\\{args.output}\\{args.queue_type}"
-    estFolder = f"{folder}\\{args.waiting_estimation}"
-    if not os.path.exists(estFolder):
-        os.makedirs(estFolder)
+    estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
+    if not os.path.exists(estWaitingFolder):
+        os.makedirs(estWaitingFolder)
+    estDroneFolder = f"{folder}\\drone"  # TODO
+    if not os.path.exists(estDroneFolder):
+        os.makedirs(estDroneFolder)
 
     if not os.path.exists(f"{folder}\\animations"):
         os.makedirs(f"{folder}\\animations")
@@ -54,10 +55,14 @@ def run(args):
     ])
 
     # estimation = getChargerWaitingTimeEstimation(world, args, outputFolder=estFolder)
-    class EstimationMock:
-        name = "TODO"
-    estimation = EstimationMock()  # TODO(MT)
+    acceptedDronesSelectionTimeEstimation = BaselineEstimation(outputFolder=estWaitingFolder, args=args)
+    droneBatteryEstimation = BaselineEstimation(outputFolder=estDroneFolder, args=args)
     verbose = int(args.verbose)
+
+    conf = yamlObject
+    world = World(conf, droneBatteryEstimation)
+
+    droneBatteryEstimation.init()
 
     for t in range(args.train):
         verbosePrint(f"Iteration {t + 1} started at {datetime.now()}:", 1)
@@ -67,25 +72,27 @@ def run(args):
 
             currentWorld = copy.deepcopy(world)
             newSimulation = Simulation(currentWorld, folder, visualize=args.animation)
-            estimation, newLog, chargerLogs = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", estimation, verbose, args)
+            acceptedDronesSelectionTimeEstimation, newLog, chargerLogs = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", acceptedDronesSelectionTimeEstimation, verbose, args)
 
             if args.chart:
                 plots.createChargerPlot(
                     chargerLogs,
                     f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                    f"World: {yamlFileName}\nEstimator: {estimation.name}\nQueue Type: {args.queue_type}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                    f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.name}\nQueue Type: {args.queue_type}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
             totalLog.register(newLog)
 
-        estimation.endIteration()
+        acceptedDronesSelectionTimeEstimation.endIteration()
+        droneBatteryEstimation.endIteration()
 
-    estimation.save()
+    acceptedDronesSelectionTimeEstimation.saveModel()
+    droneBatteryEstimation.saveModel()
 
     totalLog.export(f"{folder}\\log_{args.waiting_estimation}.csv")
     if args.chart:
         plots.createLogPlot(
             totalLog.records,
             f"{folder}\\{yamlFileName}.png",
-            f"World: {yamlFileName}\nEstimator: {estimation.name}\nQueue Type: {args.queue_type}",
+            f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.name}\nQueue Type: {args.queue_type}",
             (args.number, args.train)
         )
 

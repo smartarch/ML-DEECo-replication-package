@@ -10,7 +10,7 @@ from simulation.ensemble import Ensemble, someOf
 from utils.verbose import verbosePrint
 
 
-def getEnsembles(WORLD, estimation="TODO"):
+def getEnsembles(WORLD, estimation):
 
     Drone = WORLD.Drone
     Charger = WORLD.Charger
