@@ -66,9 +66,11 @@ class Estimation(abc.ABC):
             assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimation"
             assert [t.name for t in est.targets] == target_names, f"Estimate {est} has inconsistent targets with the assigned estimation"
 
-    def collectData(self, x: List[np.ndarray], y: List[np.ndarray]):
-        self.x.extend(x)
-        self.y.extend(y)
+    def collectData(self):
+        for estimate in self._estimates:
+            x, y = estimate.getData()
+            self.x.extend(x)
+            self.y.extend(y)
 
     def dumpData(self, fileName):
         dataLogHeader = []
@@ -172,6 +174,7 @@ class Estimation(abc.ABC):
         """Called at the end of the iteration. We want to do the training now."""
         self._iteration += 1
 
+        self.collectData()
         count = len(self.x)
         verbosePrint(f"Iteration {self._iteration} collected {count} records.", 1)
         self.dumpData(f"{self._outputFolder}/waiting-time-{self._iteration}.csv")
@@ -206,4 +209,5 @@ class BaselineEstimation(Estimation):
         return "Baseline 0"
 
     def predict(self, x):
-        return np.zeros_like(x)  # TODO(MT): correct number of outputs
+        num_targets = len(self._targets)
+        return np.zeros([num_targets])

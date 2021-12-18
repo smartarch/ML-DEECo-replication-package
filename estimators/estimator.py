@@ -145,58 +145,6 @@ class NeuralNetworkTimeEstimation(Estimation):
         self.model.save(f"{self._outputFolder}/waiting-time-model.h5")
 
 
-###################
-# Data collection #
-###################
-
-
-class DataCollector:
-
-    def __init__(self, inputs):
-        """
-
-        Parameters
-        ----------
-        inputs : dict[str, Feature]
-        """
-
-        self._inputs = inputs
-
-        self._data_x = []
-        self._data_y = []
-
-    def collectRecord(self, x, y):
-        if self._inputs:
-            record = np.concatenate([
-                feature.preprocess(x[featureName])
-                for featureName, feature in self._inputs.items()
-            ])
-        else:
-            record = np.empty((0,))
-
-        self._data_x.append(record)
-        self._data_y.append(np.array([y]))
-
-    def dumpData(self, fileName):
-        dataLogHeader = []
-        for featureName, feature in self._inputs.items():
-            dataLogHeader.extend(feature.getHeader(featureName))
-        dataLogHeader.append("target")
-
-        dataLog = Log(dataLogHeader)
-
-        for x, y in zip(self._data_x, self._data_y):
-            dataLog.register(list(x) + list(y))
-
-        dataLog.export(fileName)
-
-    def getData(self, clear=True):
-        x, y = self._data_x, self._data_y
-        if clear:
-            self._data_x, self._data_y = [], []
-        return x, y
-
-
 class TimeDataCollector(DataCollector):
 
     def __init__(self, inputs):

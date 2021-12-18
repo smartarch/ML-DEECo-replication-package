@@ -148,8 +148,6 @@ def getDroneClass(WORLD, estimation):
 
             return futureBattery < self.alert
 
-        # TODO: collect targets when state changes
-
         def checkBattery(self):
             if self.battery <= 0:
                 self.battery = 0
@@ -162,6 +160,9 @@ def getDroneClass(WORLD, estimation):
             super().move(self.target)
 
         def actuate(self):
+            if self.closestCharger is not None:
+                self.needsChargingWithEstimate()  # TODO(MT) this is just to collect the data
+
             if self.state == DroneState.TERMINATED:
                 return
             if self.state < DroneState.MOVING_TO_CHARGER:  # IDLE, PROTECTING or MOVING TO FIELD
