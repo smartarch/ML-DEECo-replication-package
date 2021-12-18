@@ -7,15 +7,13 @@ from datetime import datetime
 from typing import List
 import numpy as np
 import os
-
 from matplotlib import pyplot as plt
-
-from estimators.estimate import Estimate, BoundFeature
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 
+from estimators.estimate import Estimate, BoundFeature
 from utils.serialization import Log
 from utils.verbose import verbosePrint
 
@@ -60,8 +58,8 @@ class Estimation(abc.ABC):
         input_names = [i.name for i in self._inputs]
         target_names = [t.name for t in self._targets]
 
-        verbosePrint(f"{self.estimationName}: inputs {input_names}.", 3)
-        verbosePrint(f"{self.estimationName}: targets {target_names}.", 3)
+        verbosePrint(f"{self.estimationName}: inputs {input_names}.", 2)
+        verbosePrint(f"{self.estimationName}: targets {target_names}.", 2)
 
         for est in self._estimates:
             assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimation {self.name} ({self.estimationName})"

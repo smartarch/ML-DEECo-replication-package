@@ -180,6 +180,7 @@ class Estimate:
         return x, y
 
 
+# TODO(MT) add support for batch prediction (caching)
 class SelectionTimeEstimate(Estimate):
 
     def __init__(self, estimation):

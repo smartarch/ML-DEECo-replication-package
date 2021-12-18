@@ -4,7 +4,7 @@ Drone charging ensembles
 import math
 from typing import List
 
-from estimators.features import FloatFeature
+from estimators.features import FloatFeature, IntEnumFeature
 from simulation.drone import DroneState
 from simulation.ensemble import Ensemble, someOf
 from utils.verbose import verbosePrint
@@ -86,9 +86,33 @@ def getEnsembles(WORLD, estimation):
         def battery(self, drone):
             return drone.battery
 
+        @drones.selectionTimeEstimate.input(IntEnumFeature(DroneState))
+        def drone_state(self, drone):
+            return drone.state
+
         @drones.selectionTimeEstimate.input(FloatFeature(0, math.sqrt(WORLD.mapWidth ** 2 + WORLD.mapHeight ** 2)))
         def charger_distance(self, drone):
             return self.charger.location.distance(drone.location)
+
+        @drones.selectionTimeEstimate.input(FloatFeature(0, WORLD.chargerCapacity))
+        def accepted_drones_length(self, drone):
+            return len(self.charger.acceptedDrones)
+
+        @drones.selectionTimeEstimate.input(FloatFeature(0, WORLD.chargerCapacity))
+        def accepted_drones_missing_battery(self, drone):
+            return sum([1 - drone.battery for drone in self.charger.acceptedDrones])
+
+        @drones.selectionTimeEstimate.input(FloatFeature(0, WORLD.chargerCapacity))
+        def charging_drones_length(self, drone):
+            return len(self.charger.chargingDrones)
+
+        @drones.selectionTimeEstimate.input(FloatFeature(0, WORLD.chargerCapacity))
+        def charging_drones_missing_battery(self, drone):
+            return sum([1 - drone.battery for drone in self.charger.chargingDrones])
+
+        @drones.selectionTimeEstimate.input(FloatFeature(0, len(WORLD.drones)))
+        def potential_drones_with_lower_battery(self, drone):
+            return len([d for d in self.charger.potentialDrones if d.battery < drone.battery])
 
         # TODO(MT): more features
 
