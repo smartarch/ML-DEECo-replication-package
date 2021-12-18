@@ -3,7 +3,7 @@
 """
 from yaml import load
 
-from estimators.estimation import BaselineEstimation
+from estimators.estimation import ZeroEstimation, NeuralNetworkEstimation
 from utils.verbose import setVerboseLevel, verbosePrint
 
 try:
@@ -55,8 +55,13 @@ def run(args):
     ])
 
     # estimation = getChargerWaitingTimeEstimation(world, args, outputFolder=estFolder)
-    acceptedDronesSelectionTimeEstimation = BaselineEstimation(outputFolder=estWaitingFolder, args=args)
-    droneBatteryEstimation = BaselineEstimation(outputFolder=estDroneFolder, args=args)
+    if args.waiting_estimation == "baseline_zero":
+        acceptedDronesSelectionTimeEstimation = ZeroEstimation(outputFolder=estWaitingFolder, args=args,
+                                                               name="Accepted Drones Selection Time")
+    else:
+        acceptedDronesSelectionTimeEstimation = NeuralNetworkEstimation(args.hidden_layers, outputFolder=estWaitingFolder,
+                                                                        args=args, name="Accepted Drones Selection Time")
+    droneBatteryEstimation = ZeroEstimation(outputFolder=estDroneFolder, args=args, name="Drone Battery")
     verbose = int(args.verbose)
 
     conf = yamlObject
@@ -78,7 +83,7 @@ def run(args):
                 plots.createChargerPlot(
                     chargerLogs,
                     f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                    f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.name}\nQueue Type: {args.queue_type}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                    f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}\nQueue Type: {args.queue_type}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
             totalLog.register(newLog)
 
         acceptedDronesSelectionTimeEstimation.endIteration()
@@ -92,7 +97,7 @@ def run(args):
         plots.createLogPlot(
             totalLog.records,
             f"{folder}\\{yamlFileName}.png",
-            f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.name}\nQueue Type: {args.queue_type}",
+            f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}\nQueue Type: {args.queue_type}",
             (args.number, args.train)
         )
 

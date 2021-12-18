@@ -58,6 +58,11 @@ class DataCollector:
             else:
                 self.y.append(y)
 
+    def clear(self):
+        self.x = []
+        self.y = []
+        self._records = {}
+
 
 class Estimate:
 
@@ -168,8 +173,11 @@ class Estimate:
         recordId = self.idFunction(*args)
         self.dataCollector.collectRecordTargets(recordId, y)
 
-    def getData(self):
-        return self.dataCollector.x, self.dataCollector.y
+    def getData(self, clear=True):
+        x, y = self.dataCollector.x, self.dataCollector.y
+        if clear:
+            self.dataCollector.clear()
+        return x, y
 
 
 class SelectionTimeEstimate(Estimate):
