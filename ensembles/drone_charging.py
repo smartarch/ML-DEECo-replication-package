@@ -5,14 +5,15 @@ import math
 from typing import List
 
 from estimators.features import FloatFeature
-from simulation.charger import Charger
-from simulation.drone import DroneState, Drone
+from simulation.drone import DroneState
 from simulation.ensemble import Ensemble, someOf
-
 from utils.verbose import verbosePrint
 
 
 def getEnsembles(WORLD, estimation="TODO"):
+
+    Drone = WORLD.Drone
+    Charger = WORLD.Charger
 
     class PotentialDronesAssignment(Ensemble):
 

@@ -1,16 +1,11 @@
+from typing import Type, Optional
+
 from simulation.components import Bird, Point, Field
-from simulation.charger import Charger
-from simulation.drone import DroneState, Drone
+from simulation.charger import getChargerClass
+from simulation.drone import DroneState, getDroneClass
 from utils.serialization import Log
 from utils.verbose import verbosePrint
 from utils.visualizers import Visualizer
-
-CLASSNAMES = {
-    'drones': Drone,
-    'birds': Bird,
-    'chargers': Charger,
-    'fields': Field,
-}
 
 
 class World:
@@ -19,6 +14,8 @@ class World:
     """
 
     MAX_RANDOMPOINTS = 100
+    Drone: Optional[Type] = None
+    Charger: Optional[Type] = None
 
     def __init__(self, confDict):
         """
@@ -39,6 +36,18 @@ class World:
         self.chargerCapacity = 1
 
         self.currentTimeStep = 0
+
+        self.Drone = getDroneClass(self)
+        Drone = self.Drone
+        self.Charger = getChargerClass(self)
+        Charger = self.Charger
+
+        CLASSNAMES = {
+            'drones': Drone,
+            'birds': Bird,
+            'chargers': Charger,
+            'fields': Field,
+        }
 
         for conf, confValue in confDict.items():
             if conf not in CLASSNAMES:

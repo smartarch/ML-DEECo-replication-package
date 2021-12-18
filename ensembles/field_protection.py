@@ -4,12 +4,14 @@ Field protection ensembles
 from typing import List
 
 from simulation.components import Field
-from simulation.drone import DroneState, Drone
+from simulation.drone import DroneState
 from simulation.ensemble import Ensemble, someOf
 from utils.verbose import verbosePrint
 
 
 def getEnsembles(WORLD):
+
+    Drone = WORLD.Drone
 
     class FieldProtection(Ensemble):
 
