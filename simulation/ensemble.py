@@ -42,6 +42,16 @@ class someOf():
     def reset(self, instance):
         self.selections[instance] = None
 
+    def filterComponents(self, instance, allComponents, otherEnsembles):
+        return [(self.priorityFn(instance, comp), comp) for comp in allComponents if
+                isinstance(comp, self.compClass) and
+                comp not in self.selections[instance]]
+
+    def selectComponents(self, instance, allComponents, otherEnsembles):
+        filteredComponents = self.filterComponents(instance, allComponents, otherEnsembles)
+        return [(priority, comp) for priority, comp in filteredComponents if
+                self.selectFn(instance, comp, otherEnsembles)]
+
     def execute(self, instance, allComponents, otherEnsembles):
         assert(self.cardinalityFn is not None)
         assert(self.selectFn is not None)
@@ -54,18 +64,12 @@ class someOf():
         else:
             cardinalityMin, cardinalityMax = cardinality, cardinality
 
-        def selectComponents():
-            return [(self.priorityFn(instance, comp), comp) for comp in allComponents if
-                    isinstance(comp, self.compClass) and
-                    comp not in self.selections[instance] and
-                    self.selectFn(instance, comp, otherEnsembles)]
-
-        sel = selectComponents()
+        sel = self.selectComponents(instance, allComponents, otherEnsembles)
         for idx in range(cardinalityMax):
             if len(sel) > 0:
                 priority, comp = max(sel, key=operator.itemgetter(0))
                 self.selections[instance].append(comp)
-                sel = selectComponents()
+                sel = self.selectComponents(instance, allComponents, otherEnsembles)
 
         if len(self.selections[instance]) < cardinalityMin:
             return False
@@ -108,6 +112,12 @@ class someOfWithSelectionTimeEstimate(someOf):
         selected = self.get(instance, None)
         for comp in selected:
             self.selectionTimeEstimate.collectTargets(instance, comp)
+
+    def selectComponents(self, instance, allComponents, otherEnsembles):
+        filteredComponents = self.filterComponents(instance, allComponents, otherEnsembles)
+        self.selectionTimeEstimate.cacheEstimates(instance, [comp for priority, comp in filteredComponents])
+        return [(priority, comp) for priority, comp in filteredComponents if
+                self.selectFn(instance, comp, otherEnsembles)]
 
 
 class oneOf(someOf):

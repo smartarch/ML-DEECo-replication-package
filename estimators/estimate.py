@@ -2,7 +2,7 @@
 Estimates
 """
 from enum import Enum, auto
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from types import MethodType
 from typing import Callable, List
 
@@ -180,7 +180,6 @@ class Estimate:
         return x, y
 
 
-# TODO(MT) add support for batch prediction (caching)
 class SelectionTimeEstimate(Estimate):
 
     def __init__(self, estimation):
@@ -189,6 +188,8 @@ class SelectionTimeEstimate(Estimate):
         self.idFunction = lambda instance, comp: (instance, comp)
 
         self.targets = [BoundFeature("time", Feature(), None)]
+
+        self.estimateCache = defaultdict(dict)
 
     def time(self, function):
         self.timeFunc = function
@@ -203,6 +204,23 @@ class SelectionTimeEstimate(Estimate):
             return np.array([difference])
 
         return timeDifference
+
+    def estimate(self, *args, collect=False):
+        instance, comp = args
+        if comp in self.estimateCache[instance]:
+            return self.estimateCache[instance][comp]
+        else:
+            print("WARNING: estimate not cached, computing it again")
+            return super().estimate(*args)
+
+    def cacheEstimates(self, instance, comps):
+        records = np.array([self.generateRecord(instance, comp) for comp in comps])
+        predictions = self.estimation.predictBatch(records)
+
+        self.estimateCache[instance] = {
+            comp: prediction[0]
+            for comp, prediction in zip(comps, predictions)
+        }
 
 
 class ListWithSelectionTimeEstimate(list):
