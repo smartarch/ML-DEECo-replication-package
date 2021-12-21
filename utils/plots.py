@@ -63,6 +63,8 @@ def createChargerPlot(logs, filename, title):
         'lightblue',
     ]
     fig, axs = plt.subplots(len(logs), figsize=(10, 10))
+    if len(logs) == 1:
+        axs = [axs]
     x = np.arange(1, len(logs[0].records))
     labels = logs[0].records[0]
     for i in range(len(logs)):
