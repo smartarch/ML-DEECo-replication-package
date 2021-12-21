@@ -40,7 +40,7 @@ def run(args):
     # prepare folder structure for results (TODO)
     yamlFileName = os.path.splitext(os.path.basename(args.source))[0]
 
-    folder = f"results\\{args.output}\\{args.queue_type}"
+    folder = f"results\\{args.output}"
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
     if not os.path.exists(estWaitingFolder):
         os.makedirs(estWaitingFolder)
@@ -87,7 +87,7 @@ def run(args):
                 plots.createChargerPlot(
                     chargerLogs,
                     f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                    f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}\nQueue Type: {args.queue_type}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                    f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
             totalLog.register(newLog)
 
         acceptedDronesSelectionTimeEstimation.endIteration()
@@ -101,7 +101,7 @@ def run(args):
         plots.createLogPlot(
             totalLog.records,
             f"{folder}\\{yamlFileName}.png",
-            f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}\nQueue Type: {args.queue_type}",
+            f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}",
             (args.number, args.train)
         )
 
@@ -120,8 +120,8 @@ def main():
                         choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"],
                         help='The estimation model to be used for predicting charger waiting time.', required=False,
                         default="neural_network")
-    parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False,
-                        default="fifo")
+    # parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False,
+    #                     default="fifo")
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
