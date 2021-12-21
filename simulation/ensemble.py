@@ -1,8 +1,10 @@
 import operator
 from collections import defaultdict
-from typing import Dict, Any
+from typing import Dict, Any, TYPE_CHECKING
 
 from estimators.estimate import SelectionTimeEstimate, ListWithSelectionTimeEstimate
+if TYPE_CHECKING:
+    from estimators.estimation import Estimation
 
 
 class someOf():
@@ -80,15 +82,19 @@ class someOf():
         """Called when the ensemble is materialized."""
         pass
 
-    def withSelectionTimeEstimate(self, estimation):
-        return someOfWithSelectionTimeEstimate(self.compClass, estimation)
+    def withSelectionTimeEstimate(self):
+        return someOfWithSelectionTimeEstimate(self.compClass)
 
 
 class someOfWithSelectionTimeEstimate(someOf):
 
-    def __init__(self, compClass, estimation):
+    def __init__(self, compClass):
         super().__init__(compClass)
-        self.selectionTimeEstimate = SelectionTimeEstimate(estimation)
+        self.selectionTimeEstimate = SelectionTimeEstimate()
+
+    def using(self, estimation: 'Estimation'):
+        self.selectionTimeEstimate.using(estimation)
+        return self
 
     def select(self, selectFn):
         def newSelectFn(instance, comp, otherEnsembles):

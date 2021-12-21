@@ -29,7 +29,7 @@ class Drone(Agent):
     # static Counter
     Count = 0
 
-    futureBatteryEstimate = Estimate(WORLD.droneBatteryEstimation)
+    futureBatteryEstimate = Estimate().inTimeSteps(50).using(WORLD.droneBatteryEstimation)
 
     def __init__(self, location):
 
@@ -62,9 +62,10 @@ class Drone(Agent):
     def battery(self):
         return self.battery
 
-    @futureBatteryEstimate.id
-    def id(self):
-        return self, WORLD.currentTimeStep
+    @futureBatteryEstimate.inputsFilter
+    @futureBatteryEstimate.targetsFilter
+    def not_terminated(self):
+        return self.state != DroneState.TERMINATED
 
     @property
     def state(self):
@@ -115,15 +116,9 @@ class Drone(Agent):
         if self.state == DroneState.TERMINATED:
             return
 
-        futureBattery = self.futureBatteryEstimate.estimate(self, collect=True)
-        # self.futureBatteryEstimate.collectInputs(self)
-
+        futureBattery = self.futureBatteryEstimate.estimate(self)
         if futureBattery < self.alert:
             print("Alert: predicted futureBattery is low")
-
-        FUTURE_STEPS = 50
-        if WORLD.currentTimeStep > FUTURE_STEPS:
-            self.futureBatteryEstimate.collectTargets(self, id=(self, WORLD.currentTimeStep - FUTURE_STEPS))
 
     def checkBattery(self):
         if self.battery <= 0:
@@ -136,6 +131,7 @@ class Drone(Agent):
         self.battery = self.battery - self.droneMovingEnergyConsumption
         super().move(self.target)
 
+    @futureBatteryEstimate.bind
     def actuate(self):
         self.futureBatteryAlert()
 

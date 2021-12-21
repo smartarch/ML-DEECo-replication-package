@@ -49,6 +49,7 @@ class Estimation(abc.ABC):
         verbosePrint(f"Initializing Estimation {self.name} ({self.estimationName}) with {len(self._estimates)} estimates assigned.", 2)
         if len(self._estimates) == 0:
             print("WARNING: No Estimates assigned, the Estimation is useless.", file=sys.stderr)
+            raise  # for debugging, later it can be changed to 'return'
 
         estimate = self._estimates[0]
         self._inputs = estimate.inputs
@@ -63,6 +64,7 @@ class Estimation(abc.ABC):
         for est in self._estimates:
             assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimation {self.name} ({self.estimationName})"
             assert [t.name for t in est.targets] == target_names, f"Estimate {est} has inconsistent targets with the assigned estimation {self.name} ({self.estimationName})"
+            est.check()
 
         self._initialized = True
 

@@ -54,7 +54,7 @@ class AcceptedDronesAssignment(Ensemble):
     def priority(self):
         return 1  # The order of AcceptedDronesAssignment ensembles can be arbitrary as they don't influence each other.
 
-    drones: List[Drone] = someOf(Drone).withSelectionTimeEstimate(WORLD.acceptedDronesSelectionTimeEstimation)
+    drones: List[Drone] = someOf(Drone).withSelectionTimeEstimate().using(WORLD.acceptedDronesSelectionTimeEstimation)
 
     @drones.cardinality
     def drones(self):
@@ -121,7 +121,8 @@ class AcceptedDronesAssignment(Ensemble):
     # def id(self, drone):
     #     return drone.id
 
-    @drones.selectionTimeEstimate.filter
+    @drones.selectionTimeEstimate.inputsFilter
+    @drones.selectionTimeEstimate.targetsFilter
     def filter(self, drone):
         return drone not in self.charger.acceptedDrones  # don't collect the data if the drone was already selected in the previous step
 

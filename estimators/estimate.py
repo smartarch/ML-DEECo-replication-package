@@ -69,15 +69,29 @@ class DataCollector:
 
 class Estimate:
 
-    def __init__(self, estimation: 'Estimation'):
-        self.estimation: 'Estimation' = estimation
-        estimation.assignEstimate(self)
+    def __init__(self):
+        self.estimation: 'Estimation' = None
         self.inputs: List[BoundFeature] = []
         self.extras: List[BoundFeature] = []
         self.targets: List[BoundFeature] = []
-        self.idFunction = None
-        self.filterFunction = lambda *args: True
+        self.inputsIdFunction = None
+        self.targetsIdFunction = None
+        self.inputsFilterFunctions: List[Callable] = []
+        self.targetsFilterFunctions: List[Callable] = []
         self.dataCollector = DataCollector()
+
+    def using(self, estimation: 'Estimation'):
+        self.estimation = estimation
+        estimation.assignEstimate(self)
+        return self
+
+    def check(self):
+        """Checks whether the estimate is initialized properly."""
+        assert self.estimation is not None, "No estimation assigned, use the 'using' method to assign an estimation."
+        assert self.inputsIdFunction is not None, f"{self.estimation.name}: 'inputsId' function not specified."
+        assert self.targetsIdFunction is not None, f"{self.estimation.name}: 'targetsId' function not specified."
+        assert len(self.inputs) > 0, f"{self.estimation.name}: No inputs specified."
+        assert len(self.targets) > 0, f"{self.estimation.name}: No targets specified."
 
     def input(self, feature=None):
         """Defines an input feature"""
@@ -106,12 +120,20 @@ class Estimate:
 
         return addTargetFunction
 
-    def id(self, function):
-        self.idFunction = function
+    def inputsId(self, function):
+        self.inputsIdFunction = function
         return function
 
-    def filter(self, function):
-        self.filterFunction = function
+    def targetsId(self, function):
+        self.targetsIdFunction = function
+        return function
+
+    def inputsFilter(self, function):
+        self.inputsFilterFunctions.append(function)
+        return function
+
+    def targetsFilter(self, function):
+        self.targetsFilterFunctions.append(function)
         return function
 
     def _addInput(self, name: str, feature: Feature, function: Callable):
@@ -122,6 +144,21 @@ class Estimate:
 
     def _addTarget(self, name: str, feature: Feature, function: Callable):
         self.targets.append(BoundFeature(name, feature, function))
+
+    def inTimeSteps(self, timeSteps):
+        """Automatically collect the data with fixed time difference between inputs and targets."""
+        self.targetsFilterFunctions.append(lambda *args: WORLD.currentTimeStep > timeSteps)
+        self.inputsIdFunction = lambda *args: (*args, WORLD.currentTimeStep)
+        self.targetsIdFunction = lambda *args: (*args, WORLD.currentTimeStep - timeSteps)
+        return self
+
+    def bind(self, function):
+        def collectAndRun(*args, **kwargs):
+            result = function(*args, **kwargs)
+            self.collectInputs(*args)
+            self.collectTargets(*args)
+            return result
+        return collectAndRun
 
     def estimate(self, *args, collect=False):
 
@@ -144,8 +181,9 @@ class Estimate:
         return np.concatenate(record)
 
     def collectInputs(self, *args, x=None, id=None):
-        if not self.filterFunction(*args):
-            return
+        for f in self.inputsFilterFunctions:
+            if not f(*args):
+                return
 
         if x is None:
             x = self.generateRecord(*args)
@@ -155,7 +193,7 @@ class Estimate:
             for name, _, function in self.extras
         }
 
-        recordId = id if id is not None else self.idFunction(*args)
+        recordId = id if id is not None else self.inputsIdFunction(*args)
         self.dataCollector.collectRecordInputs(recordId, x, extra)
 
     def generateTargets(self, *args):
@@ -167,12 +205,13 @@ class Estimate:
         return np.concatenate(record)
 
     def collectTargets(self, *args, id=None):
-        if not self.filterFunction(*args):
-            return
+        for f in self.targetsFilterFunctions:
+            if not f(*args):
+                return
 
         y = self.generateTargets(*args)
 
-        recordId = id if id is not None else self.idFunction(*args)
+        recordId = id if id is not None else self.targetsIdFunction(*args)
         self.dataCollector.collectRecordTargets(recordId, y)
 
     def getData(self, clear=True):
@@ -184,9 +223,10 @@ class Estimate:
 
 class SelectionTimeEstimate(Estimate):
 
-    def __init__(self, estimation):
-        super().__init__(estimation)
-        self.idFunction = lambda instance, comp: (instance, comp)
+    def __init__(self):
+        super().__init__()
+        self.inputsIdFunction = lambda instance, comp: (instance, comp)
+        self.targetsIdFunction = self.inputsIdFunction
         self.timeFunc = self.time(lambda *args: WORLD.currentTimeStep)
 
         self.targets = [BoundFeature("time", Feature(), None)]
