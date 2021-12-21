@@ -31,10 +31,7 @@ class Drone(Agent):
 
     BatteryWhenChargingStartsEstimate = Estimate(WORLD.droneBatteryEstimation)
 
-    def __init__(
-            self,
-            location,
-            world):
+    def __init__(self, location):
 
         self.droneRadius = ENVIRONMENT.droneRadius
         self.droneSpeed = ENVIRONMENT.droneSpeed
@@ -49,10 +46,10 @@ class Drone(Agent):
         self.targetCharger: Optional[Charger] = None
         self.closestCharger: Optional[Charger] = None
         self.alert = 0.2
-        self.world = world  # TODO: self.world can now be replaced by WORLD
+        #self.world = world  # TODO: self.world can now be replaced by WORLD
 
         Drone.Count = Drone.Count + 1
-        Agent.__init__(self, location, self.droneSpeed, world, Drone.Count)
+        Agent.__init__(self, location, self.droneSpeed, Drone.Count)
 
     @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, 1))
     def battery(self):
@@ -88,7 +85,7 @@ class Drone(Agent):
         return time * consumptionRate
 
     def findClosestCharger(self):
-        return min(self.world.chargers, key=lambda charger: self.location.distance(charger.location))
+        return min(WORLD.chargers, key=lambda charger: self.location.distance(charger.location))
 
     def timeToFlyToCharger(self, charger=None):
         if charger is None:

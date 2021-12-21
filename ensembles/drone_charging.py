@@ -29,7 +29,7 @@ class PotentialDronesAssignment(Ensemble):
 
     @drones.cardinality
     def drones(self):
-        return 0, len(self.charger.world.drones)
+        return 0, len(WORLD.drones)
 
     @drones.select
     def drones(self, drone, otherEnsembles):
@@ -136,8 +136,8 @@ class AcceptedDronesAssignment(Ensemble):
         for drone in self.drones:
             if drone in self.charger.acceptedDrones:
                 continue
-            self.charger.world.chargerLog.register([
-                drone.world.currentTimeStep,
+            WORLD.chargerLog.register([
+                WORLD.currentTimeStep,
                 drone.id,
                 drone.battery,
                 self.drones.selectionTimeEstimate.estimate(self, drone),

@@ -77,10 +77,10 @@ class World:
 
         self.currentTimeStep = 0
 
-        self.drones: List[Drone] = [Drone(Point.randomPoint(), self) for _ in range(ENVIRONMENT.droneCount)]
-        self.birds: List[Bird] = [Bird(Point.randomPoint(), self) for _ in range(ENVIRONMENT.birdCount)]
-        self.chargers: List[Charger] = [Charger(point, self) for point in ENVIRONMENT.chargerPositions]
-        self.fields: List[Field] = [Field(points, self) for points in ENVIRONMENT.fieldPositions]
+        self.drones: List[Drone] = [Drone(Point.randomPoint()) for _ in range(ENVIRONMENT.droneCount)]
+        self.birds: List[Bird] = [Bird(Point.randomPoint()) for _ in range(ENVIRONMENT.birdCount)]
+        self.chargers: List[Charger] = [Charger(point) for point in ENVIRONMENT.chargerPositions]
+        self.fields: List[Field] = [Field(points) for points in ENVIRONMENT.fieldPositions]
 
         self.totalPlaces = sum([len(f.places) for f in self.fields])
         self.sortedFields = sorted(self.fields, key=lambda field: -len(field.places))

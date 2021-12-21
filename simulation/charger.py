@@ -17,12 +17,9 @@ class Charger(Component):
     # static Counter
     Count = 0
 
-    def __init__(
-            self,
-            location,
-            world):
+    def __init__(self,location):
         Charger.Count = Charger.Count + 1
-        Component.__init__(self, location, world, Charger.Count)
+        Component.__init__(self, location, Charger.Count)
 
         self.chargingRate = ENVIRONMENT.chargingRate
         self.chargerCapacity = ENVIRONMENT.chargerCapacity

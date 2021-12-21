@@ -1,7 +1,7 @@
 import math
 import random
 from enum import Enum
-from simulation.world import ENVIRONMENT
+from simulation.world import ENVIRONMENT, WORLD
 
 
 class Point:
@@ -103,13 +103,9 @@ class Field:
     topLeft: Point
     bottomRight: Point
 
-    def __init__(
-            self,
-            pointLists,
-            world):
+    def __init__( self,pointLists):
 
         self.droneRadius = ENVIRONMENT.droneRadius
-        self.world = world
         Field.Count = Field.Count + 1
         self.id = f"FIELD_{Field.Count}"
         self.topLeft = Point(pointLists[0], pointLists[1])
@@ -206,11 +202,7 @@ class Component:
 
     id: str
 
-    def __init__(
-            self,
-            location,
-            world,
-            componentID):
+    def __init__( self, location,  componentID):
         """
             Initiate the Component object.
             After the derived type is identified, it gives a string ID
@@ -232,7 +224,6 @@ class Component:
         """
         child_type = type(self).__name__
         self.id = "%s_%d" % (child_type, componentID)
-        self.world = world
 
         if isinstance(location, Point):
             self.location = location
@@ -287,12 +278,7 @@ class Agent(Component):
     reporter = lambda agent, time: None
     header = ""
 
-    def __init__(
-            self,
-            location,
-            speed,
-            world,
-            count):
+    def __init__( self, location, speed,   count):
         """
             Initiate the Agent object.
             Parameters
@@ -307,7 +293,7 @@ class Agent(Component):
             count : int
                 the number of component created with this type to be used as ID.
         """
-        Component.__init__(self, location, world, count)
+        Component.__init__(self, location, count)
         self.speed = speed
 
     def move(self, target):
@@ -375,12 +361,11 @@ class Bird(Agent):
     # mover : BirdMover
     def __init__(
             self,
-            location,
-            world):
+            location):
         self.speed = ENVIRONMENT.birdSpeed
 
         Bird.Count = Bird.Count + 1
-        Agent.__init__(self, location, self.speed, world, Bird.Count)
+        Agent.__init__(self, location, self.speed, Bird.Count)
 
         self.state = BirdState.IDLE
         self.target = None
@@ -391,12 +376,12 @@ class Bird(Agent):
         self.target = Point.random()
 
     def moveToNewField(self):
-        self.field = random.choice(self.world.fields)
+        self.field = random.choice(WORLD.fields)
         self.target = self.field.randomLocation()
 
     def moveToNoField(self):
         self.field = None
-        self.target = random.choice(self.world.emptyPoints)
+        self.target = random.choice(WORLD.emptyPoints)
 
     def moveWithinSameField(self):
         if self.field == None:
@@ -431,7 +416,7 @@ class Bird(Agent):
                 self.move(self.target)
 
         if self.state == BirdState.OBSERVING or self.state == BirdState.EATING:
-            if self.world.isProtectedByDrone(self.location):
+            if WORLD.isProtectedByDrone(self.location):
                 self.moveToNoField()
                 self.state = BirdState.FLEEING
             else:
