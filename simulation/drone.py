@@ -5,7 +5,7 @@ from typing import Optional, TYPE_CHECKING
 from simulation.drone_state import DroneState
 from simulation.world import ENVIRONMENT, WORLD
 from estimators.estimate import Estimate
-from estimators.features import FloatFeature
+from estimators.features import FloatFeature, IntEnumFeature
 from simulation.components import Agent
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ class Drone(Agent):
     # static Counter
     Count = 0
 
-    BatteryWhenChargingStartsEstimate = Estimate(WORLD.droneBatteryEstimation)
+    futureBatteryEstimate = Estimate(WORLD.droneBatteryEstimation)
 
     def __init__(self, location):
 
@@ -46,28 +46,25 @@ class Drone(Agent):
         self.targetCharger: Optional[Charger] = None
         self.closestCharger: Optional[Charger] = None
         self.alert = 0.2
-        #self.world = world  # TODO: self.world can now be replaced by WORLD
 
         Drone.Count = Drone.Count + 1
         Agent.__init__(self, location, self.droneSpeed, Drone.Count)
 
-    @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, 1))
+    @futureBatteryEstimate.input(FloatFeature(0, 1))
     def battery(self):
         return self.battery
 
-    @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
-    def charger_distance(self):
-        return self.location.distance(self.closestCharger.location)
+    @futureBatteryEstimate.input(IntEnumFeature(DroneState))
+    def drone_state(self):
+        return self.state
 
-    # TODO(MT): more features
-
-    @BatteryWhenChargingStartsEstimate.target()
+    @futureBatteryEstimate.target()
     def battery(self):
         return self.battery
 
-    @BatteryWhenChargingStartsEstimate.id
+    @futureBatteryEstimate.id
     def id(self):
-        return self.id
+        return self, WORLD.currentTimeStep
 
     @property
     def state(self):
@@ -76,8 +73,6 @@ class Drone(Agent):
     @state.setter
     def state(self, value):
         self._state = value
-        if value == DroneState.CHARGING:
-            self.BatteryWhenChargingStartsEstimate.collectTargets(self)
 
     def timeToEnergy(self, time, consumptionRate=None):
         if consumptionRate is None:
@@ -116,16 +111,19 @@ class Drone(Agent):
 
         return futureBattery < self.alert
 
-    def needsChargingWithEstimate(self):
+    def futureBatteryAlert(self):
         if self.state == DroneState.TERMINATED:
-            return False
+            return
 
-        futureBattery = self.BatteryWhenChargingStartsEstimate.estimate(self)
+        futureBattery = self.futureBatteryEstimate.estimate(self, collect=True)
+        # self.futureBatteryEstimate.collectInputs(self)
 
-        if futureBattery < 0:
-            return False
+        if futureBattery < self.alert:
+            print("Alert: predicted futureBattery is low")
 
-        return futureBattery < self.alert
+        FUTURE_STEPS = 50
+        if WORLD.currentTimeStep > FUTURE_STEPS:
+            self.futureBatteryEstimate.collectTargets(self, id=(self, WORLD.currentTimeStep - FUTURE_STEPS))
 
     def checkBattery(self):
         if self.battery <= 0:
@@ -139,7 +137,7 @@ class Drone(Agent):
         super().move(self.target)
 
     def actuate(self):
-        self.BatteryWhenChargingStartsEstimate.collectInputs(self)  # TODO(MT) this is just to collect the data
+        self.futureBatteryAlert()
 
         if self.state == DroneState.TERMINATED:
             return

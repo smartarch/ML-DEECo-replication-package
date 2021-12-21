@@ -49,7 +49,7 @@ class DataCollector:
 
     def collectRecordTargets(self, recordId, y):
         if recordId not in self._records:
-            raise KeyError(f"RecordId {recordId} not found. The record inputs must be collected first using the 'collectRecordInputs' method.")
+            raise KeyError(f"RecordId '{recordId}' not found. The record inputs must be collected first using the 'collectRecordInputs' method.")
 
         records = self._records[recordId]
         del self._records[recordId]
@@ -143,7 +143,7 @@ class Estimate:
             record.append(value)
         return np.concatenate(record)
 
-    def collectInputs(self, *args, x=None):
+    def collectInputs(self, *args, x=None, id=None):
         if not self.filterFunction(*args):
             return
 
@@ -155,7 +155,7 @@ class Estimate:
             for name, _, function in self.extras
         }
 
-        recordId = self.idFunction(*args)
+        recordId = id if id is not None else self.idFunction(*args)
         self.dataCollector.collectRecordInputs(recordId, x, extra)
 
     def generateTargets(self, *args):
@@ -166,13 +166,13 @@ class Estimate:
             record.append(value)
         return np.concatenate(record)
 
-    def collectTargets(self, *args):
+    def collectTargets(self, *args, id=None):
         if not self.filterFunction(*args):
             return
 
         y = self.generateTargets(*args)
 
-        recordId = self.idFunction(*args)
+        recordId = id if id is not None else self.idFunction(*args)
         self.dataCollector.collectRecordTargets(recordId, y)
 
     def getData(self, clear=True):

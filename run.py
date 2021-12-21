@@ -67,7 +67,8 @@ def run(args):
     else:
         acceptedDronesSelectionTimeEstimation = NeuralNetworkEstimation(args.hidden_layers, outputFolder=estWaitingFolder,
                                                                         args=args, name="Accepted Drones Selection Time")
-    droneBatteryEstimation = ZeroEstimation(outputFolder=estDroneFolder, args=args, name="Drone Battery")
+    # TODO(MT): set the NN architecture (incl. activation and loss) from here
+    droneBatteryEstimation = NeuralNetworkEstimation(args.hidden_layers, outputFolder=estDroneFolder, args=args, name="Drone Battery")
 
     WORLD.acceptedDronesSelectionTimeEstimation = acceptedDronesSelectionTimeEstimation
     WORLD.droneBatteryEstimation = droneBatteryEstimation
