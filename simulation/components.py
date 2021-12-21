@@ -113,10 +113,27 @@ class Field:
 
         self.places = []
         self.protectingDrones = {}
-        # new approach: how many protecting places there are
-        for x in range(self.topLeft.x, self.bottomRight.x, self.droneRadius):
-            for y in range(self.topLeft.y, self.bottomRight.y, self.droneRadius):
-                self.places.append(Point(x + self.droneRadius / 2, y + self.droneRadius / 2))
+
+        xCenters = math.ceil((self.bottomRight.x-self.topLeft.x)/self.droneRadius)
+        yCenters = math.ceil((self.bottomRight.y-self.topLeft.y)/self.droneRadius)
+
+        totalXCover = xCenters*self.droneRadius
+        totalYCover = yCenters*self.droneRadius
+
+        startX = int(self.topLeft.x-(totalXCover - (self.bottomRight.x-self.topLeft.x))/2)
+        startY = int(self.topLeft.y-(totalYCover - (self.bottomRight.y-self.topLeft.y))/2)
+
+        for i in range(xCenters):
+            for j in range(yCenters):
+                self.places.append(Point(startX,startY+(self.droneRadius*j)))
+            startX = startX + self.droneRadius
+
+
+        # # new approach: how many protecting places there are
+        # for x in range(self.topLeft.x+(self.droneRadius/2), self.bottomRight.x, self.droneRadius):
+        #     for y in range(self.topLeft.y+(self.droneRadius/2), self.bottomRight.y, self.droneRadius):
+        #         self.places.append(Point(x + self.droneRadius, y + self.droneRadius))
+       
 
     def locationPoints(self):
         points = []
