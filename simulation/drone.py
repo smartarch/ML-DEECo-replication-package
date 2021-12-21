@@ -1,214 +1,194 @@
 import math
 import random
-from enum import IntEnum
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
+from simulation.drone_state import DroneState
+from simulation.world import ENVIRONMENT, WORLD
 from estimators.estimate import Estimate
 from estimators.features import FloatFeature
 from simulation.components import Agent
 
+if TYPE_CHECKING:
+    from simulation.charger import Charger
 
-class DroneState(IntEnum):
+
+class Drone(Agent):
     """
-        An enumerate property for the drones.
-        IDLE: a default state for drones.
-        PROTECTING: when the drones are protecting the zones.
-        MOVING_TO_CHARGING: when the drones are moving/queuing for a charger.
-        CHARGIN: when the drones are being chareged.
-        TERMINATED: when the drone's battery is below 0 and they do not operate anymore.
+        The drone class represent the active drones that are in the field.
+        Location: type of a Point (x,y) in a given world.
+        Battery: a level that shows how much of battery is left. 1 means full and 0 means empty.
+        State: the state of a Drone as following:
+            0 IDLE: a default state for drones.
+            1 PROTECTING: when the drones are protecting the zones.
+            2 MOVING_TO_CHARGING: when the drones are moving/queuing for a charger.
+            3 CHARGIN: when the drones are being chareged.
+            4 TERMINATED: when the drone's battery is below 0 and they do not operate anymore.
+        Target: is the target component, it could be a place, a charger, a bird, or anything else.
+        Static Count for the Drones
     """
+    # static Counter
+    Count = 0
 
-    IDLE = 0
-    PROTECTING = 1
-    MOVING_TO_FIELD = 2
-    MOVING_TO_CHARGER = 3
-    CHARGING = 4
-    TERMINATED = 5
+    BatteryWhenChargingStartsEstimate = Estimate(WORLD.droneBatteryEstimation)
 
+    def __init__(
+            self,
+            location,
+            world):
 
-def getDroneClass(WORLD, estimation):
+        self.droneRadius = ENVIRONMENT.droneRadius
+        self.droneSpeed = ENVIRONMENT.droneSpeed
+        self.droneMovingEnergyConsumption = ENVIRONMENT.droneMovingEnergyConsumption
+        self.droneProtectingEnergyConsumption = ENVIRONMENT.droneProtectingEnergyConsumption
 
-    Charger = WORLD.Charger
+        self.battery = 1 - (ENVIRONMENT.droneBatteryRandomize * random.random())
+        self._state = DroneState.IDLE
 
-    class Drone(Agent):
-        """
-            The drone class represent the active drones that are in the field.
-            Location: type of a Point (x,y) in a given world.
-            Battery: a level that shows how much of battery is left. 1 means full and 0 means empty.
-            State: the state of a Drone as following:
-                0 IDLE: a default state for drones.
-                1 PROTECTING: when the drones are protecting the zones.
-                2 MOVING_TO_CHARGING: when the drones are moving/queuing for a charger.
-                3 CHARGIN: when the drones are being chareged.
-                4 TERMINATED: when the drone's battery is below 0 and they do not operate anymore.
-            Target: is the target component, it could be a place, a charger, a bird, or anything else.
-            Static Count for the Drones
-        """
-        # static Counter
-        Count = 0
+        self.target = None
+        self.targetField = None
+        self.targetCharger: Optional[Charger] = None
+        self.closestCharger: Optional[Charger] = None
+        self.alert = 0.2
+        self.world = world  # TODO: self.world can now be replaced by WORLD
 
-        BatteryWhenChargingStartsEstimate = Estimate(estimation)
+        Drone.Count = Drone.Count + 1
+        Agent.__init__(self, location, self.droneSpeed, world, Drone.Count)
 
-        def __init__(
-                self,
-                location,
-                world):
+    @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, 1))
+    def battery(self):
+        return self.battery
 
-            self.droneRadius = world.droneRadius
-            self.droneSpeed = world.droneSpeed
-            self.droneMovingEnergyConsumption = world.droneMovingEnergyConsumption
-            self.droneProtectingEnergyConsumption = world.droneProtectingEnergyConsumption
+    @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
+    def charger_distance(self):
+        return self.location.distance(self.closestCharger.location)
 
-            self.battery = 1 - (world.droneBatteryRandomize * random.random())
-            self._state = DroneState.IDLE
+    # TODO(MT): more features
 
-            self.target = None
-            self.targetField = None
-            self.targetCharger: Optional[Charger] = None
-            self.closestCharger: Optional[Charger] = None
-            self.alert = 0.2
-            self.world = world  # TODO: self.world can now be replaced by WORLD
+    @BatteryWhenChargingStartsEstimate.target()
+    def battery(self):
+        return self.battery
 
-            Drone.Count = Drone.Count + 1
-            Agent.__init__(self, location, self.droneSpeed, world, Drone.Count)
+    @BatteryWhenChargingStartsEstimate.id
+    def id(self):
+        return self.id
 
-        @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, 1))
-        def battery(self):
-            return self.battery
+    @property
+    def state(self):
+        return self._state
 
-        @BatteryWhenChargingStartsEstimate.input(FloatFeature(0, math.sqrt(WORLD.mapWidth ** 2 + WORLD.mapHeight ** 2)))
-        def charger_distance(self):
-            return self.location.distance(self.closestCharger.location)
+    @state.setter
+    def state(self, value):
+        self._state = value
+        if value == DroneState.CHARGING:
+            self.BatteryWhenChargingStartsEstimate.collectTargets(self)
 
-        # TODO(MT): more features
+    def timeToEnergy(self, time, consumptionRate=None):
+        if consumptionRate is None:
+            consumptionRate = self.droneMovingEnergyConsumption
+        return time * consumptionRate
 
-        @BatteryWhenChargingStartsEstimate.target()
-        def battery(self):
-            return self.battery
+    def findClosestCharger(self):
+        return min(self.world.chargers, key=lambda charger: self.location.distance(charger.location))
 
-        @BatteryWhenChargingStartsEstimate.id
-        def id(self):
-            return self.id
+    def timeToFlyToCharger(self, charger=None):
+        if charger is None:
+            charger = self.closestCharger
 
-        @property
-        def state(self):
-            return self._state
+        return self.location.distance(charger.location) / self.speed
 
-        @state.setter
-        def state(self, value):
-            self._state = value
-            if value == DroneState.CHARGING:
-                self.BatteryWhenChargingStartsEstimate.collectTargets(self)
+    def energyToFlyToCharger(self, charger=None):
+        return self.timeToEnergy(self.timeToFlyToCharger(charger))
 
-        def timeToEnergy(self, time, consumptionRate=None):
-            if consumptionRate is None:
-                consumptionRate = self.droneMovingEnergyConsumption
-            return time * consumptionRate
+    def computeBatteryAfterTime(self, time: int):
+        return self.battery - self.timeToEnergy(time)
 
-        def findClosestCharger(self):
-            return min(self.world.chargers, key=lambda charger: self.location.distance(charger.location))
+    def timeToDoneCharging(self):
+        """How long it will take to fly to the closest charger and get fully charged, assuming the charger is free."""
+        batteryWhenGetToCharger = self.battery - self.energyToFlyToCharger()
+        timeToCharge = (1 - batteryWhenGetToCharger) * self.closestCharger.chargingRate
+        return self.timeToFlyToCharger() + timeToCharge
 
-        def timeToFlyToCharger(self, charger=None):
-            if charger is None:
-                charger = self.closestCharger
+    def needsCharging(self, timeToStartCharging: int):
+        if self.state == DroneState.TERMINATED:
+            return False
 
-            return self.location.distance(charger.location) / self.speed
+        futureBattery = self.computeBatteryAfterTime(timeToStartCharging)
 
-        def energyToFlyToCharger(self, charger=None):
-            return self.timeToEnergy(self.timeToFlyToCharger(charger))
+        if futureBattery < 0:
+            return False
 
-        def computeBatteryAfterTime(self, time: int):
-            return self.battery - self.timeToEnergy(time)
+        return futureBattery < self.alert
 
-        def timeToDoneCharging(self):
-            """How long it will take to fly to the closest charger and get fully charged, assuming the charger is free."""
-            batteryWhenGetToCharger = self.battery - self.energyToFlyToCharger()
-            timeToCharge = (1 - batteryWhenGetToCharger) * self.closestCharger.chargingRate
-            return self.timeToFlyToCharger() + timeToCharge
+    def needsChargingWithEstimate(self):
+        if self.state == DroneState.TERMINATED:
+            return False
 
-        def needsCharging(self, timeToStartCharging: int):
-            if self.state == DroneState.TERMINATED:
-                return False
+        futureBattery = self.BatteryWhenChargingStartsEstimate.estimate(self)
 
-            futureBattery = self.computeBatteryAfterTime(timeToStartCharging)
+        if futureBattery < 0:
+            return False
 
-            if futureBattery < 0:
-                return False
+        return futureBattery < self.alert
 
-            return futureBattery < self.alert
+    def checkBattery(self):
+        if self.battery <= 0:
+            self.battery = 0
+            self.state = DroneState.TERMINATED
+            if self.targetField is not None:
+                self.targetField.unassign(self)
 
-        def needsChargingWithEstimate(self):
-            if self.state == DroneState.TERMINATED:
-                return False
+    def move(self):
+        self.battery = self.battery - self.droneMovingEnergyConsumption
+        super().move(self.target)
 
-            futureBattery = self.BatteryWhenChargingStartsEstimate.estimate(self)
+    def actuate(self):
+        self.BatteryWhenChargingStartsEstimate.collectInputs(self)  # TODO(MT) this is just to collect the data
 
-            if futureBattery < 0:
-                return False
-
-            return futureBattery < self.alert
-
-        def checkBattery(self):
-            if self.battery <= 0:
-                self.battery = 0
-                self.state = DroneState.TERMINATED
+        if self.state == DroneState.TERMINATED:
+            return
+        if self.state < DroneState.MOVING_TO_CHARGER:  # IDLE, PROTECTING or MOVING TO FIELD
+            if self.targetCharger is not None:
+                self.state = DroneState.MOVING_TO_CHARGER
                 if self.targetField is not None:
                     self.targetField.unassign(self)
-
-        def move(self):
-            self.battery = self.battery - self.droneMovingEnergyConsumption
-            super().move(self.target)
-
-        def actuate(self):
-            self.BatteryWhenChargingStartsEstimate.collectInputs(self)  # TODO(MT) this is just to collect the data
-
-            if self.state == DroneState.TERMINATED:
-                return
-            if self.state < DroneState.MOVING_TO_CHARGER:  # IDLE, PROTECTING or MOVING TO FIELD
-                if self.targetCharger is not None:
-                    self.state = DroneState.MOVING_TO_CHARGER
-                    if self.targetField is not None:
-                        self.targetField.unassign(self)
-                else:
-                    if self.targetField is None:
-                        self.state = DroneState.IDLE
-                        return
-                    self.target = self.targetField.assingPlace(self)
-                    self.state = DroneState.MOVING_TO_FIELD
-
-            if self.state == DroneState.MOVING_TO_CHARGER:
-                self.target = self.targetCharger.provideLocation(self)
-                if self.location != self.targetCharger.location:
-                    self.move()
-
-            if self.state == DroneState.MOVING_TO_FIELD:
-                if self.location == self.target:
-                    self.state = DroneState.PROTECTING
-                    self.battery = self.battery - self.droneProtectingEnergyConsumption
-                else:
-                    self.move()
-            if self.state == DroneState.CHARGING:
-                if self.battery >= 1:
-                    self.targetCharger = None
+            else:
+                if self.targetField is None:
                     self.state = DroneState.IDLE
-            self.checkBattery()
+                    return
+                self.target = self.targetField.assingPlace(self)
+                self.state = DroneState.MOVING_TO_FIELD
 
-        def isProtecting(self, point):
-            return (self.state == DroneState.PROTECTING or self.state == DroneState.MOVING_TO_FIELD) and self.location.distance(
-                point) <= self.droneRadius
+        if self.state == DroneState.MOVING_TO_CHARGER:
+            self.target = self.targetCharger.provideLocation(self)
+            if self.location != self.targetCharger.location:
+                self.move()
 
-        def protectRadius(self):
-            startX = self.location.x - self.droneRadius
-            endX = self.location.x + self.droneRadius
-            startY = self.location.y - self.droneRadius
-            endY = self.location.y + self.droneRadius
-            startX = 0 if startX < 0 else startX
-            startY = 0 if startY < 0 else startY
-            endX = self.world.mapWidth - 1 if endX >= self.world.mapWidth else endX
-            endY = self.world.mapHeight - 1 if endY >= self.world.mapHeight else endY
-            return startX, startY, endX, endY
+        if self.state == DroneState.MOVING_TO_FIELD:
+            if self.location == self.target:
+                self.state = DroneState.PROTECTING
+                self.battery = self.battery - self.droneProtectingEnergyConsumption
+            else:
+                self.move()
+        if self.state == DroneState.CHARGING:
+            if self.battery >= 1:
+                self.targetCharger = None
+                self.state = DroneState.IDLE
+        self.checkBattery()
 
-        def __repr__(self):
-            return f"{self.id}: state={str(self.state)}, battery={self.battery}"
+    def isProtecting(self, point):
+        return (self.state == DroneState.PROTECTING or self.state == DroneState.MOVING_TO_FIELD) and self.location.distance(
+            point) <= self.droneRadius
 
-    return Drone
+    def protectRadius(self):
+        startX = self.location.x - self.droneRadius
+        endX = self.location.x + self.droneRadius
+        startY = self.location.y - self.droneRadius
+        endY = self.location.y + self.droneRadius
+        startX = 0 if startX < 0 else startX
+        startY = 0 if startY < 0 else startY
+        endX = ENVIRONMENT.mapWidth - 1 if endX >= ENVIRONMENT.mapWidth else endX
+        endY = ENVIRONMENT.mapHeight - 1 if endY >= ENVIRONMENT.mapHeight else endY
+        return startX, startY, endX, endY
+
+    def __repr__(self):
+        return f"{self.id}: state={str(self.state)}, battery={self.battery}"

@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
-from simulation.drone import DroneState
+from simulation.drone_state import DroneState
+from simulation.world import ENVIRONMENT
 
 COLORS = {
     'drone': [77, 148, 255],
@@ -28,9 +29,9 @@ class Visualizer:
     def __init__(self, world):
         self.world = world
         self.cellSize = SIZES['field']
-        self.width = world.mapWidth * self.cellSize + LEGEND_SIZE  # 150 for legends
+        self.width = ENVIRONMENT.mapWidth * self.cellSize + LEGEND_SIZE  # 150 for legends
 
-        self.height = world.mapHeight * self.cellSize
+        self.height = ENVIRONMENT.mapHeight * self.cellSize
 
         self.images = []
         self.grid = {}
@@ -75,7 +76,7 @@ class Visualizer:
         text = f"{text}\niteration: {self.world.currentTimeStep + 1}"
         text = f"{text}\nalive drones: {len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED])}"
         text = f"{text}\nchargers: {len(self.world.chargers)}"
-        text = f"{text}\ncharger capacity: {self.world.chargerCapacity}"
+        text = f"{text}\ncharger capacity: {ENVIRONMENT.chargerCapacity}"
         text = f"{text}\nCharger Queues:"
         for charger in self.world.chargers:
             text = f"{text}\n-{charger.id}, C:{len(charger.chargingDrones)}, A:{len(charger.acceptedDrones)}, P:{len(charger.potentialDrones)}"

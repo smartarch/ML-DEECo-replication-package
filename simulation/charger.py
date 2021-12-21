@@ -1,87 +1,85 @@
 import random
-from typing import List, Optional
-import numpy as np
+from typing import List, TYPE_CHECKING
 
+from simulation.world import ENVIRONMENT
 from simulation.components import Component, Point
-from simulation.drone import DroneState
+from simulation.drone_state import DroneState
+
+if TYPE_CHECKING:
+    from simulation.drone import Drone
 
 
-def getChargerClass(WORLD):
+class Charger(Component):
+    """
+    The drone charger component.
+    """
 
-    Drone = WORLD.Drone
+    # static Counter
+    Count = 0
 
-    class Charger(Component):
-        """
+    def __init__(
+            self,
+            location,
+            world):
+        Charger.Count = Charger.Count + 1
+        Component.__init__(self, location, world, Charger.Count)
 
-        """
-        # static Counter
-        Count = 0
+        self.chargingRate = ENVIRONMENT.chargingRate
+        self.chargerCapacity = ENVIRONMENT.chargerCapacity
+        self.acceptedCapacity = ENVIRONMENT.chargerCapacity
 
-        def __init__(
-                self,
-                location,
-                world):
-            Charger.Count = Charger.Count + 1
-            Component.__init__(self, location, world, Charger.Count)
+        self.energyConsumed = 0
 
-            self.chargingRate = world.chargingRate
-            self.chargerCapacity = world.chargerCapacity
-            self.acceptedCapacity = world.chargerCapacity
+        self.potentialDrones: List[Drone] = []  # these belong to this charger and are not waiting or being charged
+        self.acceptedDrones: List[Drone] = []  # drones accepted for charging, they move to the charger
+        self.chargingDrones: List[Drone] = []  # drones currently being charged
 
-            self.energyConsumed = 0
+    def startCharging(self, drone):
+        """Drone is in the correct location and starts charging"""
+        self.acceptedDrones.remove(drone)
+        self.chargingDrones.append(drone)
+        drone.state = DroneState.CHARGING
 
-            self.potentialDrones: List[Drone] = []  # these belong to this charger and are not waiting or being charged
-            self.acceptedDrones: List[Drone] = []  # drones accepted for charging, they move to the charger
-            self.chargingDrones: List[Drone] = []  # drones currently being charged
+    def doneCharging(self, drone):
+        drone.battery = 1
+        self.chargingDrones.remove(drone)
 
-        def startCharging(self, drone):
-            """Drone is in the correct location and starts charging"""
-            self.acceptedDrones.remove(drone)
-            self.chargingDrones.append(drone)
-            drone.state = DroneState.CHARGING
+    def timeToDoneCharging(self):
+        maxBattery = max(map(lambda d: d.battery, self.chargingDrones), default=1)
+        return (1 - maxBattery) / self.chargingRate
 
-        def doneCharging(self, drone):
-            drone.battery = 1
-            self.chargingDrones.remove(drone)
+    def randomNearLocation(self):
+        return Point(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))
 
-        def timeToDoneCharging(self):
-            maxBattery = max(map(lambda d: d.battery, self.chargingDrones), default=1)
-            return (1 - maxBattery) / self.chargingRate
+    def provideLocation(self, drone):
+        if drone in self.chargingDrones or drone in self.acceptedDrones:
+            return self.location
+        else:
+            return self.randomNearLocation()
 
-        def randomNearLocation(self):
-            return Point(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))
+    def actuate(self):
 
-        def provideLocation(self, drone):
-            if drone in self.chargingDrones or drone in self.acceptedDrones:
-                return self.location
-            else:
-                return self.randomNearLocation()
+        # charge the drones
+        for drone in self.chargingDrones:
+            drone.battery = drone.battery + self.chargingRate
+            self.energyConsumed = self.energyConsumed + self.chargingRate
+            if drone.battery >= 1:
+                self.doneCharging(drone)
 
-        def actuate(self):
+        # move drones from accepted to charging
+        freeChargingPlaces = self.chargerCapacity - len(self.chargingDrones)
+        for i in range(freeChargingPlaces):
+            if len(self.acceptedDrones) > 0:
+                for drone in self.acceptedDrones:
+                    if drone.location == self.location:
+                        self.startCharging(drone)
 
-            # charge the drones
-            for drone in self.chargingDrones:
-                drone.battery = drone.battery + self.chargingRate
-                self.energyConsumed = self.energyConsumed + self.chargingRate
-                if drone.battery >= 1:
-                    self.doneCharging(drone)
+        # assign the target charger of the accepted drones
+        for drone in self.acceptedDrones:
+            drone.targetCharger = self
 
-            # move drones from accepted to charging
-            freeChargingPlaces = self.chargerCapacity - len(self.chargingDrones)
-            for i in range(freeChargingPlaces):
-                if len(self.acceptedDrones) > 0:
-                    for drone in self.acceptedDrones:
-                        if drone.location == self.location:
-                            self.startCharging(drone)
+    def __repr__(self):
+        return f"{self.id}: C={len(self.chargingDrones)}, A={len(self.acceptedDrones)}, P={len(self.potentialDrones)}"
 
-            # assign the target charger of the accepted drones
-            for drone in self.acceptedDrones:
-                drone.targetCharger = self
-
-        def __repr__(self):
-            return f"{self.id}: C={len(self.chargingDrones)}, A={len(self.acceptedDrones)}, P={len(self.potentialDrones)}"
-
-        def report(self, iteration):
-            pass
-
-    return Charger
+    def report(self, iteration):
+        pass

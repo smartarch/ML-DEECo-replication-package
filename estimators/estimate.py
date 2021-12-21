@@ -4,11 +4,14 @@ Estimates
 from enum import Enum, auto
 from collections import namedtuple, defaultdict
 from types import MethodType
-from typing import Callable, List
-
+from typing import Callable, List, TYPE_CHECKING
 import numpy as np
 
 from estimators.features import Feature
+from simulation.world import WORLD
+
+if TYPE_CHECKING:
+    from estimators.estimation import Estimation
 
 
 BoundFeature = namedtuple('BoundFeature', ('name', 'feature', 'function'))
@@ -66,9 +69,8 @@ class DataCollector:
 
 class Estimate:
 
-    def __init__(self, estimation):
-        from estimators.estimation import Estimation  # for type annotation
-        self.estimation: Estimation = estimation
+    def __init__(self, estimation: 'Estimation'):
+        self.estimation: 'Estimation' = estimation
         estimation.assignEstimate(self)
         self.inputs: List[BoundFeature] = []
         self.extras: List[BoundFeature] = []
@@ -184,8 +186,8 @@ class SelectionTimeEstimate(Estimate):
 
     def __init__(self, estimation):
         super().__init__(estimation)
-        self.timeFunc = lambda _: 0
         self.idFunction = lambda instance, comp: (instance, comp)
+        self.timeFunc = self.time(lambda *args: WORLD.currentTimeStep)
 
         self.targets = [BoundFeature("time", Feature(), None)]
 

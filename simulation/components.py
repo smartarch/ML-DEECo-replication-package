@@ -1,6 +1,7 @@
 import math
 import random
 from enum import Enum
+from simulation.world import ENVIRONMENT
 
 
 class Point:
@@ -44,8 +45,6 @@ class Point:
 
     """
 
-    MaxWidth = 0
-    MaxHeight = 0
 
     def __init__(
             self,
@@ -81,7 +80,7 @@ class Point:
 
     @staticmethod
     def randomPoint():
-        return Point(random.randrange(0, Point.MaxWidth), random.randrange(0, Point.MaxHeight))
+        return Point(random.randrange(0, ENVIRONMENT.mapWidth), random.randrange(0, ENVIRONMENT.mapHeight))
 
 
 class Field:
@@ -109,7 +108,7 @@ class Field:
             pointLists,
             world):
 
-        self.droneRadius = world.droneRadius
+        self.droneRadius = ENVIRONMENT.droneRadius
         self.world = world
         Field.Count = Field.Count + 1
         self.id = f"FIELD_{Field.Count}"
@@ -136,8 +135,8 @@ class Field:
 
     # a function to call and set all field points
     def isPointOnField(self, point):
-        return (point.x >= self.topLeft.x and point.x < self.bottomRight.x) and (
-                point.y >= self.topLeft.y and point.y < self.bottomRight.y)
+        return self.topLeft.x <= point.x < self.bottomRight.x and \
+               self.topLeft.y <= point.y < self.bottomRight.y
 
     def closestDistanceToDrone(self, drone):
         distances = []
@@ -378,7 +377,7 @@ class Bird(Agent):
             self,
             location,
             world):
-        self.speed = world.birdSpeed
+        self.speed = ENVIRONMENT.birdSpeed
 
         Bird.Count = Bird.Count + 1
         Agent.__init__(self, location, self.speed, world, Bird.Count)

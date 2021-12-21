@@ -2,10 +2,6 @@
     This file contains a simple experiment run
 """
 from yaml import load
-
-from estimators.estimation import ZeroEstimation, NeuralNetworkEstimation
-from utils.verbose import setVerboseLevel, verbosePrint
-
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -15,23 +11,33 @@ import os
 import argparse
 import copy
 from datetime import datetime
+import random
+import numpy as np
+
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
+import tensorflow as tf
+
+from simulation.world import WORLD, ENVIRONMENT  # This import should be first
+from estimators.estimation import ZeroEstimation, NeuralNetworkEstimation
+from simulation.simulation import Simulation
 from utils import plots
-from simulation.simulation import World, Simulation
 from utils.serialization import Log
+from utils.verbose import setVerboseLevel, verbosePrint
 
 
 def run(args):
     # Fix random seeds
-    import random
-    import numpy as np
-    import tensorflow as tf
     random.seed(args.seed)
     np.random.seed(args.seed)
     tf.random.set_seed(args.seed)
 
+    # load config from yaml
     yamlFile = open(args.source, 'r')
     yamlObject = load(yamlFile, Loader=Loader)
+    ENVIRONMENT.loadConfig(yamlObject)
 
+    # prepare folder structure for results (TODO)
     yamlFileName = os.path.splitext(os.path.basename(args.source))[0]
 
     folder = f"results\\{args.output}\\{args.queue_type}"
@@ -54,7 +60,7 @@ def run(args):
         'Energy Consumed',
     ])
 
-    # estimation = getChargerWaitingTimeEstimation(world, args, outputFolder=estFolder)
+    # create the estimations
     if args.waiting_estimation == "baseline_zero":
         acceptedDronesSelectionTimeEstimation = ZeroEstimation(outputFolder=estWaitingFolder, args=args,
                                                                name="Accepted Drones Selection Time")
@@ -62,22 +68,20 @@ def run(args):
         acceptedDronesSelectionTimeEstimation = NeuralNetworkEstimation(args.hidden_layers, outputFolder=estWaitingFolder,
                                                                         args=args, name="Accepted Drones Selection Time")
     droneBatteryEstimation = ZeroEstimation(outputFolder=estDroneFolder, args=args, name="Drone Battery")
-    verbose = int(args.verbose)
 
-    conf = yamlObject
-    world = World(conf, droneBatteryEstimation)
+    WORLD.acceptedDronesSelectionTimeEstimation = acceptedDronesSelectionTimeEstimation
+    WORLD.droneBatteryEstimation = droneBatteryEstimation
 
-    droneBatteryEstimation.init()
-
+    # start the main loop
     for t in range(args.train):
         verbosePrint(f"Iteration {t + 1} started at {datetime.now()}:", 1)
 
         for i in range(args.number):
             verbosePrint(f"Run {i + 1} started at {datetime.now()}:", 2)
 
-            currentWorld = copy.deepcopy(world)
-            newSimulation = Simulation(currentWorld, folder, visualize=args.animation)
-            acceptedDronesSelectionTimeEstimation, newLog, chargerLogs = newSimulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", acceptedDronesSelectionTimeEstimation, verbose, args)
+            WORLD.reset()
+            simulation = Simulation(WORLD, folder, visualize=args.animation)
+            newLog, chargerLogs = simulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", args)
 
             if args.chart:
                 plots.createChargerPlot(
