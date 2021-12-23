@@ -70,7 +70,9 @@ class Simulation:
                 visualizer.drawComponents(i + 1)
 
         if self.visualize:
+            verbosePrint(f"Saving animation...", 2)
             visualizer.createAnimation(f"{self.folder}/animations/{filename}.gif")
+            verbosePrint(f"Animation saved.", 2)
 
         self.world.chargerLog.export(f"{self.folder}/charger_logs/{filename}.csv")
         totalLog = self.collectStatistics()
