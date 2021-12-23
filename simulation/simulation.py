@@ -59,20 +59,24 @@ class Simulation:
             # Collect statistics
             for chargerIndex in range(len(self.world.chargers)):
                 charger = self.world.chargers[chargerIndex]
+                accepted = set(charger.acceptedDrones)
+                waiting = set(charger.waitingDrones)
+                potential = set(charger.potentialDrones)
                 self.world.chargerLogs[chargerIndex].register([
                     # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
                     len(charger.chargingDrones),
-                    len(charger.acceptedDrones),
-                    len(charger.potentialDrones),
+                    len(accepted),
+                    len(waiting - accepted),
+                    len(potential - waiting - accepted),
                 ])
 
             if self.visualize:
                 visualizer.drawComponents(i + 1)
 
         if self.visualize:
-            verbosePrint(f"Saving animation...", 2)
+            verbosePrint(f"Saving animation...", 3)
             visualizer.createAnimation(f"{self.folder}/animations/{filename}.gif")
-            verbosePrint(f"Animation saved.", 2)
+            verbosePrint(f"Animation saved.", 3)
 
         self.world.chargerLog.export(f"{self.folder}/charger_logs/{filename}.csv")
         totalLog = self.collectStatistics()

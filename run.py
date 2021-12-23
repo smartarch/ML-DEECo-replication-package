@@ -85,10 +85,12 @@ def run(args):
             newLog, chargerLogs = simulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", args)
 
             if args.chart:
+                verbosePrint(f"Saving charger plot...", 3)
                 plots.createChargerPlot(
                     chargerLogs,
                     f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
                     f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
 
         acceptedDronesSelectionTimeEstimation.endIteration()

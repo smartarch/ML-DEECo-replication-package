@@ -17,7 +17,7 @@ class Charger(Component):
     # static Counter
     Count = 0
 
-    def __init__(self,location):
+    def __init__(self, location):
         Charger.Count = Charger.Count + 1
         Component.__init__(self, location, Charger.Count)
 
@@ -28,8 +28,9 @@ class Charger(Component):
         self.energyConsumed = 0
 
         self.potentialDrones: List[Drone] = []  # these belong to this charger and are not waiting or being charged
-        self.acceptedDrones: List[Drone] = []  # drones accepted for charging, they move to the charger
-        self.chargingDrones: List[Drone] = []  # drones currently being charged
+        self.waitingDrones: List[Drone] = []    # drones in need of being charged, waiting for acceptance
+        self.acceptedDrones: List[Drone] = []   # drones accepted for charging, they move to the charger
+        self.chargingDrones: List[Drone] = []   # drones currently being charged
 
     def startCharging(self, drone):
         """Drone is in the correct location and starts charging"""
@@ -41,9 +42,13 @@ class Charger(Component):
         drone.battery = 1
         self.chargingDrones.remove(drone)
 
-    def timeToDoneCharging(self):
-        maxBattery = max(map(lambda d: d.battery, self.chargingDrones), default=1)
-        return (1 - maxBattery) / self.chargingRate
+    def timeToDoneCharging(self, alreadyAccepted=0):
+        batteries = sorted(map(lambda d: d.battery, self.chargingDrones), reverse=True)
+        if len(batteries) > alreadyAccepted:
+            nthMaxBattery = batteries[alreadyAccepted]
+        else:
+            nthMaxBattery = 1
+        return (1 - nthMaxBattery) / self.chargingRate
 
     def randomNearLocation(self):
         return Point(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))
@@ -76,7 +81,7 @@ class Charger(Component):
             drone.targetCharger = self
 
     def __repr__(self):
-        return f"{self.id}: C={len(self.chargingDrones)}, A={len(self.acceptedDrones)}, P={len(self.potentialDrones)}"
+        return f"{self.id}: C={len(self.chargingDrones)}, A={len(self.acceptedDrones)}, W={len(self.waitingDrones)}, P={len(self.potentialDrones)}"
 
     def report(self, iteration):
         pass

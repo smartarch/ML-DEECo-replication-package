@@ -221,7 +221,7 @@ class Estimate:
         return x, y
 
 
-class SelectionTimeEstimate(Estimate):
+class TimeEstimate(Estimate):
 
     def __init__(self):
         super().__init__()
@@ -265,8 +265,8 @@ class SelectionTimeEstimate(Estimate):
         }
 
 
-class ListWithSelectionTimeEstimate(list):
-    selectionTimeEstimate = None
+class ListWithTimeEstimate(list):
+    timeEstimate = None
 
 
 # def addSelectionTimeEstimate(compSelector, estimation):

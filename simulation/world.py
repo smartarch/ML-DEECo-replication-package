@@ -112,6 +112,7 @@ class World:
             "time_to_done_charging",
             "charger",
             "potential_drones_length",
+            "waiting_drones_length",
             "accepted_queues_length",
             "charging_drones_length",
         ])
@@ -121,6 +122,7 @@ class World:
             self.chargerLogs.append(Log([
                 "Charging Drones",
                 "Accepted Drones",
+                "Waiting Drones",
                 "Potential Drones",
             ]))
 

@@ -58,8 +58,8 @@ def createLogPlot(log, filename, title, size):
 def createChargerPlot(logs, filename, title):
     colors = [
         'green',
-        'orange',
-        # 'red',
+        'yellowgreen',
+        'lightcoral',
         'lightblue',
     ]
     fig, axs = plt.subplots(len(logs), figsize=(10, 10))
