@@ -44,15 +44,26 @@ class someOf():
     def reset(self, instance):
         self.selections[instance] = None
 
-    def filterComponents(self, instance, allComponents, otherEnsembles):
-        return [(self.priorityFn(instance, comp), comp) for comp in allComponents if
-                isinstance(comp, self.compClass) and
+    def filterComponentsByType(self, instance, allComponents):
+        return [comp for comp in allComponents if
+                isinstance(comp, self.compClass)]
+
+    def filterPreviouslySelectedComponents(self, instance, components):
+        return [comp for comp in components if
                 comp not in self.selections[instance]]
 
-    def selectComponents(self, instance, allComponents, otherEnsembles):
-        filteredComponents = self.filterComponents(instance, allComponents, otherEnsembles)
-        return [(priority, comp) for priority, comp in filteredComponents if
+    def filterBySelectFunction(self, instance, components, otherEnsembles):
+        return [comp for comp in components if
                 self.selectFn(instance, comp, otherEnsembles)]
+
+    def assignPriority(self, instance, components):
+        return [(self.priorityFn(instance, comp), comp) for comp in components]
+
+    def selectComponents(self, instance, allComponents, otherEnsembles):
+        filteredComponents = self.filterComponentsByType(instance, allComponents)
+        filteredComponents = self.filterPreviouslySelectedComponents(instance, filteredComponents)
+        filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
+        return self.assignPriority(instance, filteredComponents)
 
     def execute(self, instance, allComponents, otherEnsembles):
         assert(self.cardinalityFn is not None)
@@ -120,10 +131,11 @@ class someOfWithSelectionTimeEstimate(someOf):
             self.selectionTimeEstimate.collectTargets(instance, comp)
 
     def selectComponents(self, instance, allComponents, otherEnsembles):
-        filteredComponents = self.filterComponents(instance, allComponents, otherEnsembles)
-        self.selectionTimeEstimate.cacheEstimates(instance, [comp for priority, comp in filteredComponents])
-        return [(priority, comp) for priority, comp in filteredComponents if
-                self.selectFn(instance, comp, otherEnsembles)]
+        filteredComponents = self.filterComponentsByType(instance, allComponents)
+        self.selectionTimeEstimate.cacheEstimates(instance, filteredComponents)
+        filteredComponents = self.filterPreviouslySelectedComponents(instance, filteredComponents)
+        filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
+        return self.assignPriority(instance, filteredComponents)
 
 
 class oneOf(someOf):
