@@ -77,6 +77,7 @@ def run(args):
 
     droneBatteryEstimation = NeuralNetworkEstimation(
         hidden_layers=[32, 32],
+        activation=tf.keras.activations.sigmoid,
         outputFolder=estDroneFolder, args=args, name="Drone Battery"
     )
 

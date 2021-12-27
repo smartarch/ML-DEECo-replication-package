@@ -168,9 +168,7 @@ class Estimate:
 
         prediction = self.estimation.predict(x)
 
-        if len(prediction) == 1:
-            prediction = prediction[0]
-        return prediction.tolist()
+        return self.generateOutputs(prediction)
 
     def generateRecord(self, *args):
         record = []
@@ -179,6 +177,22 @@ class Estimate:
             value = feature.preprocess(value)
             record.append(value)
         return np.concatenate(record)
+
+    def generateOutputs(self, prediction):
+        # if we have only one target, return just the value
+        if len(self.targets) == 1:
+            return self.targets[0][1].postprocess(prediction)
+
+        # otherwise, return a dictionary with all the targets
+        output = {}
+        currentIndex = 0
+        for name, feature, _ in self.targets:
+            width = feature.getNumFeatures()
+            values = prediction[currentIndex:currentIndex + width]
+            output[name] = feature.postprocess(values)
+            currentIndex += width
+
+        return output
 
     def collectInputs(self, *args, x=None, id=None):
         for f in self.inputsFilterFunctions:

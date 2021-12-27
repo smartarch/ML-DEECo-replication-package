@@ -18,6 +18,9 @@ class Feature:
     def preprocess(self, value):
         return np.array([value])
 
+    def postprocess(self, value):
+        return value[0]
+
 
 class IntEnumFeature(Feature):
 
@@ -34,13 +37,20 @@ class IntEnumFeature(Feature):
     def preprocess(self, value):
         return tf.one_hot(int(value), self.numItems).numpy()
 
+    def postprocess(self, value):
+        return self.enumClass(np.argmax(value))
+
 
 class FloatFeature(Feature):
 
     def __init__(self, min, max):
         self.min = min
         self.max = max
+        self.diff = max - min
 
     def preprocess(self, value):
-        normalized = (value - self.min) / (self.max - self.min)
+        normalized = (value - self.min) / self.diff
         return np.array([normalized])
+
+    def postprocess(self, value):
+        return value[0] * self.diff + self.min

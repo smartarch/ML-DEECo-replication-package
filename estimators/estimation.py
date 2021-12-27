@@ -148,19 +148,29 @@ class Estimation(abc.ABC):
         """
         predictions = self.predictBatch(X)
 
-        dataLog = Log(["target", "prediction"])
+        currentIndex = 0
+        for targetName, feature, _ in self._targets:
+            width = feature.getNumFeatures()
+            y_pred = predictions[:, currentIndex:currentIndex + width]
+            y_true = Y[:, currentIndex:currentIndex + width]
+            currentIndex += width
 
-        for t, p in zip(Y, predictions):
-            dataLog.register(list(t) + list(p))
+            if width > 1:
+                dataLog = Log([f"target_{i}" for i in range(width)] + [f"prediction_{i}" for i in range(width)])
+            else:
+                dataLog = Log(["target", "prediction"])
 
-        dataLog.export(f"{self._outputFolder}/{self._iteration}-evaluation-{label}.csv")
+            for t, p in zip(y_true, y_pred):
+                dataLog.register(list(t) + list(p))
 
-        mse = np.mean(np.square(Y - predictions))
-        verbosePrint(f"{label} MSE: {mse}", 2)
+            dataLog.export(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.csv")
 
-        self._eval_plot(Y, predictions, label)
+            mse = np.mean(np.square(y_true - y_pred))
+            verbosePrint(f"{label} – {targetName} MSE: {mse}", 2)
 
-    def _eval_plot(self, y_true, y_pred, label):  # TODO(MT): multiple targets
+            self._eval_plot(y_true, y_pred, label, targetName)
+
+    def _eval_plot(self, y_true, y_pred, label, targetName):
         mse = np.mean(np.square(y_true - y_pred))
 
         lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
@@ -170,11 +180,11 @@ class Estimation(abc.ABC):
         plt.scatter(y_true, y_pred)
         plt.xlabel('True Values')
         plt.ylabel('Predictions')
-        plt.title(f"{self.name} ({self.estimationName})\nIteration {self._iteration}\n{label} MSE: {mse:.3f}")
+        plt.title(f"{self.name} ({self.estimationName})\nIteration {self._iteration}, target: {targetName}\n{label} MSE: {mse:.3f}")
         plt.xlim(lims)
         plt.ylim(lims)
         plt.plot(lims, lims)
-        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}.png")
+        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
         plt.close(fig)
 
     def endIteration(self):
@@ -278,12 +288,15 @@ class NeuralNetworkEstimation(Estimation):
         numFeatures = 0
         for _, feature, _ in self._inputs:
             numFeatures += feature.getNumFeatures()
+        numTargets = 0
+        for _, feature, _ in self._targets:
+            numTargets += feature.getNumFeatures()
 
         inputs = tf.keras.layers.Input([numFeatures])
         hidden = inputs
         for layer_size in self._hidden_layers:
             hidden = tf.keras.layers.Dense(layer_size, activation=tf.keras.activations.relu)(hidden)
-        output = tf.keras.layers.Dense(1, activation=self._activation)(hidden)
+        output = tf.keras.layers.Dense(numTargets, activation=self._activation)(hidden)
 
         model = tf.keras.Model(inputs=inputs, outputs=output)
         model.compile(
