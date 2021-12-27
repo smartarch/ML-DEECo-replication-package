@@ -15,6 +15,11 @@ from utils.verbose import verbosePrint
 from simulation.world import WORLD
 
 
+#########################
+# Estimation base class #
+#########################
+
+
 class Estimation(abc.ABC):
 
     def __init__(self, *, outputFolder, args, name=""):
@@ -148,7 +153,7 @@ class Estimation(abc.ABC):
         for t, p in zip(Y, predictions):
             dataLog.register(list(t) + list(p))
 
-        dataLog.export(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation-{label}.csv")  # TODO(MT): file names
+        dataLog.export(f"{self._outputFolder}/{self._iteration}-evaluation-{label}.csv")
 
         mse = np.mean(np.square(Y - predictions))
         verbosePrint(f"{label} MSE: {mse}", 2)
@@ -169,7 +174,7 @@ class Estimation(abc.ABC):
         plt.xlim(lims)
         plt.ylim(lims)
         plt.plot(lims, lims)
-        plt.savefig(f"{self._outputFolder}/waiting-time-{self._iteration}-evaluation-{label}.png")
+        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}.png")
         plt.close(fig)
 
     def endIteration(self):
@@ -179,7 +184,7 @@ class Estimation(abc.ABC):
         self.collectData()
         count = len(self.x)
         verbosePrint(f"{self.name} ({self.estimationName}): iteration {self._iteration} collected {count} records.", 1)
-        self.dumpData(f"{self._outputFolder}/waiting-time-{self._iteration}.csv")
+        self.dumpData(f"{self._outputFolder}/{self._iteration}-data.csv")
 
         if count > 0:
             x = np.array(self.x)
@@ -204,18 +209,39 @@ class Estimation(abc.ABC):
         self.y = []
 
 
-class ZeroEstimation(Estimation):
+##################################
+# Constant estimation (baseline) #
+##################################
+
+
+class ConstantEstimation(Estimation):
     """
     Predicts 0 for each target.
     """
 
+    def __init__(self, value=0., *, outputFolder, args, name):
+        super().__init__(outputFolder=outputFolder, args=args, name=name)
+        self._value = value
+
     @property
     def estimationName(self):
-        return "ZeroEstimation"
+        return f"ConstantEstimation({self._value})"
 
     def predict(self, x):
         num_targets = len(self._targets)
-        return np.zeros([num_targets])
+        return np.full([num_targets], self._value)
+
+
+###################
+# Neural networks #
+###################
+
+
+DEFAULT_FIT_PARAMS = {
+    "epochs": 50,
+    "validation_split": 0.2,
+    "callbacks": [tf.keras.callbacks.EarlyStopping(patience=10)],
+}
 
 
 class NeuralNetworkEstimation(Estimation):
@@ -224,9 +250,24 @@ class NeuralNetworkEstimation(Estimation):
     def estimationName(self):
         return f"Neural network {self._hidden_layers}"
 
-    def __init__(self, hidden_layers, **kwargs):
+    def __init__(self, hidden_layers, activation=None, loss=tf.losses.mse, fit_params=None, **kwargs):
+        """
+        Parameters
+        ----------
+        hidden_layers: list[int]
+            Neuron counts for hidden layers.
+        activation
+            Activation function for the last layer. Default is no activation (identity).
+        loss: tf.keras.losses.Loss
+        fit_params: dict
+        """
         super().__init__(**kwargs)
         self._hidden_layers = hidden_layers
+        self._activation = activation
+        self._loss = loss
+        self._fit_params = DEFAULT_FIT_PARAMS.copy()
+        if fit_params:
+            self._fit_params.update(fit_params)
         self._model: tf.keras.Model = None
 
     def init(self, **kwargs):
@@ -242,12 +283,12 @@ class NeuralNetworkEstimation(Estimation):
         hidden = inputs
         for layer_size in self._hidden_layers:
             hidden = tf.keras.layers.Dense(layer_size, activation=tf.keras.activations.relu)(hidden)
-        output = tf.keras.layers.Dense(1, activation=tf.keras.activations.exponential)(hidden)
+        output = tf.keras.layers.Dense(1, activation=self._activation)(hidden)
 
         model = tf.keras.Model(inputs=inputs, outputs=output)
         model.compile(
             tf.optimizers.Adam(),
-            tf.losses.Poisson(),
+            self._loss,
             metrics=[tf.metrics.mse],
         )
 
@@ -260,17 +301,17 @@ class NeuralNetworkEstimation(Estimation):
         return self._model(X).numpy()
 
     def train(self, x, y):
-        epochs = 50
-        history = self._model.fit(x, y,
-                                  epochs=epochs,
-                                  validation_split=0.2,
-                                  callbacks=[tf.keras.callbacks.EarlyStopping(patience=10)],
-                                  verbose=2 if self._args.verbose > 1 else 0)
+        history = self._model.fit(
+            x, y,
+            **self._fit_params,
+            verbose=2 if self._args.verbose > 1 else 0
+        )
 
         trainLog = Log(["epoch", "train_mse", "val_mse"])
-        for row in zip(range(1, epochs + 1), history.history["mean_squared_error"], history.history["val_mean_squared_error"]):
+        epochs = range(1, self._fit_params["epochs"] + 1)
+        for row in zip(epochs, history.history["mean_squared_error"], history.history["val_mean_squared_error"]):
             trainLog.register(row)
-        trainLog.export(f"{self._outputFolder}/waiting-time-{self._iteration}-training.csv")  # TODO(MT): file names
+        trainLog.export(f"{self._outputFolder}/{self._iteration}-training.csv")
 
     def saveModel(self):
-        self._model.save(f"{self._outputFolder}/waiting-time-model.h5")  # TODO(MT): file names
+        self._model.save(f"{self._outputFolder}/model.h5")

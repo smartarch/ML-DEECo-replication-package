@@ -204,7 +204,7 @@ class oneOf(someOf):
         return sel[0]
 
 
-# TODO(MT): someOfWithSelectionTimeEstimate
+# TODO(MT): oneOf with Estimates
 
 
 class Ensemble:

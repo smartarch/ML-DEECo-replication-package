@@ -61,7 +61,7 @@ class WaitingDronesAssignment(Ensemble):
         return 2
 
     # TODO: think of a better name for withMembershipInOtherEnsembleTimeEstimate
-    drones: List[Drone] = someOf(Drone).withMembershipInOtherEnsembleTimeEstimate().using(WORLD.acceptedDronesSelectionTimeEstimation)
+    drones: List[Drone] = someOf(Drone).withMembershipInOtherEnsembleTimeEstimate().using(WORLD.waitingTimeEstimation)
 
     @drones.cardinality
     def drones(self):

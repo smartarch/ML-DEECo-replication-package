@@ -7,6 +7,7 @@ from simulation.world import ENVIRONMENT, WORLD
 from estimators.estimate import Estimate
 from estimators.features import FloatFeature, IntEnumFeature
 from simulation.components import Agent
+from utils.verbose import verbosePrint
 
 if TYPE_CHECKING:
     from simulation.charger import Charger
@@ -118,7 +119,7 @@ class Drone(Agent):
 
         futureBattery = self.futureBatteryEstimate.estimate(self)
         if futureBattery < self.alert:
-            print("Alert: predicted futureBattery is low")
+            verbosePrint("Alert: predicted futureBattery is low", 4)
 
     def checkBattery(self):
         if self.battery <= 0:

@@ -19,7 +19,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are s
 import tensorflow as tf
 
 from simulation.world import WORLD, ENVIRONMENT  # This import should be first
-from estimators.estimation import ZeroEstimation, NeuralNetworkEstimation
+from estimators.estimation import ConstantEstimation, NeuralNetworkEstimation
 from simulation.simulation import Simulation
 from utils import plots
 from utils.serialization import Log
@@ -44,7 +44,7 @@ def run(args):
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
     if not os.path.exists(estWaitingFolder):
         os.makedirs(estWaitingFolder)
-    estDroneFolder = f"{folder}\\drone"  # TODO
+    estDroneFolder = f"{folder}\\drone"
     if not os.path.exists(estDroneFolder):
         os.makedirs(estDroneFolder)
 
@@ -61,16 +61,27 @@ def run(args):
     ])
 
     # create the estimations
+    waitingTimeEstimationArgs = {
+        "outputFolder": estWaitingFolder,
+        "args": args,
+        "name": "Waiting Time",
+    }
     if args.waiting_estimation == "baseline_zero":
-        acceptedDronesSelectionTimeEstimation = ZeroEstimation(outputFolder=estWaitingFolder, args=args,
-                                                               name="Accepted Drones Selection Time")
+        waitingTimeEstimation = ConstantEstimation(**waitingTimeEstimationArgs)
     else:
-        acceptedDronesSelectionTimeEstimation = NeuralNetworkEstimation(args.hidden_layers, outputFolder=estWaitingFolder,
-                                                                        args=args, name="Accepted Drones Selection Time")
-    # TODO(MT): set the NN architecture (incl. activation and loss) from here
-    droneBatteryEstimation = NeuralNetworkEstimation(args.hidden_layers, outputFolder=estDroneFolder, args=args, name="Drone Battery")
+        waitingTimeEstimation = NeuralNetworkEstimation(
+            args.hidden_layers,
+            activation=tf.keras.activations.exponential,
+            loss=tf.losses.Poisson(),
+            **waitingTimeEstimationArgs
+        )
 
-    WORLD.acceptedDronesSelectionTimeEstimation = acceptedDronesSelectionTimeEstimation
+    droneBatteryEstimation = NeuralNetworkEstimation(
+        hidden_layers=[32, 32],
+        outputFolder=estDroneFolder, args=args, name="Drone Battery"
+    )
+
+    WORLD.waitingTimeEstimation = waitingTimeEstimation
     WORLD.droneBatteryEstimation = droneBatteryEstimation
 
     # start the main loop
@@ -89,14 +100,14 @@ def run(args):
                 plots.createChargerPlot(
                     chargerLogs,
                     f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                    f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                    f"World: {yamlFileName}\nEstimator: {waitingTimeEstimation.estimationName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
                 verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
 
-        acceptedDronesSelectionTimeEstimation.endIteration()
+        waitingTimeEstimation.endIteration()
         droneBatteryEstimation.endIteration()
 
-    acceptedDronesSelectionTimeEstimation.saveModel()
+    waitingTimeEstimation.saveModel()
     droneBatteryEstimation.saveModel()
 
     totalLog.export(f"{folder}\\log_{args.waiting_estimation}.csv")
@@ -104,7 +115,7 @@ def run(args):
         plots.createLogPlot(
             totalLog.records,
             f"{folder}\\{yamlFileName}.png",
-            f"World: {yamlFileName}\nEstimator: {acceptedDronesSelectionTimeEstimation.estimationName}",
+            f"World: {yamlFileName}\nEstimator: {waitingTimeEstimation.estimationName}",
             (args.number, args.train)
         )
 
@@ -120,7 +131,8 @@ def main():
                         help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
     parser.add_argument('-w', '--waiting_estimation', type=str,
-                        choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"],
+                        #choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"],
+                        choices=["baseline_zero", "neural_network"],
                         help='The estimation model to be used for predicting charger waiting time.', required=False,
                         default="neural_network")
     # parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False,
