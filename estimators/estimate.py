@@ -1,10 +1,10 @@
 """
 Estimates
 """
-from enum import Enum, auto
 from collections import namedtuple, defaultdict
-from types import MethodType
+from enum import Enum, auto
 from typing import Callable, List, TYPE_CHECKING
+
 import numpy as np
 
 from estimators.features import Feature

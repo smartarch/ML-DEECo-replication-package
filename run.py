@@ -9,7 +9,6 @@ except ImportError:
 
 import os
 import argparse
-import copy
 from datetime import datetime
 import random
 import numpy as np
@@ -114,7 +113,7 @@ def run(args):
     if args.chart:
         plots.createLogPlot(
             totalLog.records,
-            f"{folder}\\{yamlFileName}.png",
+            f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
             f"World: {yamlFileName}\nEstimator: {waitingTimeEstimation.estimationName}",
             (args.number, args.train)
         )
@@ -131,7 +130,7 @@ def main():
                         help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
     parser.add_argument('-w', '--waiting_estimation', type=str,
-                        #choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"],
+                        # choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"],
                         choices=["baseline_zero", "neural_network"],
                         help='The estimation model to be used for predicting charger waiting time.', required=False,
                         default="neural_network")

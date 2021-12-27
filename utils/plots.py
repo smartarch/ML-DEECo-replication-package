@@ -14,7 +14,7 @@ def createLogPlot(log, filename, title, size):
         'green',
         'red'
     ]
-    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+    fig, axs = plt.subplots(2, 2, figsize=(16, 9))
     x = np.arange(1, len(log))
     xtickLabels = (np.arange(0, size[0] * size[1]) % size[0] + 1).tolist()
     labels = log[0]

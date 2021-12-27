@@ -58,7 +58,7 @@ class World:
     """
     The simulated world.
     """
-    acceptedDronesSelectionTimeEstimation: 'Estimation'
+    waitingTimeEstimation: 'Estimation'
     droneBatteryEstimation: 'Estimation'
 
     def __init__(self):

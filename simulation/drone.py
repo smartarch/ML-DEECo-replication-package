@@ -1,12 +1,11 @@
-import math
 import random
 from typing import Optional, TYPE_CHECKING
 
-from simulation.drone_state import DroneState
-from simulation.world import ENVIRONMENT, WORLD
 from estimators.estimate import Estimate
 from estimators.features import FloatFeature, IntEnumFeature
 from simulation.components import Agent
+from simulation.drone_state import DroneState
+from simulation.world import ENVIRONMENT, WORLD
 from utils.verbose import verbosePrint
 
 if TYPE_CHECKING:
