@@ -31,7 +31,7 @@ class Simulation:
         from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
         potentialEnsembles = fieldProtectionEnsembles(self.world) + droneChargingEnsembles(self.world)
 
-        WORLD.initEstimations()
+        WORLD.initEstimators()
 
         if self.visualize:
             visualizer = Visualizer(self.world)

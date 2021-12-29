@@ -11,7 +11,7 @@ from estimators.features import Feature
 from simulation.world import WORLD
 
 if TYPE_CHECKING:
-    from estimators.estimation import Estimation
+    from estimators.estimator import Estimator
 
 
 BoundFeature = namedtuple('BoundFeature', ('name', 'feature', 'function'))
@@ -70,7 +70,7 @@ class DataCollector:
 class Estimate:
 
     def __init__(self):
-        self.estimation: 'Estimation' = None
+        self.estimator: 'Estimator' = None
         self.inputs: List[BoundFeature] = []
         self.extras: List[BoundFeature] = []
         self.targets: List[BoundFeature] = []
@@ -80,18 +80,18 @@ class Estimate:
         self.targetsFilterFunctions: List[Callable] = []
         self.dataCollector = DataCollector()
 
-    def using(self, estimation: 'Estimation'):
-        self.estimation = estimation
-        estimation.assignEstimate(self)
+    def using(self, estimator: 'Estimator'):
+        self.estimator = estimator
+        estimator.assignEstimate(self)
         return self
 
     def check(self):
         """Checks whether the estimate is initialized properly."""
-        assert self.estimation is not None, "No estimation assigned, use the 'using' method to assign an estimation."
-        assert self.inputsIdFunction is not None, f"{self.estimation.name}: 'inputsId' function not specified."
-        assert self.targetsIdFunction is not None, f"{self.estimation.name}: 'targetsId' function not specified."
-        assert len(self.inputs) > 0, f"{self.estimation.name}: No inputs specified."
-        assert len(self.targets) > 0, f"{self.estimation.name}: No targets specified."
+        assert self.estimator is not None, "No estimator assigned, use the 'using' method to assign an estimator."
+        assert self.inputsIdFunction is not None, f"{self.estimator.name}: 'inputsId' function not specified."
+        assert self.targetsIdFunction is not None, f"{self.estimator.name}: 'targetsId' function not specified."
+        assert len(self.inputs) > 0, f"{self.estimator.name}: No inputs specified."
+        assert len(self.targets) > 0, f"{self.estimator.name}: No targets specified."
 
     def input(self, feature=None):
         """Defines an input feature"""
@@ -166,7 +166,7 @@ class Estimate:
         if collect:
             self.collectInputs(*args, x=x)
 
-        prediction = self.estimation.predict(x)
+        prediction = self.estimator.predict(x)
 
         return self.generateOutputs(prediction)
 
@@ -271,7 +271,7 @@ class TimeEstimate(Estimate):
 
     def cacheEstimates(self, instance, comps):
         records = np.array([self.generateRecord(instance, comp) for comp in comps])
-        predictions = self.estimation.predictBatch(records)
+        predictions = self.estimator.predictBatch(records)
 
         self.estimateCache[instance] = {
             comp: prediction[0]

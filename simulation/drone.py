@@ -29,7 +29,7 @@ class Drone(Agent):
     # static Counter
     Count = 0
 
-    futureBatteryEstimate = Estimate().inTimeSteps(50).using(WORLD.droneBatteryEstimation)
+    futureBatteryEstimate = Estimate().inTimeSteps(50).using(WORLD.droneBatteryEstimator)
 
     def __init__(self, location):
 

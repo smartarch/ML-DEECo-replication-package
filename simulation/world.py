@@ -3,7 +3,7 @@ from typing import List, TYPE_CHECKING
 from utils.serialization import Log
 
 if TYPE_CHECKING:
-    from estimators.estimation import Estimation
+    from estimators.estimator import Estimator
 
 
 MAX_RANDOM_POINTS = 100
@@ -58,13 +58,13 @@ class World:
     """
     The simulated world.
     """
-    waitingTimeEstimation: 'Estimation'
-    droneBatteryEstimation: 'Estimation'
+    waitingTimeEstimator: 'Estimator'
+    droneBatteryEstimator: 'Estimator'
 
     def __init__(self):
         if 'WORLD' in locals():
             raise RuntimeError("Do not create a new instance of the World. Use the WORLD global variable instead.")
-        self.estimations = []
+        self.estimators = []
 
     # noinspection PyAttributeOutsideInit
     def reset(self):
@@ -95,9 +95,9 @@ class World:
 
         self.createLogs()
 
-    def initEstimations(self):
-        """Initialize the estimations. This has to be called after the components and ensembles are imported."""
-        for est in self.estimations:
+    def initEstimators(self):
+        """Initialize the estimators. This has to be called after the components and ensembles are imported."""
+        for est in self.estimators:
             est.init()
 
     # noinspection PyAttributeOutsideInit

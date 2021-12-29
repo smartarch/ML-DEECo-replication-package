@@ -1,5 +1,5 @@
 """
-Estimation methods
+Estimator methods
 """
 import abc
 import sys
@@ -16,14 +16,14 @@ from simulation.world import WORLD
 
 
 #########################
-# Estimation base class #
+# Estimator base class #
 #########################
 
 
-class Estimation(abc.ABC):
+class Estimator(abc.ABC):
 
     def __init__(self, *, outputFolder, args, name=""):
-        WORLD.estimations.append(self)
+        WORLD.estimators.append(self)
 
         self.x = []
         self.y = []
@@ -39,7 +39,7 @@ class Estimation(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def estimationName(self):
+    def estimatorName(self):
         return ""
 
     def assignEstimate(self, estimate: Estimate):
@@ -48,12 +48,12 @@ class Estimation(abc.ABC):
     def init(self, force=False):
         """This must be run AFTER the input and target features are collected by the estimates."""
         if self._initialized and not force:
-            verbosePrint(f"Already initialized {self.name} ({self.estimationName}).", 4)
+            verbosePrint(f"Already initialized {self.name} ({self.estimatorName}).", 4)
             return
 
-        verbosePrint(f"Initializing Estimation {self.name} ({self.estimationName}) with {len(self._estimates)} estimates assigned.", 2)
+        verbosePrint(f"Initializing Estimator {self.name} ({self.estimatorName}) with {len(self._estimates)} estimates assigned.", 2)
         if len(self._estimates) == 0:
-            print("WARNING: No Estimates assigned, the Estimation is useless.", file=sys.stderr)
+            print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
             raise  # for debugging, later it can be changed to 'return'
 
         estimate = self._estimates[0]
@@ -63,12 +63,12 @@ class Estimation(abc.ABC):
         input_names = [i.name for i in self._inputs]
         target_names = [t.name for t in self._targets]
 
-        verbosePrint(f"{self.estimationName}: inputs {input_names}.", 2)
-        verbosePrint(f"{self.estimationName}: targets {target_names}.", 2)
+        verbosePrint(f"{self.estimatorName}: inputs {input_names}.", 2)
+        verbosePrint(f"{self.estimatorName}: targets {target_names}.", 2)
 
         for est in self._estimates:
-            assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimation {self.name} ({self.estimationName})"
-            assert [t.name for t in est.targets] == target_names, f"Estimate {est} has inconsistent targets with the assigned estimation {self.name} ({self.estimationName})"
+            assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimator {self.name} ({self.estimatorName})"
+            assert [t.name for t in est.targets] == target_names, f"Estimate {est} has inconsistent targets with the assigned estimator {self.name} ({self.estimatorName})"
             est.check()
 
         self._initialized = True
@@ -180,7 +180,7 @@ class Estimation(abc.ABC):
         plt.scatter(y_true, y_pred)
         plt.xlabel('True Values')
         plt.ylabel('Predictions')
-        plt.title(f"{self.name} ({self.estimationName})\nIteration {self._iteration}, target: {targetName}\n{label} MSE: {mse:.3f}")
+        plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} MSE: {mse:.3f}")
         plt.xlim(lims)
         plt.ylim(lims)
         plt.plot(lims, lims)
@@ -193,7 +193,7 @@ class Estimation(abc.ABC):
 
         self.collectData()
         count = len(self.x)
-        verbosePrint(f"{self.name} ({self.estimationName}): iteration {self._iteration} collected {count} records.", 1)
+        verbosePrint(f"{self.name} ({self.estimatorName}): iteration {self._iteration} collected {count} records.", 1)
         self.dumpData(f"{self._outputFolder}/{self._iteration}-data.csv")
 
         if count > 0:
@@ -207,8 +207,8 @@ class Estimation(abc.ABC):
             test_x = x[indices[-test_size:], :]
             test_y = y[indices[-test_size:], :]
 
-            verbosePrint(f"{self.name} ({self.estimationName}): Training {self._iteration} started at {datetime.now()}: ", 1)
-            verbosePrint(f"{self.name} ({self.estimationName}): Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
+            verbosePrint(f"{self.name} ({self.estimatorName}): Training {self._iteration} started at {datetime.now()}: ", 1)
+            verbosePrint(f"{self.name} ({self.estimatorName}): Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
 
             self.train(train_x, train_y)
             self.evaluate(train_x, train_y, label="Train")
@@ -219,12 +219,12 @@ class Estimation(abc.ABC):
         self.y = []
 
 
-##################################
-# Constant estimation (baseline) #
-##################################
+#################################
+# Constant estimator (baseline) #
+#################################
 
 
-class ConstantEstimation(Estimation):
+class ConstantEstimator(Estimator):
     """
     Predicts 0 for each target.
     """
@@ -234,8 +234,8 @@ class ConstantEstimation(Estimation):
         self._value = value
 
     @property
-    def estimationName(self):
-        return f"ConstantEstimation({self._value})"
+    def estimatorName(self):
+        return f"ConstantEstimator({self._value})"
 
     def predict(self, x):
         num_targets = len(self._targets)
@@ -254,10 +254,10 @@ DEFAULT_FIT_PARAMS = {
 }
 
 
-class NeuralNetworkEstimation(Estimation):
+class NeuralNetworkEstimator(Estimator):
 
     @property
-    def estimationName(self):
+    def estimatorName(self):
         return f"Neural network {self._hidden_layers}"
 
     def __init__(self, hidden_layers, activation=None, loss=tf.losses.mse, fit_params=None, **kwargs):

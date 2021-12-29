@@ -18,7 +18,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are s
 import tensorflow as tf
 
 from simulation.world import WORLD, ENVIRONMENT  # This import should be first
-from estimators.estimation import ConstantEstimation, NeuralNetworkEstimation
+from estimators.estimator import ConstantEstimator, NeuralNetworkEstimator
 from simulation.simulation import Simulation
 from utils import plots
 from utils.serialization import Log
@@ -59,30 +59,30 @@ def run(args):
         'Energy Consumed',
     ])
 
-    # create the estimations
-    waitingTimeEstimationArgs = {
+    # create the estimators
+    waitingTimeEstimatorArgs = {
         "outputFolder": estWaitingFolder,
         "args": args,
         "name": "Waiting Time",
     }
     if args.waiting_estimation == "baseline_zero":
-        waitingTimeEstimation = ConstantEstimation(**waitingTimeEstimationArgs)
+        waitingTimeEstimator = ConstantEstimator(**waitingTimeEstimatorArgs)
     else:
-        waitingTimeEstimation = NeuralNetworkEstimation(
+        waitingTimeEstimator = NeuralNetworkEstimator(
             args.hidden_layers,
             activation=tf.keras.activations.exponential,
             loss=tf.losses.Poisson(),
-            **waitingTimeEstimationArgs
+            **waitingTimeEstimatorArgs
         )
 
-    droneBatteryEstimation = NeuralNetworkEstimation(
+    droneBatteryEstimator = NeuralNetworkEstimator(
         hidden_layers=[32, 32],
         activation=tf.keras.activations.sigmoid,
         outputFolder=estDroneFolder, args=args, name="Drone Battery"
     )
 
-    WORLD.waitingTimeEstimation = waitingTimeEstimation
-    WORLD.droneBatteryEstimation = droneBatteryEstimation
+    WORLD.waitingTimeEstimator = waitingTimeEstimator
+    WORLD.droneBatteryEstimator = droneBatteryEstimator
 
     # start the main loop
     for t in range(args.train):
@@ -100,22 +100,22 @@ def run(args):
                 plots.createChargerPlot(
                     chargerLogs,
                     f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                    f"World: {yamlFileName}\nEstimator: {waitingTimeEstimation.estimationName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                    f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
                 verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
 
-        waitingTimeEstimation.endIteration()
-        droneBatteryEstimation.endIteration()
+        waitingTimeEstimator.endIteration()
+        droneBatteryEstimator.endIteration()
 
-    waitingTimeEstimation.saveModel()
-    droneBatteryEstimation.saveModel()
+    waitingTimeEstimator.saveModel()
+    droneBatteryEstimator.saveModel()
 
     totalLog.export(f"{folder}\\log_{args.waiting_estimation}.csv")
     if args.chart:
         plots.createLogPlot(
             totalLog.records,
             f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
-            f"World: {yamlFileName}\nEstimator: {waitingTimeEstimation.estimationName}",
+            f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
             (args.number, args.train)
         )
 

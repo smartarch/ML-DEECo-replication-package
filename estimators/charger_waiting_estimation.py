@@ -230,4 +230,4 @@ def getChargerWaitingTimeEstimation(world, args, outputFolder):
     elif estimationType == "queue_charging_time":
         return QueueChargingTimeWaitingTimeEstimation(**kwargs)
     else:
-        raise NotImplementedError(f"Estimation '{estimationType}' not implemented.")
+        raise NotImplementedError(f"Estimator '{estimationType}' not implemented.")

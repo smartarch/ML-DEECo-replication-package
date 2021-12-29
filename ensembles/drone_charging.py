@@ -50,6 +50,19 @@ class PotentialDronesAssignment(Ensemble):
         verbosePrint(f"PotentialDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
 
 
+# estimator(komp instance, atribut)
+# estimator(typ ensemblu, parametry konstruktoru, fnValue) [ regrese ]
+# - atT+X = futureValue
+# (- timeToC = jak dlouho nez např. regrese > hodnota)
+# 
+# estimator(komp instance, fnClassify)
+# estimator(typ ensemblu, parametry konstruktoru, fnClassify) [ klasifikace ]
+# - timeToC = jak dlouho nez klasifikace vrati C
+# - isAtT+X = T/F -- např. membership
+# 
+# fnSplneno = drone je v te ensemble instanci
+
+
 class WaitingDronesAssignment(Ensemble):
 
     charger: 'Charger'
@@ -60,8 +73,7 @@ class WaitingDronesAssignment(Ensemble):
     def priority(self):
         return 2
 
-    # TODO: think of a better name for withMembershipInOtherEnsembleTimeEstimate
-    drones: List[Drone] = someOf(Drone).withMembershipInOtherEnsembleTimeEstimate().using(WORLD.waitingTimeEstimation)
+    drones: List[Drone] = someOf(Drone).withTimeToMembershipInOtherEnsembleEstimate().using(WORLD.waitingTimeEstimator)
 
     @drones.cardinality
     def drones(self):
@@ -79,43 +91,47 @@ class WaitingDronesAssignment(Ensemble):
         return drone in self.charger.potentialDrones and \
             drone.needsCharging(waitingTimeEstimate + timeToFlyToCharger)
 
-    @drones.timeEstimate.input(FloatFeature(0, 1))
+    @drones.timeToMembershipEstimate.input(FloatFeature(0, 1))
     def battery(self, drone):
         return drone.battery
 
-    @drones.timeEstimate.input(IntEnumFeature(DroneState))
+    @drones.timeToMembershipEstimate.input(IntEnumFeature(DroneState))
     def drone_state(self, drone):
         return drone.state
 
-    @drones.timeEstimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
+    @drones.timeToMembershipEstimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
     def charger_distance(self, drone):
         return self.charger.location.distance(drone.location)
 
-    @drones.timeEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.timeToMembershipEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones_length(self, drone):
         return len(self.charger.acceptedDrones)
 
-    @drones.timeEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.timeToMembershipEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones_missing_battery(self, drone):
         return sum([1 - drone.battery for drone in self.charger.acceptedDrones])
 
-    @drones.timeEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.timeToMembershipEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def charging_drones_length(self, drone):
         return len(self.charger.chargingDrones)
 
-    @drones.timeEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.timeToMembershipEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def charging_drones_missing_battery(self, drone):
         return sum([1 - drone.battery for drone in self.charger.chargingDrones])
 
-    @drones.timeEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    @drones.timeToMembershipEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
     def potential_drones_with_lower_battery(self, drone):
         return len([d for d in self.charger.potentialDrones if d.battery < drone.battery])
 
     # TODO: better features
 
-    @drones.timeEstimate.inputsFilter
+    @drones.timeToMembershipEstimate.inputsFilter
     def filter(self, drone):
         return drone not in self.charger.waitingDrones  # don't collect the data if the drone was already selected in the previous step
+
+    @drones.timeToMembershipEstimate.targetsFilter
+    def filter(self, drone):
+        return drone not in self.charger.acceptedDrones  # don't collect the data if the drone was already selected in the previous step
 
     def actuate(self):
 
@@ -134,8 +150,7 @@ class AcceptedDronesAssignment(Ensemble):
     def priority(self):
         return 1  # The order of AcceptedDronesAssignment ensembles can be arbitrary as they don't influence each other.
 
-    # TODO: think of a better name for isOtherFor
-    drones: List[Drone] = someOf(Drone).isOtherFor(WaitingDronesAssignment.drones)
+    drones: List[Drone] = someOf(Drone)
 
     @drones.cardinality
     def drones(self):
@@ -157,10 +172,6 @@ class AcceptedDronesAssignment(Ensemble):
             return 1  # keep the accepted drones from previous time steps
         return -drone.timeToDoneCharging()
 
-    @drones.timeEstimate.targetsFilter
-    def filter(self, drone):
-        return drone not in self.charger.acceptedDrones  # don't collect the data if the drone was already selected in the previous step
-
     def actuate(self):
 
         verbosePrint(f"AcceptedDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
@@ -173,7 +184,7 @@ class AcceptedDronesAssignment(Ensemble):
                 WORLD.currentTimeStep,
                 drone.id,
                 drone.battery,
-                WaitingDronesAssignment.drones.timeEstimate.estimate(waitingDronesAssignment, drone),
+                WaitingDronesAssignment.drones.timeToMembershipEstimate.estimate(waitingDronesAssignment, drone),
                 drone.energyToFlyToCharger(),
                 drone.timeToDoneCharging(),
                 self.charger.id,
@@ -184,6 +195,9 @@ class AcceptedDronesAssignment(Ensemble):
             ])
 
         self.charger.acceptedDrones = self.drones
+
+
+WaitingDronesAssignment.drones.bindTo(AcceptedDronesAssignment.drones)
 
 
 ensembles: List[Ensemble]

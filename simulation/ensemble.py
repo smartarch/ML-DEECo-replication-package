@@ -4,7 +4,7 @@ from typing import Dict, Any, TYPE_CHECKING, Callable, List
 
 from estimators.estimate import TimeEstimate, ListWithTimeEstimate
 if TYPE_CHECKING:
-    from estimators.estimation import Estimation
+    from estimators.estimator import Estimator
 
 
 class someOf():
@@ -100,12 +100,8 @@ class someOf():
     def withSelectionTimeEstimate(self):
         return someOfWithSelectionTimeEstimate(self.compClass)
 
-    def withMembershipInOtherEnsembleTimeEstimate(self):
-        return someOfWithMembershipInOtherEnsembleTimeEstimate(self.compClass)
-
-    def isOtherFor(self, first: 'someOfWithMembershipInOtherEnsembleTimeEstimate'):
-        first.setOther(self)
-        return self
+    def withTimeToMembershipInOtherEnsembleEstimate(self):
+        return someOfWithTimeToMembershipInOtherEnsembleEstimate(self.compClass)
 
 
 class someOfWithSelectionTimeEstimate(someOf):
@@ -115,8 +111,8 @@ class someOfWithSelectionTimeEstimate(someOf):
         self.onMaterialized.append(self.collectTargets)
         self.timeEstimate = TimeEstimate()
 
-    def using(self, estimation: 'Estimation'):
-        self.timeEstimate.using(estimation)
+    def using(self, estimator: 'Estimator'):
+        self.timeEstimate.using(estimator)
         return self
 
     def select(self, selectFn):
@@ -150,48 +146,48 @@ class someOfWithSelectionTimeEstimate(someOf):
         return self.assignPriority(instance, filteredComponents)
 
 
-class someOfWithMembershipInOtherEnsembleTimeEstimate(someOf):
+class someOfWithTimeToMembershipInOtherEnsembleEstimate(someOf):
 
     def __init__(self, compClass):
         super().__init__(compClass)
         self.onMaterialized.append(self.collectInputs)
-        self.timeEstimate = TimeEstimate()
-        self.timeEstimate.inputsIdFunction = lambda instance, comp: comp
-        self.timeEstimate.targetsIdFunction = self.timeEstimate.inputsIdFunction
+        self.timeToMembershipEstimate = TimeEstimate()
+        self.timeToMembershipEstimate.inputsIdFunction = lambda instance, comp: comp
+        self.timeToMembershipEstimate.targetsIdFunction = self.timeToMembershipEstimate.inputsIdFunction
 
-    def using(self, estimation: 'Estimation'):
-        self.timeEstimate.using(estimation)
+    def using(self, estimator: 'Estimator'):
+        self.timeToMembershipEstimate.using(estimator)
         return self
 
     def get(self, instance, owner):
         sel = super().get(instance, owner)
         if isinstance(sel, list):
             sel = ListWithTimeEstimate(sel)
-        sel.timeEstimate = self.timeEstimate
+        sel.timeEstimate = self.timeToMembershipEstimate
         return sel
 
     def collectInputs(self, _self, instance):
         """Called when the ensemble is materialized."""
         selected = self.get(instance, None)
         for comp in selected:
-            self.timeEstimate.collectInputs(instance, comp)
+            self.timeToMembershipEstimate.collectInputs(instance, comp)
 
     def collectTargets(self, other, instance):
         """Called when the other ensemble is materialized."""
         selected = other.get(instance, None)
         for comp in selected:
-            self.timeEstimate.collectTargets(instance, comp)
+            self.timeToMembershipEstimate.collectTargets(instance, comp)
 
     def selectComponents(self, instance, allComponents, otherEnsembles):
         filteredComponents = self.filterComponentsByType(instance, allComponents)
-        self.timeEstimate.cacheEstimates(instance, filteredComponents)
+        self.timeToMembershipEstimate.cacheEstimates(instance, filteredComponents)
         filteredComponents = self.filterPreviouslySelectedComponents(instance, filteredComponents)
         filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
         return self.assignPriority(instance, filteredComponents)
 
-    def setOther(self, other):
+    def bindTo(self, other):
         other.onMaterialized.append(self.collectTargets)
-        other.timeEstimate = self.timeEstimate
+        # other.timeEstimate = self.timeEstimate
 
 
 class oneOf(someOf):
