@@ -56,7 +56,7 @@ class Estimator(abc.ABC):
         verbosePrint(f"Initializing Estimator {self.name} ({self.estimatorName}) with {len(self._estimates)} estimates assigned.", 2)
         if len(self._estimates) == 0:
             print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
-            raise  # for debugging, later it can be changed to 'return'
+            raise RuntimeError()  # for debugging, later it can be changed to 'return'
 
         estimate = self._estimates[0]
         self._inputs = estimate.inputs
@@ -167,6 +167,7 @@ class Estimator(abc.ABC):
 
             dataLog.export(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.csv")
 
+            # TODO(MT): accuracy and confusion matrix for classification tasks
             mse = np.mean(np.square(y_true - y_pred))
             verbosePrint(f"{label} – {targetName} MSE: {mse}", 2)
 
@@ -240,8 +241,8 @@ class ConstantEstimator(Estimator):
         return f"ConstantEstimator({self._value})"
 
     def predict(self, x):
-        num_targets = len(self._targets)
-        return np.full([num_targets], self._value)
+        numTargets = sum((feature.getNumFeatures() for _, feature, _ in self._targets))
+        return np.full([numTargets], self._value)
 
 
 ###################
@@ -287,12 +288,8 @@ class NeuralNetworkEstimator(Estimator):
         self._model = self.constructModel()
 
     def constructModel(self) -> tf.keras.Model:
-        numFeatures = 0
-        for _, feature, _ in self._inputs:
-            numFeatures += feature.getNumFeatures()
-        numTargets = 0
-        for _, feature, _ in self._targets:
-            numTargets += feature.getNumFeatures()
+        numFeatures = sum((feature.getNumFeatures() for _, feature, _ in self._inputs))
+        numTargets = sum((feature.getNumFeatures() for _, feature, _ in self._targets))
 
         inputs = tf.keras.layers.Input([numFeatures])
         hidden = inputs

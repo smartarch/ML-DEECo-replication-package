@@ -41,8 +41,9 @@ def run(args):
 
     folder = f"results\\{args.output}"
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
-    estDroneFolder = f"{folder}\\drone"
-    estChargerFolder = f"{folder}\\charger"
+    estDroneFolder = f"{folder}\\drone_battery"
+    estChargerUtilFolder = f"{folder}\\charger_utilization"
+    estChargerFullFolder = f"{folder}\\charger_full"
 
     if not os.path.exists(f"{folder}\\animations"):
         os.makedirs(f"{folder}\\animations")
@@ -72,23 +73,42 @@ def run(args):
             **waitingTimeEstimatorArgs
         )
 
-    droneBatteryEstimator = NeuralNetworkEstimator(
-        hidden_layers=[32, 32],
-        activation=tf.keras.activations.sigmoid,
-        outputFolder=estDroneFolder, args=args, name="Drone Battery"
-    )
+    exampleEstimators = False
 
     # TODO(MT): think of a way to set the activation and loss automatically -- based on the target feature type
-    chargerUtilizationEstimator = NeuralNetworkEstimator(
-        hidden_layers=[32, 32],
-        activation=tf.keras.activations.softmax,
-        loss=tf.losses.CategoricalCrossentropy(),
-        outputFolder=estChargerFolder, args=args, name="Charger Capacity"
-    )
+    if exampleEstimators:
+        droneBatteryEstimator = NeuralNetworkEstimator(
+            hidden_layers=[32, 32],
+            activation=tf.keras.activations.sigmoid,
+            outputFolder=estDroneFolder, args=args, name="Drone Battery"
+        )
+    else:
+        droneBatteryEstimator = ConstantEstimator(outputFolder=estDroneFolder, args=args, name="Drone Battery")
+
+    if exampleEstimators:
+        chargerUtilizationEstimator = NeuralNetworkEstimator(
+            hidden_layers=[32, 32],
+            activation=tf.keras.activations.softmax,
+            loss=tf.losses.CategoricalCrossentropy(),
+            outputFolder=estChargerUtilFolder, args=args, name="Charger Capacity"
+        )
+    else:
+        chargerUtilizationEstimator = ConstantEstimator(outputFolder=estChargerUtilFolder, args=args, name="Charger Capacity")
+
+    if exampleEstimators:
+        chargerFullEstimator = NeuralNetworkEstimator(
+            hidden_layers=[32, 32],
+            activation=tf.keras.activations.sigmoid,
+            loss=tf.losses.BinaryCrossentropy(),
+            outputFolder=estChargerFullFolder, args=args, name="Charger Full"
+        )
+    else:
+        chargerFullEstimator = ConstantEstimator(outputFolder=estChargerFullFolder, args=args, name="Charger Full")
 
     WORLD.waitingTimeEstimator = waitingTimeEstimator
     WORLD.droneBatteryEstimator = droneBatteryEstimator
     WORLD.chargerUtilizationEstimator = chargerUtilizationEstimator
+    WORLD.chargerFullEstimator = chargerFullEstimator
 
     # start the main loop
     for t in range(args.train):

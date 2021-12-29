@@ -2,7 +2,7 @@ import random
 from typing import List, TYPE_CHECKING
 
 from estimators.estimate import Estimate
-from estimators.features import FloatFeature, CategoricalFeature
+from estimators.features import FloatFeature, CategoricalFeature, BinaryFeature
 from simulation.world import ENVIRONMENT, WORLD
 from simulation.components import Component, Point
 from simulation.drone_state import DroneState
@@ -21,6 +21,7 @@ class Charger(Component):
     Count = 0
 
     chargerUtilizationEstimate = Estimate().inTimeSteps(20).using(WORLD.chargerUtilizationEstimator)
+    chargerFullEstimate = Estimate().inTimeSteps(20).using(WORLD.chargerFullEstimator)
 
     def __init__(self, location):
         Charger.Count = Charger.Count + 1
@@ -38,21 +39,29 @@ class Charger(Component):
         self.chargingDrones: List[Drone] = []   # drones currently being charged
 
     @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
     def potential_drones(self):
         return len(self.potentialDrones)
 
     @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
     def waiting_drones(self):
         return len(self.waitingDrones)
 
     @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones(self):
         return len(self.acceptedDrones)
 
     @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     @chargerUtilizationEstimate.target(CategoricalFeature(list(range(ENVIRONMENT.chargerCapacity + 1))))
+    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def charging_drones(self):
         return len(self.chargingDrones)
+
+    @chargerFullEstimate.target(BinaryFeature())
+    def charger_full(self):
+        return len(self.chargingDrones) == self.chargerCapacity
 
     def startCharging(self, drone):
         """Drone is in the correct location and starts charging"""
@@ -82,8 +91,10 @@ class Charger(Component):
             return self.randomNearLocation()
 
     def printEstimate(self):
-        estimate = self.chargerUtilizationEstimate()
-        verbosePrint(estimate, 4)
+        utilizationEstimate = self.chargerUtilizationEstimate()
+        verbosePrint(utilizationEstimate, 4)
+        isFullEstimate = self.chargerFullEstimate()
+        verbosePrint(isFullEstimate, 4)
 
     def actuate(self):
         self.printEstimate()

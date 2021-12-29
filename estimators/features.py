@@ -16,7 +16,7 @@ class Feature:
         return [featureName]
 
     def preprocess(self, value):
-        return np.array([value])
+        return np.array([value], dtype=np.float32)
 
     def postprocess(self, value):
         return value[0]
@@ -59,6 +59,12 @@ class CategoricalFeature(Feature):
 
     def postprocess(self, value):
         return self.categories[np.argmax(value)]
+
+
+class BinaryFeature(Feature):
+
+    def postprocess(self, value):
+        return bool(super().postprocess(value))
 
 
 class FloatFeature(Feature):
