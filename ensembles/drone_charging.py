@@ -84,7 +84,7 @@ class WaitingDronesAssignment(Ensemble):
         if drone.state == DroneState.TERMINATED:
             return False
 
-        waitingTimeEstimate = self.drones.timeEstimate.estimate(self, drone)
+        waitingTimeEstimate = self.drones.timeToMembershipEstimate(drone)
         timeToFlyToCharger = drone.timeToFlyToCharger()
 
         # needs charging

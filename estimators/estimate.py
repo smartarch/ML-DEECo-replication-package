@@ -93,6 +93,8 @@ class Estimate:
         assert len(self.inputs) > 0, f"{self.estimator.name}: No inputs specified."
         assert len(self.targets) > 0, f"{self.estimator.name}: No targets specified."
 
+    # decorators (definition of inputs and outputs)
+
     def input(self, feature=None):
         """Defines an input feature"""
         if feature is None:
@@ -160,6 +162,8 @@ class Estimate:
             return result
         return collectAndRun
 
+    # estimation
+
     def estimate(self, *args, collect=False):
 
         x = self.generateRecord(*args)
@@ -193,6 +197,17 @@ class Estimate:
             currentIndex += width
 
         return output
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
+        def estimate(*args):
+            return self.estimate(instance, *args)
+
+        return estimate
+
+    # data collection
 
     def collectInputs(self, *args, x=None, id=None):
         for f in self.inputsFilterFunctions:

@@ -163,7 +163,11 @@ class someOfWithTimeToMembershipInOtherEnsembleEstimate(someOf):
         sel = super().get(instance, owner)
         if isinstance(sel, list):
             sel = ListWithTimeEstimate(sel)
-        sel.timeEstimate = self.timeToMembershipEstimate
+
+        def estimate(*args):
+            return self.timeToMembershipEstimate.estimate(instance, *args)
+
+        sel.timeToMembershipEstimate = estimate
         return sel
 
     def collectInputs(self, _self, instance):

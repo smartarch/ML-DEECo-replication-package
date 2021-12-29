@@ -116,7 +116,7 @@ class Drone(Agent):
         if self.state == DroneState.TERMINATED:
             return
 
-        futureBattery = self.futureBatteryEstimate.estimate(self)
+        futureBattery = self.futureBatteryEstimate()
         if futureBattery < self.alert:
             verbosePrint("Alert: predicted futureBattery is low", 4)
 
