@@ -2,6 +2,7 @@
 Estimator methods
 """
 import abc
+import os
 import sys
 from datetime import datetime
 from typing import List
@@ -27,6 +28,7 @@ class Estimator(abc.ABC):
 
         self.x = []
         self.y = []
+        os.makedirs(outputFolder, exist_ok=True)
         self._outputFolder = outputFolder
         self._args = args
         self.name = name

@@ -41,6 +41,26 @@ class IntEnumFeature(Feature):
         return self.enumClass(np.argmax(value))
 
 
+class CategoricalFeature(Feature):
+
+    def __init__(self, categories: list):
+        self.categories = categories
+        self.numItems = len(self.categories)
+
+    def getNumFeatures(self):
+        return self.numItems
+
+    def getHeader(self, featureName):
+        return [f"{featureName}_{item}" for item in self.categories]
+
+    def preprocess(self, value):
+        index = self.categories.index(value)
+        return tf.one_hot(index, self.numItems).numpy()
+
+    def postprocess(self, value):
+        return self.categories[np.argmax(value)]
+
+
 class FloatFeature(Feature):
 
     def __init__(self, min, max):

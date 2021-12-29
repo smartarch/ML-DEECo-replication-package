@@ -60,6 +60,7 @@ class World:
     """
     waitingTimeEstimator: 'Estimator'
     droneBatteryEstimator: 'Estimator'
+    chargerUtilizationEstimator: 'Estimator'
 
     def __init__(self):
         if 'WORLD' in locals():

@@ -41,11 +41,8 @@ def run(args):
 
     folder = f"results\\{args.output}"
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
-    if not os.path.exists(estWaitingFolder):
-        os.makedirs(estWaitingFolder)
     estDroneFolder = f"{folder}\\drone"
-    if not os.path.exists(estDroneFolder):
-        os.makedirs(estDroneFolder)
+    estChargerFolder = f"{folder}\\charger"
 
     if not os.path.exists(f"{folder}\\animations"):
         os.makedirs(f"{folder}\\animations")
@@ -81,8 +78,17 @@ def run(args):
         outputFolder=estDroneFolder, args=args, name="Drone Battery"
     )
 
+    # TODO(MT): think of a way to set the activation and loss automatically -- based on the target feature type
+    chargerUtilizationEstimator = NeuralNetworkEstimator(
+        hidden_layers=[32, 32],
+        activation=tf.keras.activations.softmax,
+        loss=tf.losses.CategoricalCrossentropy(),
+        outputFolder=estChargerFolder, args=args, name="Charger Capacity"
+    )
+
     WORLD.waitingTimeEstimator = waitingTimeEstimator
     WORLD.droneBatteryEstimator = droneBatteryEstimator
+    WORLD.chargerUtilizationEstimator = chargerUtilizationEstimator
 
     # start the main loop
     for t in range(args.train):
@@ -104,11 +110,11 @@ def run(args):
                 verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
 
-        waitingTimeEstimator.endIteration()
-        droneBatteryEstimator.endIteration()
+        for estimator in WORLD.estimators:
+            estimator.endIteration()
 
-    waitingTimeEstimator.saveModel()
-    droneBatteryEstimator.saveModel()
+    for estimator in WORLD.estimators:
+        estimator.saveModel()
 
     totalLog.export(f"{folder}\\log_{args.waiting_estimation}.csv")
     if args.chart:
