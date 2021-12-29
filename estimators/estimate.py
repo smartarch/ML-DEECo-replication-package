@@ -8,6 +8,7 @@ from typing import Callable, List, TYPE_CHECKING
 import numpy as np
 
 from estimators.features import Feature
+from simulation.components import Component
 from simulation.world import WORLD
 
 if TYPE_CHECKING:
@@ -79,6 +80,10 @@ class Estimate:
         self.inputsFilterFunctions: List[Callable] = []
         self.targetsFilterFunctions: List[Callable] = []
         self.dataCollector = DataCollector()
+
+    def __set_name__(self, owner, name):
+        if issubclass(owner, Component):
+            owner.assignEstimate(self)
 
     def using(self, estimator: 'Estimator'):
         self.estimator = estimator
@@ -154,13 +159,13 @@ class Estimate:
         self.targetsIdFunction = lambda *args: (*args, WORLD.currentTimeStep - timeSteps)
         return self
 
-    def bind(self, function):
-        def collectAndRun(*args, **kwargs):
-            result = function(*args, **kwargs)
-            self.collectInputs(*args)
-            self.collectTargets(*args)
-            return result
-        return collectAndRun
+    # def bind(self, function):
+    #     def collectAndRun(*args, **kwargs):
+    #         result = function(*args, **kwargs)
+    #         self.collectInputs(*args)
+    #         self.collectTargets(*args)
+    #         return result
+    #     return collectAndRun
 
     # estimation
 

@@ -54,6 +54,7 @@ class Simulation:
             # Components
             for component in components:
                 component.actuate()
+                component.collectEstimatesData()
                 verbosePrint(f"{component}", 4)
 
             # Collect statistics

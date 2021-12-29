@@ -131,7 +131,6 @@ class Drone(Agent):
         self.battery = self.battery - self.droneMovingEnergyConsumption
         super().move(self.target)
 
-    @futureBatteryEstimate.bind
     def actuate(self):
         self.futureBatteryAlert()
 

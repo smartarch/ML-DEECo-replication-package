@@ -1,7 +1,12 @@
 import math
 import random
 from enum import Enum
+from typing import List, TYPE_CHECKING
+
 from simulation.world import ENVIRONMENT, WORLD
+
+if TYPE_CHECKING:
+    from estimators.estimate import Estimate
 
 
 class Point:
@@ -44,7 +49,6 @@ class Point:
             creates a random point with margin of 1.
 
     """
-
 
     def __init__(
             self,
@@ -103,7 +107,7 @@ class Field:
     topLeft: Point
     bottomRight: Point
 
-    def __init__( self,pointLists):
+    def __init__(self, pointLists):
 
         self.droneRadius = ENVIRONMENT.droneRadius
         Field.Count = Field.Count + 1
@@ -114,26 +118,24 @@ class Field:
         self.places = []
         self.protectingDrones = {}
 
-        xCenters = math.ceil((self.bottomRight.x-self.topLeft.x)/self.droneRadius)
-        yCenters = math.ceil((self.bottomRight.y-self.topLeft.y)/self.droneRadius)
+        xCenters = math.ceil((self.bottomRight.x - self.topLeft.x) / self.droneRadius)
+        yCenters = math.ceil((self.bottomRight.y - self.topLeft.y) / self.droneRadius)
 
-        totalXCover = xCenters*self.droneRadius
-        totalYCover = yCenters*self.droneRadius
+        totalXCover = xCenters * self.droneRadius
+        totalYCover = yCenters * self.droneRadius
 
-        startX = int(self.topLeft.x-(totalXCover - (self.bottomRight.x-self.topLeft.x))/2)
-        startY = int(self.topLeft.y-(totalYCover - (self.bottomRight.y-self.topLeft.y))/2)
+        startX = int(self.topLeft.x - (totalXCover - (self.bottomRight.x - self.topLeft.x)) / 2)
+        startY = int(self.topLeft.y - (totalYCover - (self.bottomRight.y - self.topLeft.y)) / 2)
 
         for i in range(xCenters):
             for j in range(yCenters):
-                self.places.append(Point(startX,startY+(self.droneRadius*j)))
+                self.places.append(Point(startX, startY + (self.droneRadius * j)))
             startX = startX + self.droneRadius
-
 
         # # new approach: how many protecting places there are
         # for x in range(self.topLeft.x+(self.droneRadius/2), self.bottomRight.x, self.droneRadius):
         #     for y in range(self.topLeft.y+(self.droneRadius/2), self.bottomRight.y, self.droneRadius):
         #         self.places.append(Point(x + self.droneRadius, y + self.droneRadius))
-       
 
     def locationPoints(self):
         points = []
@@ -194,7 +196,13 @@ class Field:
         return f"{self.id},{self.topLeft},{self.bottomRight}"
 
 
-class Component:
+class ComponentMeta(type):
+    def __new__(mcs, name, bases, namespace):
+        namespace['estimates'] = []  # adding a class attribute
+        return super().__new__(mcs, name, bases, namespace)
+
+
+class Component(metaclass=ComponentMeta):
     """
         Component class is used to represent A component on the map. 
         Components are all elements that are on the map such as Birds, Drones, Chargers and Charging Stations.
@@ -216,10 +224,10 @@ class Component:
             return the current point as a list object.
     """
     location: Point
-
     id: str
+    estimates: List['Estimate']
 
-    def __init__( self, location,  componentID):
+    def __init__(self, location, componentID):
         """
             Initiate the Component object.
             After the derived type is identified, it gives a string ID
@@ -252,6 +260,15 @@ class Component:
             An abstract method to be developed by the derived instances.
         """
         pass
+
+    @classmethod
+    def assignEstimate(cls, estimate):
+        cls.estimates.append(estimate)
+
+    def collectEstimatesData(self):
+        for estimate in self.estimates:
+            estimate.collectInputs(self)
+            estimate.collectTargets(self)
 
     def locationPoints(self):
         """
@@ -295,7 +312,7 @@ class Agent(Component):
     reporter = lambda agent, time: None
     header = ""
 
-    def __init__( self, location, speed,   count):
+    def __init__(self, location, speed, count):
         """
             Initiate the Agent object.
             Parameters
