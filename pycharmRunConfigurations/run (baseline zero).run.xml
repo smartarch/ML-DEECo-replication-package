@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="run (baseline zero)" type="PythonConfigurationType" factoryName="Python" folderName="Small FIFO">
+  <configuration default="false" name="small (baseline zero)" type="PythonConfigurationType" factoryName="Python" folderName="Small">
     <module name="2022-SEAMS" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />

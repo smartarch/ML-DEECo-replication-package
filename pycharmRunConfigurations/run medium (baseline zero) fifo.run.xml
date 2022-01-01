@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="run medium (baseline zero) fifo" type="PythonConfigurationType" factoryName="Python" folderName="Medium FIFO">
+  <configuration default="false" name="medium (baseline zero)" type="PythonConfigurationType" factoryName="Python" folderName="Medium">
     <module name="2022-SEAMS" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/en2-drone-charging/run.py" />
-    <option name="PARAMETERS" value="experiments/medium.yaml -n 5 -t 1 -o medium -v 2 -c --waiting_estimation=baseline_zero -q=fifo" />
+    <option name="PARAMETERS" value="experiments/medium.yaml -n 5 -t 1 -o medium -v 2 -c --waiting_estimation=baseline_zero" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

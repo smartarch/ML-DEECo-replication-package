@@ -36,7 +36,7 @@ def run(args):
     yamlObject = load(yamlFile, Loader=Loader)
     ENVIRONMENT.loadConfig(yamlObject)
 
-    # prepare folder structure for results (TODO)
+    # prepare folder structure for results
     yamlFileName = os.path.splitext(os.path.basename(args.source))[0]
 
     folder = f"results\\{args.output}"
@@ -73,7 +73,7 @@ def run(args):
             **waitingTimeEstimatorArgs
         )
 
-    exampleEstimators = False
+    exampleEstimators = args.examples
 
     # TODO(MT): think of a way to set the activation and loss automatically -- based on the target feature type
     if exampleEstimators:
@@ -166,6 +166,8 @@ def main():
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
+    # TODO(MT): remove?
+    parser.add_argument('-e', '--examples', action='store_true', default=False, help='Additional examples for debug purposes.')
     args = parser.parse_args()
 
     number = args.number
