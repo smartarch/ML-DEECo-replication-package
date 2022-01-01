@@ -64,7 +64,7 @@ class CategoricalFeature(Feature):
 class BinaryFeature(Feature):
 
     def postprocess(self, value):
-        return bool(super().postprocess(value))
+        return super().postprocess(value) > 0.5
 
 
 class FloatFeature(Feature):
