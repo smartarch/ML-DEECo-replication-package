@@ -7,7 +7,7 @@ from typing import Callable, List, TYPE_CHECKING
 
 import numpy as np
 
-from estimators.features import Feature
+from estimators.features import Feature, TimeFeature
 from simulation.components import Component
 from simulation.world import WORLD
 
@@ -255,13 +255,13 @@ class TimeEstimate(Estimate):
         self.targetsIdFunction = self.inputsIdFunction
         self.timeFunc = self.time(lambda *args: WORLD.currentTimeStep)
 
-        self.targets = [BoundFeature("time", Feature(), None)]
+        self.targets = [BoundFeature("time", TimeFeature(), None)]
 
         self.estimateCache = defaultdict(dict)
 
     def time(self, function):
         self.timeFunc = function
-        self.extras = [BoundFeature("time", Feature(), self.timeFunc)]
+        self.extras = [BoundFeature("time", TimeFeature(), self.timeFunc)]
         return function
 
     def generateTargets(self, *args):

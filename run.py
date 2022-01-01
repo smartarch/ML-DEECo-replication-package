@@ -14,7 +14,7 @@ import random
 import numpy as np
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 
 from simulation.world import WORLD, ENVIRONMENT  # This import should be first
@@ -68,38 +68,29 @@ def run(args):
     else:
         waitingTimeEstimator = NeuralNetworkEstimator(
             args.hidden_layers,
-            activation=tf.keras.activations.exponential,
-            loss=tf.losses.Poisson(),
             **waitingTimeEstimatorArgs
         )
 
-    exampleEstimators = args.examples
-
-    # TODO(MT): think of a way to set the activation and loss automatically -- based on the target feature type
-    if exampleEstimators:
+    if args.examples:
         droneBatteryEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32],
-            activation=tf.keras.activations.sigmoid,
+            activation=tf.keras.activations.sigmoid,  # We want a value between 0 and 1
             outputFolder=estDroneFolder, args=args, name="Drone Battery"
         )
     else:
         droneBatteryEstimator = ConstantEstimator(outputFolder=estDroneFolder, args=args, name="Drone Battery")
 
-    if exampleEstimators:
+    if args.examples:
         chargerUtilizationEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32],
-            activation=tf.keras.activations.softmax,
-            loss=tf.losses.CategoricalCrossentropy(),
             outputFolder=estChargerUtilFolder, args=args, name="Charger Capacity"
         )
     else:
         chargerUtilizationEstimator = ConstantEstimator(outputFolder=estChargerUtilFolder, args=args, name="Charger Capacity")
 
-    if exampleEstimators:
+    if args.examples:
         chargerFullEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32],
-            activation=tf.keras.activations.sigmoid,
-            loss=tf.losses.BinaryCrossentropy(),
             outputFolder=estChargerFullFolder, args=args, name="Charger Full"
         )
     else:

@@ -80,3 +80,8 @@ class FloatFeature(Feature):
 
     def postprocess(self, value):
         return value[0] * self.diff + self.min
+
+
+class TimeFeature(Feature):
+    """This is used for automatic activation and loss inference."""
+    pass
