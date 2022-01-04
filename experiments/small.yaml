@@ -21,5 +21,3 @@ chargingRate: 0.04
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0.3
- 
-

@@ -64,7 +64,7 @@ class CategoricalFeature(Feature):
 class BinaryFeature(Feature):
 
     def postprocess(self, value):
-        return bool(super().postprocess(value))
+        return super().postprocess(value) > 0.5
 
 
 class FloatFeature(Feature):
@@ -80,3 +80,8 @@ class FloatFeature(Feature):
 
     def postprocess(self, value):
         return value[0] * self.diff + self.min
+
+
+class TimeFeature(Feature):
+    """This is used for automatic activation and loss inference."""
+    pass

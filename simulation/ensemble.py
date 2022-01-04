@@ -1,8 +1,9 @@
 import operator
 from collections import defaultdict
-from typing import Dict, Any, TYPE_CHECKING, Callable, List
+from typing import Dict, Any, TYPE_CHECKING
 
-from estimators.estimate import TimeEstimate, ListWithTimeEstimate
+from estimators.estimate import TimeEstimate, ListWithEstimate, Estimate, DataCollectorMode
+
 if TYPE_CHECKING:
     from estimators.estimator import Estimator
 
@@ -15,7 +16,6 @@ class someOf():
         someOf.counter += 1
 
         self.compClass = compClass
-        self.onMaterialized: List[Callable] = []
 
         self.cardinalityFn = None
         self.selectFn = None
@@ -92,106 +92,53 @@ class someOf():
 
         return True
 
-    def materialized(self, instance):
-        """Called when the ensemble is materialized."""
-        for f in self.onMaterialized:
-            f(self, instance)
+    def withEstimate(self):
+        return someOfWithEstimate(self.compClass, Estimate())
 
-    def withSelectionTimeEstimate(self):
-        return someOfWithSelectionTimeEstimate(self.compClass)
-
-    def withTimeToMembershipInOtherEnsembleEstimate(self):
-        return someOfWithTimeToMembershipInOtherEnsembleEstimate(self.compClass)
+    def withTimeEstimate(self, *, begin=DataCollectorMode.First):
+        return someOfWithEstimate(self.compClass, TimeEstimate(begin=begin))
 
 
-class someOfWithSelectionTimeEstimate(someOf):
+class someOfWithEstimate(someOf):
 
-    def __init__(self, compClass):
+    def __init__(self, compClass, estimate: 'Estimate'):
         super().__init__(compClass)
-        self.onMaterialized.append(self.collectTargets)
-        self.timeEstimate = TimeEstimate()
+        self.estimate = estimate
+        self.estimate.inputsIdFunction = lambda instance, comp: comp
+        self.estimate.targetsIdFunction = self.estimate.inputsIdFunction
 
     def using(self, estimator: 'Estimator'):
-        self.timeEstimate.using(estimator)
+        self.estimate.using(estimator)
         return self
 
-    def select(self, selectFn):
-        def newSelectFn(instance, comp, otherEnsembles):
-            select = selectFn(instance, comp, otherEnsembles)
-            if select:
-                self.timeEstimate.collectInputs(instance, comp)
-            return select
-
-        self.selectFn = newSelectFn
+    def inTimeSteps(self, timeSteps):
+        self.estimate.inTimeSteps(timeSteps)
         return self
 
     def get(self, instance, owner):
         sel = super().get(instance, owner)
         if isinstance(sel, list):
-            sel = ListWithTimeEstimate(sel)
-        sel.timeEstimate = self.timeEstimate
-        return sel
-
-    def collectTargets(self, _self, instance):
-        """Called when the ensemble is materialized."""
-        selected = self.get(instance, None)
-        for comp in selected:
-            self.timeEstimate.collectTargets(instance, comp)
-
-    def selectComponents(self, instance, allComponents, otherEnsembles):
-        filteredComponents = self.filterComponentsByType(instance, allComponents)
-        self.timeEstimate.cacheEstimates(instance, filteredComponents)
-        filteredComponents = self.filterPreviouslySelectedComponents(instance, filteredComponents)
-        filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
-        return self.assignPriority(instance, filteredComponents)
-
-
-class someOfWithTimeToMembershipInOtherEnsembleEstimate(someOf):
-
-    def __init__(self, compClass):
-        super().__init__(compClass)
-        self.onMaterialized.append(self.collectInputs)
-        self.timeToMembershipEstimate = TimeEstimate()
-        self.timeToMembershipEstimate.inputsIdFunction = lambda instance, comp: comp
-        self.timeToMembershipEstimate.targetsIdFunction = self.timeToMembershipEstimate.inputsIdFunction
-
-    def using(self, estimator: 'Estimator'):
-        self.timeToMembershipEstimate.using(estimator)
-        return self
-
-    def get(self, instance, owner):
-        sel = super().get(instance, owner)
-        if isinstance(sel, list):
-            sel = ListWithTimeEstimate(sel)
+            sel = ListWithEstimate(sel)
 
         def estimate(*args):
-            return self.timeToMembershipEstimate.estimate(instance, *args)
+            return self.estimate.estimate(instance, *args)
 
-        sel.timeToMembershipEstimate = estimate
+        sel.estimate = estimate
         return sel
 
-    def collectInputs(self, _self, instance):
-        """Called when the ensemble is materialized."""
-        selected = self.get(instance, None)
+    def collectEstimateData(self, instance):
+        selected = self.get(instance, type(instance))
         for comp in selected:
-            self.timeToMembershipEstimate.collectInputs(instance, comp)
-
-    def collectTargets(self, other, instance):
-        """Called when the other ensemble is materialized."""
-        selected = other.get(instance, None)
-        for comp in selected:
-            self.timeToMembershipEstimate.collectTargets(instance, comp)
+            self.estimate.collectInputs(instance, comp)
+            self.estimate.collectTargets(instance, comp)
 
     def selectComponents(self, instance, allComponents, otherEnsembles):
+        """Estimate caching for better performance."""
         filteredComponents = self.filterComponentsByType(instance, allComponents)
-        self.timeToMembershipEstimate.cacheEstimates(instance, filteredComponents)
+        self.estimate.cacheEstimates(instance, filteredComponents)
         filteredComponents = self.filterPreviouslySelectedComponents(instance, filteredComponents)
         filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
         return self.assignPriority(instance, filteredComponents)
-
-    def bindTo(self, other):
-        other.onMaterialized.append(self.collectTargets)
-        # other.timeEstimate = self.timeEstimate
 
 
 class oneOf(someOf):
@@ -208,6 +155,7 @@ class oneOf(someOf):
 
 
 class Ensemble:
+
     def materialize(self, components, otherEnsembles):
 
         # sorts a list of ensembles that are type of someOf according to id, 
@@ -221,10 +169,6 @@ class Ensemble:
         if not allOk:
             for fld in compFields:
                 fld.reset(self)
-
-        if allOk:
-            for fld in compFields:
-                fld.materialized(self)
                 
         return allOk
     
@@ -238,5 +182,7 @@ class Ensemble:
     def __lt__(self, other):
         return self.priority() > other.priority()
 
-
-
+    def collectEstimatesData(self):
+        compWithEstimateFields = [fld for (fldName, fld) in type(self).__dict__.items() if not fldName.startswith('__') and isinstance(fld, someOfWithEstimate)]
+        for field in compWithEstimateFields:
+            field.collectEstimateData(self)

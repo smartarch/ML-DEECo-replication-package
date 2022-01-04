@@ -9,8 +9,10 @@ from typing import List
 import numpy as np
 from matplotlib import pyplot as plt
 import tensorflow as tf
+import seaborn as sns
 
 from estimators.estimate import Estimate, BoundFeature
+from estimators.features import Feature, CategoricalFeature, IntEnumFeature, FloatFeature, BinaryFeature, TimeFeature
 from utils.serialization import Log
 from utils.verbose import verbosePrint
 from simulation.world import WORLD
@@ -65,8 +67,8 @@ class Estimator(abc.ABC):
         input_names = [i.name for i in self._inputs]
         target_names = [t.name for t in self._targets]
 
-        verbosePrint(f"{self.estimatorName}: inputs {input_names}.", 2)
-        verbosePrint(f"{self.estimatorName}: targets {target_names}.", 2)
+        verbosePrint(f"  inputs {input_names}.", 2)
+        verbosePrint(f"  targets {target_names}.", 2)
 
         for est in self._estimates:
             assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimator {self.name} ({self.estimatorName})"
@@ -167,26 +169,58 @@ class Estimator(abc.ABC):
 
             dataLog.export(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.csv")
 
-            # TODO(MT): accuracy and confusion matrix for classification tasks
-            mse = np.mean(np.square(y_true - y_pred))
-            verbosePrint(f"{label} – {targetName} MSE: {mse}", 2)
+            if type(feature) == BinaryFeature:
+                self.evaluate_binary_classification(label, targetName, y_pred, y_true)
+            elif type(feature) in (CategoricalFeature, IntEnumFeature):
+                self.evaluate_classification(label, targetName, y_pred, y_true)
+            else:
+                self.evaluate_regression(label, targetName, y_pred, y_true)
 
-            self._eval_plot(y_true, y_pred, label, targetName)
-
-    def _eval_plot(self, y_true, y_pred, label, targetName):
-        mse = np.mean(np.square(y_true - y_pred))
+    def evaluate_regression(self, label, targetName, y_pred, y_true):
+        mse = tf.reduce_mean(tf.metrics.mse(y_true, y_pred))
+        verbosePrint(f"{label} – {targetName} MSE: {mse}", 2)
 
         lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
         # plt.ioff()
         fig = plt.figure(figsize=(10, 10))
         plt.axes(aspect='equal')
-        plt.scatter(y_true, y_pred)
-        plt.xlabel('True Values')
-        plt.ylabel('Predictions')
+        plt.scatter(y_pred, y_true, alpha=0.5)
+        plt.xlabel('Predictions')
+        plt.ylabel('True Values')
         plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} MSE: {mse:.3f}")
         plt.xlim(lims)
         plt.ylim(lims)
-        plt.plot(lims, lims)
+        plt.plot(lims, lims, lw=0.5, c='k')
+        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
+        plt.close(fig)
+
+    def evaluate_binary_classification(self, label, targetName, y_pred, y_true):
+        accuracy = tf.reduce_mean(tf.metrics.binary_accuracy(y_true, y_pred))
+        verbosePrint(f"{label} – {targetName} Accuracy: {accuracy}", 2)
+
+        y_true = tf.squeeze(y_true)
+        y_pred = tf.squeeze(y_pred > 0.5)
+        cm = tf.math.confusion_matrix(y_true, y_pred)
+        fig = plt.figure(figsize=(10, 10))
+        sns.heatmap(cm, annot=True)
+        plt.xlabel('Predictions')
+        plt.ylabel('True Values')
+        plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
+        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
+        plt.close(fig)
+
+    def evaluate_classification(self, label, targetName, y_pred, y_true):
+        accuracy = tf.reduce_mean(tf.metrics.categorical_accuracy(y_true, y_pred))
+        verbosePrint(f"{label} – {targetName} Accuracy: {accuracy}", 2)
+
+        y_true_classes = tf.argmax(y_true, axis=1)
+        y_pred_classes = tf.argmax(y_pred, axis=1)
+        cm = tf.math.confusion_matrix(y_true_classes, y_pred_classes)
+        fig = plt.figure(figsize=(10, 10))
+        sns.heatmap(cm, annot=True)
+        plt.xlabel('Predictions')
+        plt.ylabel('True Values')
+        plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
         plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
         plt.close(fig)
 
@@ -263,13 +297,13 @@ class NeuralNetworkEstimator(Estimator):
     def estimatorName(self):
         return f"Neural network {self._hidden_layers}"
 
-    def __init__(self, hidden_layers, activation=None, loss=tf.losses.mse, fit_params=None, **kwargs):
+    def __init__(self, hidden_layers, activation=None, loss=None, fit_params=None, **kwargs):
         """
         Parameters
         ----------
         hidden_layers: list[int]
             Neuron counts for hidden layers.
-        activation
+        activation: Callable
             Activation function for the last layer. Default is no activation (identity).
         loss: tf.keras.losses.Loss
         fit_params: dict
@@ -291,6 +325,11 @@ class NeuralNetworkEstimator(Estimator):
         numFeatures = sum((feature.getNumFeatures() for _, feature, _ in self._inputs))
         numTargets = sum((feature.getNumFeatures() for _, feature, _ in self._targets))
 
+        if self._activation is None:
+            self._activation = self.inferActivation()
+        if self._loss is None:
+            self._loss = self.inferLoss()
+
         inputs = tf.keras.layers.Input([numFeatures])
         hidden = inputs
         for layer_size in self._hidden_layers:
@@ -301,10 +340,39 @@ class NeuralNetworkEstimator(Estimator):
         model.compile(
             tf.optimizers.Adam(),
             self._loss,
-            metrics=[tf.metrics.mse],
         )
 
         return model
+
+    def inferActivation(self):
+        if len(self._targets) != 1:
+            raise ValueError(f"{self.name} ({self.estimatorName}): Automatic 'activation' inferring is only available for one target feature. Specify the 'activation' manually.")
+        targetFeature = self._targets[0][1]
+        if type(targetFeature) == Feature or type(targetFeature) == FloatFeature:
+            return tf.identity
+        elif type(targetFeature) == IntEnumFeature or type(targetFeature) == CategoricalFeature:
+            return tf.keras.activations.softmax
+        elif type(targetFeature) == BinaryFeature:
+            return tf.keras.activations.sigmoid
+        elif type(targetFeature) == TimeFeature:
+            return tf.keras.activations.exponential
+        else:
+            raise ValueError(f"{self.name} ({self.estimatorName}): Cannot automatically infer activation for '{type(targetFeature)}'. Specify the 'activation' manually.")
+
+    def inferLoss(self):
+        if len(self._targets) != 1:
+            raise ValueError(f"{self.name} ({self.estimatorName}): Automatic 'loss' inferring is only available for one target feature. Specify the 'loss' manually.")
+        targetFeature = self._targets[0][1]
+        if type(targetFeature) == Feature or type(targetFeature) == FloatFeature:
+            return tf.losses.MeanSquaredError()
+        elif type(targetFeature) == IntEnumFeature or type(targetFeature) == CategoricalFeature:
+            return tf.losses.CategoricalCrossentropy()
+        elif type(targetFeature) == BinaryFeature:
+            return tf.losses.BinaryCrossentropy()
+        elif type(targetFeature) == TimeFeature:
+            return tf.losses.Poisson()
+        else:
+            raise ValueError(f"{self.name} ({self.estimatorName}): Cannot automatically infer loss for '{type(targetFeature)}'. Specify the 'loss' manually.")
 
     def predict(self, x):
         return self._model(x.reshape(1, -1)).numpy()[0]
@@ -319,9 +387,9 @@ class NeuralNetworkEstimator(Estimator):
             verbose=2 if self._args.verbose > 1 else 0
         )
 
-        trainLog = Log(["epoch", "train_mse", "val_mse"])
+        trainLog = Log(["epoch", "train_loss", "val_loss"])
         epochs = range(1, self._fit_params["epochs"] + 1)
-        for row in zip(epochs, history.history["mean_squared_error"], history.history["val_mean_squared_error"]):
+        for row in zip(epochs, history.history["loss"], history.history["val_loss"]):
             trainLog.register(row)
         trainLog.export(f"{self._outputFolder}/{self._iteration}-training.csv")
 

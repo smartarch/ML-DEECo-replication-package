@@ -75,12 +75,15 @@ class Simulation:
                 if ens.materialize(components, initializedEnsembles):
                     initializedEnsembles.append(ens)
                     ens.actuate()
+            for ens in initializedEnsembles:
+                ens.collectEstimatesData()
 
             # Components
             for component in components:
                 component.actuate()
-                component.collectEstimatesData()
                 verbosePrint(f"{component}", 4)
+            for component in components:
+                component.collectEstimatesData()
 
             # Collect statistics
             for chargerIndex in range(len(self.world.chargers)):

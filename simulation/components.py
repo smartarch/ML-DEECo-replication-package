@@ -1,12 +1,9 @@
 import math
 import random
 from enum import Enum
-from typing import List, TYPE_CHECKING
 
 from simulation.world import ENVIRONMENT, WORLD
-
-if TYPE_CHECKING:
-    from estimators.estimate import Estimate
+from estimators.estimate import Estimate
 
 
 class Point:
@@ -196,13 +193,7 @@ class Field:
         return f"{self.id},{self.topLeft},{self.bottomRight}"
 
 
-class ComponentMeta(type):
-    def __new__(mcs, name, bases, namespace):
-        namespace['estimates'] = []  # adding a class attribute
-        return super().__new__(mcs, name, bases, namespace)
-
-
-class Component(metaclass=ComponentMeta):
+class Component:
     """
         Component class is used to represent A component on the map. 
         Components are all elements that are on the map such as Birds, Drones, Chargers and Charging Stations.
@@ -225,7 +216,6 @@ class Component(metaclass=ComponentMeta):
     """
     location: Point
     id: str
-    estimates: List['Estimate']
 
     def __init__(self, location, componentID):
         """
@@ -261,12 +251,10 @@ class Component(metaclass=ComponentMeta):
         """
         pass
 
-    @classmethod
-    def assignEstimate(cls, estimate):
-        cls.estimates.append(estimate)
-
     def collectEstimatesData(self):
-        for estimate in self.estimates:
+        estimates = [fld for (fldName, fld) in type(self).__dict__.items()
+                     if not fldName.startswith('__') and isinstance(fld, Estimate)]
+        for estimate in estimates:
             estimate.collectInputs(self)
             estimate.collectTargets(self)
 

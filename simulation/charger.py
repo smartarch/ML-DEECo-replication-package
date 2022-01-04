@@ -38,6 +38,8 @@ class Charger(Component):
         self.acceptedDrones: List[Drone] = []   # drones accepted for charging, they move to the charger
         self.chargingDrones: List[Drone] = []   # drones currently being charged
 
+    # region Estimates
+
     @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
     @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
     def potential_drones(self):
@@ -62,6 +64,8 @@ class Charger(Component):
     @chargerFullEstimate.target(BinaryFeature())
     def charger_full(self):
         return len(self.chargingDrones) == self.chargerCapacity
+
+    # endregion
 
     def startCharging(self, drone):
         """Drone is in the correct location and starts charging"""

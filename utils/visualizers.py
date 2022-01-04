@@ -79,15 +79,21 @@ class Visualizer:
         text = f"{text}\ncharger capacity: {ENVIRONMENT.chargerCapacity}"
         text = f"{text}\nCharger Queues:"
         for charger in self.world.chargers:
-            text = f"{text}\n-{charger.id}, C:{len(charger.chargingDrones)}, A:{len(charger.acceptedDrones)}, W:{len(charger.waitingDrones)}, P:{len(charger.potentialDrones)}"
+            accepted = set(charger.acceptedDrones)
+            waiting = set(charger.waitingDrones)
+            potential = set(charger.potentialDrones)
+
+            text = f"{text}\n-{charger.id}, C:{len(charger.chargingDrones)}, A:{len(accepted)}, W:{len(waiting - accepted)}, P:{len(potential - waiting - accepted)}"
+
             for drone in charger.chargingDrones:
                 text = f"{text}\n--{drone.id}, b:{drone.battery:.2f} - C, t:{drone.timeToDoneCharging():.0f}"
             for drone in charger.acceptedDrones:
                 text = f"{text}\n--{drone.id}, b:{drone.battery:.2f} - A, t:{drone.timeToDoneCharging():.0f}"
-            for drone in charger.waitingDrones:
+            for drone in waiting - accepted:
                 text = f"{text}\n--{drone.id}, b:{drone.battery:.2f} - W, t:{drone.timeToDoneCharging():.0f}"
-            for drone in charger.potentialDrones:
+            for drone in potential - waiting - accepted:
                 text = f"{text}\n--{drone.id}, b:{drone.battery:.2f} - P, t:{drone.timeToDoneCharging():.0f}"
+
         text = f"{text}\n Dead Drones:"
         for drone in self.world.drones:
             if drone.state == DroneState.TERMINATED:

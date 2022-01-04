@@ -7,8 +7,7 @@ from typing import Callable, List, TYPE_CHECKING
 
 import numpy as np
 
-from estimators.features import Feature
-from simulation.components import Component
+from estimators.features import Feature, TimeFeature
 from simulation.world import WORLD
 
 if TYPE_CHECKING:
@@ -26,9 +25,9 @@ class DataCollectorMode(Enum):
 
 class DataCollector:
 
-    def __init__(self, mode=DataCollectorMode.First):
+    def __init__(self, begin=DataCollectorMode.First):
         self._records = {}
-        self._mode = mode
+        self._begin = begin
         self.x = []
         self.y = []
 
@@ -37,12 +36,12 @@ class DataCollector:
             self._records[recordId] = []
 
         records = self._records[recordId]
-        if self._mode == DataCollectorMode.All:
+        if self._begin == DataCollectorMode.All:
             records.append((x, extra))
-        elif self._mode == DataCollectorMode.First:
+        elif self._begin == DataCollectorMode.First:
             if len(records) == 0:
                 records.append((x, extra))
-        elif self._mode == DataCollectorMode.Last:
+        elif self._begin == DataCollectorMode.Last:
             if len(records) == 0:
                 records.append((x, extra))
             else:
@@ -70,7 +69,7 @@ class DataCollector:
 
 class Estimate:
 
-    def __init__(self):
+    def __init__(self, **dataCollectorKwargs):
         self.estimator: 'Estimator' = None
         self.inputs: List[BoundFeature] = []
         self.extras: List[BoundFeature] = []
@@ -79,11 +78,7 @@ class Estimate:
         self.targetsIdFunction = None
         self.inputsFilterFunctions: List[Callable] = []
         self.targetsFilterFunctions: List[Callable] = []
-        self.dataCollector = DataCollector()
-
-    def __set_name__(self, owner, name):
-        if issubclass(owner, Component):
-            owner.assignEstimate(self)
+        self.dataCollector = DataCollector(**dataCollectorKwargs)
 
     def using(self, estimator: 'Estimator'):
         self.estimator = estimator
@@ -154,18 +149,10 @@ class Estimate:
 
     def inTimeSteps(self, timeSteps):
         """Automatically collect the data with fixed time difference between inputs and targets."""
-        self.targetsFilterFunctions.append(lambda *args: WORLD.currentTimeStep > timeSteps)
+        self.targetsFilterFunctions.append(lambda *args: WORLD.currentTimeStep >= timeSteps)
         self.inputsIdFunction = lambda *args: (*args, WORLD.currentTimeStep)
         self.targetsIdFunction = lambda *args: (*args, WORLD.currentTimeStep - timeSteps)
         return self
-
-    # def bind(self, function):
-    #     def collectAndRun(*args, **kwargs):
-    #         result = function(*args, **kwargs)
-    #         self.collectInputs(*args)
-    #         self.collectTargets(*args)
-    #         return result
-    #     return collectAndRun
 
     # estimation
 
@@ -257,19 +244,19 @@ class Estimate:
 
 class TimeEstimate(Estimate):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **dataCollectorKwargs):
+        super().__init__(**dataCollectorKwargs)
         self.inputsIdFunction = lambda instance, comp: (instance, comp)
         self.targetsIdFunction = self.inputsIdFunction
         self.timeFunc = self.time(lambda *args: WORLD.currentTimeStep)
 
-        self.targets = [BoundFeature("time", Feature(), None)]
+        self.targets = [BoundFeature("time", TimeFeature(), None)]
 
         self.estimateCache = defaultdict(dict)
 
     def time(self, function):
         self.timeFunc = function
-        self.extras = [BoundFeature("time", Feature(), self.timeFunc)]
+        self.extras = [BoundFeature("time", TimeFeature(), self.timeFunc)]
         return function
 
     def generateTargets(self, *args):
@@ -299,31 +286,5 @@ class TimeEstimate(Estimate):
         }
 
 
-class ListWithTimeEstimate(list):
-    timeEstimate = None
-
-
-# def addSelectionTimeEstimate(compSelector, estimation):
-#     compSelector.selectionTimeEstimate = SelectionTimeEstimate(estimation)
-#     origGet = compSelector.get
-#     origSelectFn = compSelector.selectFn
-#     origExecute = compSelector.execute
-#
-#     def newGet(self, instance, owner):
-#         sel = origGet(instance, owner)
-#         if isinstance(sel, list):
-#             sel = ListWithSelectionTimeEstimate(sel)
-#         sel.selectionTimeEstimate = compSelector.selectionTimeEstimate
-#         return sel
-#
-#     def newSelectFn(instance, comp, otherEnsembles):
-#         select = origSelectFn(instance, comp, otherEnsembles)
-#         if select:
-#             compSelector.selectionTimeEstimate.collectInputs(comp)
-#         return select
-#
-#     # TODO(MT): modify execute to collect training data
-#
-#     compSelector.get = MethodType(newGet, compSelector)
-#     compSelector.selectFn = newSelectFn
-#     return compSelector
+class ListWithEstimate(list):
+    estimate = None

@@ -50,6 +50,8 @@ class Drone(Agent):
         Drone.Count = Drone.Count + 1
         Agent.__init__(self, location, self.droneSpeed, Drone.Count)
 
+    # region Estimates
+
     @futureBatteryEstimate.input(FloatFeature(0, 1))
     def battery(self):
         return self.battery
@@ -66,6 +68,8 @@ class Drone(Agent):
     @futureBatteryEstimate.targetsFilter
     def not_terminated(self):
         return self.state != DroneState.TERMINATED
+
+    # endregion
 
     @property
     def state(self):
