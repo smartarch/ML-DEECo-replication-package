@@ -8,7 +8,6 @@ from typing import Callable, List, TYPE_CHECKING
 import numpy as np
 
 from estimators.features import Feature, TimeFeature
-from simulation.components import Component
 from simulation.world import WORLD
 
 if TYPE_CHECKING:
@@ -81,10 +80,6 @@ class Estimate:
         self.targetsFilterFunctions: List[Callable] = []
         self.dataCollector = DataCollector(**dataCollectorKwargs)
 
-    def __set_name__(self, owner, name):
-        if issubclass(owner, Component):
-            owner.assignEstimate(self)
-
     def using(self, estimator: 'Estimator'):
         self.estimator = estimator
         estimator.assignEstimate(self)
@@ -154,7 +149,7 @@ class Estimate:
 
     def inTimeSteps(self, timeSteps):
         """Automatically collect the data with fixed time difference between inputs and targets."""
-        self.targetsFilterFunctions.append(lambda *args: WORLD.currentTimeStep > timeSteps)
+        self.targetsFilterFunctions.append(lambda *args: WORLD.currentTimeStep >= timeSteps)
         self.inputsIdFunction = lambda *args: (*args, WORLD.currentTimeStep)
         self.targetsIdFunction = lambda *args: (*args, WORLD.currentTimeStep - timeSteps)
         return self

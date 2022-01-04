@@ -67,8 +67,8 @@ class Estimator(abc.ABC):
         input_names = [i.name for i in self._inputs]
         target_names = [t.name for t in self._targets]
 
-        verbosePrint(f"{self.estimatorName}: inputs {input_names}.", 2)
-        verbosePrint(f"{self.estimatorName}: targets {target_names}.", 2)
+        verbosePrint(f"  inputs {input_names}.", 2)
+        verbosePrint(f"  targets {target_names}.", 2)
 
         for est in self._estimates:
             assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimator {self.name} ({self.estimatorName})"
