@@ -49,11 +49,11 @@ def run(args):
         os.makedirs(f"{folder}\\charger_logs")
 
     totalLog = Log([
-        'Train',
-        'Run',
         'Active Drones',
         'Total Damage',
         'Energy Consumed',
+        'Train',
+        'Run'
     ])
 
     # create the estimators
