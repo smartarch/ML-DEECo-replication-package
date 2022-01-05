@@ -52,6 +52,8 @@ def run(args):
         os.makedirs(f"{folder}\\charger_logs")
 
     totalLog = Log([
+        'Train',
+        'Run',
         'Active Drones',
         'Total Damage',
         'Energy Consumed',
@@ -109,8 +111,8 @@ def run(args):
             verbosePrint(f"Run {i + 1} started at {datetime.now()}:", 2)
 
             WORLD.reset()
-            simulation = Simulation(WORLD, folder, visualize=args.animation)
-            newLog, chargerLogs = simulation.run(f"{yamlFileName}_{str(t + 1)}_{str(i + 1)}", args)
+            simulation = Simulation(folder, visualize=args.animation)
+            newLog, chargerLogs = simulation.run(yamlFileName,t,i, args)
 
             if args.chart:
                 verbosePrint(f"Saving charger plot...", 3)
@@ -127,7 +129,7 @@ def run(args):
     for estimator in WORLD.estimators:
         estimator.saveModel()
 
-    totalLog.export(f"{folder}\\log_{args.waiting_estimation}.csv")
+    totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
     if args.chart:
         plots.createLogPlot(
             totalLog.records,
