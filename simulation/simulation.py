@@ -18,11 +18,11 @@ class Simulation:
 
     def collectStatistics(self,train,iteration):
         return [
-            train+1,
-            iteration+1,
             len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]),
             sum([bird.ate for bird in WORLD.birds]),
-            sum([charger.energyConsumed for charger in WORLD.chargers])
+            sum([charger.energyConsumed for charger in WORLD.chargers]),
+            train+1,
+            iteration+1
         ]
 
     def collectRates(self, previousRates):
@@ -52,7 +52,7 @@ class Simulation:
 
         from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
         from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
-        potentialEnsembles = fieldProtectionEnsembles(WORLD) + droneChargingEnsembles(WORLD)
+        potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
 
         WORLD.initEstimators()
 
@@ -132,7 +132,7 @@ class Simulation:
 
         from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
         from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
-        potentialEnsembles = fieldProtectionEnsembles(WORLD) + droneChargingEnsembles(WORLD)
+        potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
 
         WORLD.initEstimators()
 
