@@ -6,7 +6,7 @@ from typing import List, TYPE_CHECKING
 
 from estimators.estimate import DataCollectorMode
 from simulation.world import ENVIRONMENT, WORLD
-from estimators.features import FloatFeature, IntEnumFeature
+from estimators.features import FloatFeature, IntEnumFeature, BinaryFeature
 from simulation.ensemble import Ensemble, someOf
 from simulation.drone_state import DroneState
 from utils.verbose import verbosePrint
@@ -61,7 +61,7 @@ class WaitingDronesAssignment(Ensemble):
     def priority(self):
         return 2
 
-    drones: List[Drone] = someOf(Drone).withTimeEstimate(begin=DataCollectorMode.All).using(WORLD.waitingTimeEstimator)
+    drones: List[Drone] = someOf(Drone).withTimeEstimate().using(WORLD.waitingTimeEstimator)
 
     @drones.cardinality
     def drones(self):
@@ -117,13 +117,26 @@ class WaitingDronesAssignment(Ensemble):
 
     # endregion
 
-    @drones.estimate.inputsFilter
-    def filter(self, drone):
+    @drones.estimate.inputsValid
+    def is_waiting(self, drone):
         return drone in self.charger.waitingDrones
 
-    @drones.estimate.targetsFilter
-    def filter(self, drone):
+    @drones.estimate.target(BinaryFeature())  # TODO(MT): it is not clear whether we should preprocess the value here (convert True/False to 1/0 or for IntEnumFeature do the one-hot encoding)
+    def is_accepted(self, drone):
         return drone in self.charger.acceptedDrones
+
+    @staticmethod
+    @drones.estimate.condition
+    def condition(targetValue):
+        return targetValue
+
+    @drones.estimate.condition
+    def condition(self, targetValue):
+        return targetValue
+
+    @drones.estimate.condition
+    def condition(self, drone, targetValue):
+        return targetValue
 
     def actuate(self):
 

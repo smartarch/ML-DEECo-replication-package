@@ -95,8 +95,8 @@ class someOf():
     def withEstimate(self):
         return someOfWithEstimate(self.compClass, Estimate())
 
-    def withTimeEstimate(self, *, begin=DataCollectorMode.First):
-        return someOfWithEstimate(self.compClass, TimeEstimate(begin=begin))
+    def withTimeEstimate(self, **dataCollectorKwargs):
+        return someOfWithEstimate(self.compClass, TimeEstimate(**dataCollectorKwargs))
 
 
 class someOfWithEstimate(someOf):
