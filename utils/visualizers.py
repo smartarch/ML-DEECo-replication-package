@@ -4,20 +4,20 @@ from simulation.drone_state import DroneState
 from simulation.world import ENVIRONMENT
 
 COLORS = {
-    'drone': [77, 148, 255],
+    'drone': [0, 0, 255],
     'bird': [255, 20, 102],
-    'field': [0, 102, 0],
+    'field': [206, 215, 193],
     'charger': [204, 204, 0],
     'grid': [255, 255, 255],
-    'text': (237, 230, 211),
-    'line': [0, 255, 255],
+    'text': (0, 0, 0),
+    'line': [255,0,0],
 }
 
 SIZES = {
-    'drone': 3,
-    'bird': 3,
-    'field': 6,
-    'charger': 5,
+    'drone': 5,
+    'bird': 4,
+    'field': 10,
+    'charger': 6,
 }
 
 LEGEND_SIZE = 200
@@ -59,7 +59,7 @@ class Visualizer:
         self.background = np.zeros(
             (self.height,
              self.width, 3))  # 3 for RGB and H for unsigned short
-
+        self.background.fill(255)
         for field in self.world.fields:
             filedPoints = field.locationPoints()
             self.grid[field] = filedPoints
