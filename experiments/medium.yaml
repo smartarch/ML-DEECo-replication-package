@@ -11,7 +11,7 @@ fields: [
   [81,35,90,44]
 ]
 
-maxSteps: 1000
+maxSteps: 500
 mapWidth: 100
 mapHeight: 100
 droneRadius: 5

@@ -16,16 +16,16 @@ fields: [
   [185,729,669,900]
 ]
 
-maxSteps: 1000
+maxSteps: 500
 mapWidth: 1000
 mapHeight: 1000
-droneRadius: 10
+droneRadius: 5
 birdSpeed: 1 
 droneSpeed: 1
 chargerCapacity: 5
-chargingRate: 0.1
-droneMovingEnergyConsumption: 0.001
-droneProtectingEnergyConsumption: 0.0005
+chargingRate: 0.04
+droneMovingEnergyConsumption: 0.01
+droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0.3
  
 
