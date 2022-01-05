@@ -113,10 +113,10 @@ class Charger(Component):
         # move drones from accepted to charging
         freeChargingPlaces = self.chargerCapacity - len(self.chargingDrones)
         for i in range(freeChargingPlaces):
-            if len(self.acceptedDrones) > 0:
-                for drone in self.acceptedDrones:
-                    if drone.location == self.location:
-                        self.startCharging(drone)
+            for drone in self.acceptedDrones:
+                if drone.location == self.location:
+                    self.startCharging(drone)
+                    break
 
         # assign the target charger of the accepted drones
         for drone in self.acceptedDrones:
