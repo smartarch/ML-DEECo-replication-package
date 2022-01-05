@@ -130,11 +130,67 @@ droneSurvived = {
     ],
     'type':'line',
     'folder':'results//evaluation//charts',
-    'filename':'droneSurvived',
+    'filename':'survived_drones',
     'extention':'png',
     'dpi':600,
     'size':(8,6),
     'title':'Survived Drones in Different Simulation Maps over 500 Iterations'
+}
+droneAfterNN = {
+    'inputs':[
+        'results//evaluation//methods//drones.csv',
+    ],
+    'subtitles':[
+        'Survived Drones Average of 6 Simulation Runs',
+    ],
+    'y':[
+        'No Estimator',
+        'Neural Network',
+    ],
+    'x':'Method',
+    'colors':[
+        'lightblue',
+        'orange',
+        'blue',
+        'green',
+    ],
+    'width':0.5,
+    'type':'bar',
+    'folder':'results//evaluation//charts',
+    'filename':'drones_nn',
+    'extention':'png',
+    'dpi':600,
+    'size':(8,6),
+    'title':'Survived Drones Comparision of No Estimator vs Neural Network Estimator'
+}
+energyDamageAfterNN = {
+    'inputs':[
+        'results//evaluation//methods//damage.csv',
+        'results//evaluation//methods//energy.csv',
+    ],
+    'subtitles':[
+        'Avarage Damage in 6 Runs',
+        'Avarage Energy Consumed in 6 Runs',
+    ],
+    'y':[
+        'No Estimator',
+        'Neural Network',
+    ],
+    'x':'Map',
+    'colors':[
+        'lightblue',
+        'orange',
+        'blue',
+        'green',
+    ],
+    'width':0.5,
+    'type':'bar',
+    'folder':'results//evaluation//charts',
+    'filename':'energy_damage_nn',
+    'extention':'png',
+    'dpi':600,
+    'size':(8,6),
+    'title':'Comparision of No Estimator vs Neural Network Estimator'
 }
 class Chart:
     def __init__ (self, chart):
@@ -148,7 +204,6 @@ class Chart:
         self.filename = f"{self.folder}//{chart['filename']}.{chart['extention']}"
         self.x = chart['x']
         self.y = chart['y']
-
         subcols = round(math.sqrt(self.subplots))
         subrows = math.ceil(math.sqrt(self.subplots))
         figsize = chart['size']
@@ -172,7 +227,7 @@ class Chart:
 class BarChart(Chart):
     def __init__(self,chart):
         Chart.__init__(self,chart)
-        self.width= 0.95 / len(chart['y'])
+        self.width= chart['width'] / len(chart['y'])
 
     def plot (self):
         for subplot in range(self.subplots):
@@ -235,7 +290,8 @@ def main():
         # randomBattery,
         # chargeAlertChart,
         # mapComparisionChart,
-        droneSurvived
+        droneAfterNN,
+        energyDamageAfterNN
 
     ]
 
