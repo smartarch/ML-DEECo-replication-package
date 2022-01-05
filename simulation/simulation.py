@@ -5,12 +5,10 @@ from utils.visualizers import Visualizer
 from utils.serialization import Log
 
 
-# TODO: as the world is global, this might be only a function (or multiple functions) instead of a class
 class Simulation:
 
-    def __init__(self, world, folder, visualize):
+    def __init__(self, folder, visualize):
         self.visualize = visualize
-        self.world = world
         self.folder = folder
         self.MAXDRONES = ENVIRONMENT.droneCount
         self.MAXDAMAGE = ENVIRONMENT.birdCount * ENVIRONMENT.maxSteps
@@ -18,12 +16,13 @@ class Simulation:
 
 
 
-    def collectStatistics(self):
+    def collectStatistics(self,train,iteration):
         return [
-
-            len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED]),
-            sum([bird.ate for bird in self.world.birds]),
-            sum([charger.energyConsumed for charger in self.world.chargers])
+            train+1,
+            iteration+1,
+            len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]),
+            sum([bird.ate for bird in WORLD.birds]),
+            sum([charger.energyConsumed for charger in WORLD.chargers])
         ]
 
     def collectRates(self, previousRates):
@@ -31,40 +30,39 @@ class Simulation:
             previousRates ={
                 'Damage':0,
                 'Energy':0,
-
             }
         return [
             WORLD.currentTimeStep, 
             WORLD.drones[0].alert,
             ENVIRONMENT.droneBatteryRandomize,
-            len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED]),
-            len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED])/self.MAXDRONES,
-            sum([bird.ate for bird in self.world.birds])-previousRates['Damage'],
-            sum([bird.ate for bird in self.world.birds]),
-            sum([charger.energyConsumed for charger in self.world.chargers])-previousRates['Energy'],
-            sum([charger.energyConsumed for charger in self.world.chargers])
+            len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]),
+            len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED])/self.MAXDRONES,
+            sum([bird.ate for bird in WORLD.birds])-previousRates['Damage'],
+            sum([bird.ate for bird in WORLD.birds]),
+            sum([charger.energyConsumed for charger in WORLD.chargers])-previousRates['Energy'],
+            sum([charger.energyConsumed for charger in WORLD.chargers])
         ]
-    def run(self, filename, args):
+    def run(self, filename,train,iteration, args):
 
         components = []
 
-        components.extend(self.world.drones)
-        components.extend(self.world.birds)
-        components.extend(self.world.chargers)
+        components.extend(WORLD.drones)
+        components.extend(WORLD.birds)
+        components.extend(WORLD.chargers)
 
         from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
         from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
-        potentialEnsembles = fieldProtectionEnsembles(self.world) + droneChargingEnsembles(self.world)
+        potentialEnsembles = fieldProtectionEnsembles(WORLD) + droneChargingEnsembles(WORLD)
 
         WORLD.initEstimators()
 
         if self.visualize:
-            visualizer = Visualizer(self.world)
+            visualizer = Visualizer(WORLD)
             visualizer.drawFields()
 
         for i in range(ENVIRONMENT.maxSteps):
             verbosePrint(f"Step {i + 1}:", 3)
-            self.world.currentTimeStep = i
+            WORLD.currentTimeStep = i
 
             # Ensembles
             initializedEnsembles = []
@@ -86,12 +84,12 @@ class Simulation:
                 component.collectEstimatesData()
 
             # Collect statistics
-            for chargerIndex in range(len(self.world.chargers)):
-                charger = self.world.chargers[chargerIndex]
+            for chargerIndex in range(len(WORLD.chargers)):
+                charger = WORLD.chargers[chargerIndex]
                 accepted = set(charger.acceptedDrones)
                 waiting = set(charger.waitingDrones)
                 potential = set(charger.potentialDrones)
-                self.world.chargerLogs[chargerIndex].register([
+                WORLD.chargerLogs[chargerIndex].register([
                     # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
                     len(charger.chargingDrones),
                     len(accepted),
@@ -104,16 +102,16 @@ class Simulation:
 
         if self.visualize:
             verbosePrint(f"Saving animation...", 3)
-            visualizer.createAnimation(f"{self.folder}/animations/{filename}.gif")
+            visualizer.createAnimation(f"{self.folder}/animations/{filename}_{train+1}_{iteration+1}.gif")
             verbosePrint(f"Animation saved.", 3)
 
-        self.world.chargerLog.export(f"{self.folder}/charger_logs/{filename}.csv")
-        totalLog = self.collectStatistics()
+        WORLD.chargerLog.export(f"{self.folder}/charger_logs/{filename}_{train+1}_{iteration+1}.csv")
+        totalLog = self.collectStatistics(train,iteration)
 
-        return totalLog, self.world.chargerLogs
+        return totalLog, WORLD.chargerLogs
 
 
-    def quickrun(self, filename, args):
+    def quickrun(self, filename,train,iteration, args):
         log = Log([
             'Iterations',
             'Charge Alert',
@@ -127,24 +125,24 @@ class Simulation:
             ])
         components = []
 
-        components.extend(self.world.drones)
+        components.extend(WORLD.drones)
 
-        components.extend(self.world.birds)
-        components.extend(self.world.chargers)
+        components.extend(WORLD.birds)
+        components.extend(WORLD.chargers)
 
         from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
         from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
-        potentialEnsembles = fieldProtectionEnsembles(self.world) + droneChargingEnsembles(self.world)
+        potentialEnsembles = fieldProtectionEnsembles(WORLD) + droneChargingEnsembles(WORLD)
 
         WORLD.initEstimators()
 
         if self.visualize:
-            visualizer = Visualizer(self.world)
+            visualizer = Visualizer(WORLD)
             visualizer.drawFields()
         previousRates = None
         for i in range(ENVIRONMENT.maxSteps):
             verbosePrint(f"Step {i + 1}:", 3)
-            self.world.currentTimeStep = i
+            WORLD.currentTimeStep = i
 
             # Ensembles
             initializedEnsembles = []
@@ -190,15 +188,15 @@ class Simulation:
 
         if self.visualize:
             verbosePrint(f"Saving animation...", 3)
-            visualizer.createAnimation(f"{self.folder}/animations/{filename}.gif")
+            visualizer.createAnimation(f"{self.folder}/animations/{filename}_{train+1}_{iteration+1}.gif")
             verbosePrint(f"Animation saved.", 3)
 
-        self.world.chargerLog.export(f"{self.folder}/charger_logs/{filename}.csv") 
+        WORLD.chargerLog.export(f"{self.folder}/charger_logs/{filename}_{train+1}_{iteration+1}.csv") 
         
         WORLD.currentTimeStep = ENVIRONMENT.maxSteps
         log.register(self.collectRates(previousRates))
-        log.export(f"{self.folder}/{filename}.csv")
-        return self.collectStatistics(), self.world.chargerLogs
+        log.export(f"{self.folder}/{filename}_{train+1}_{iteration+1}.csv")
+        return self.collectStatistics(train,iteration), WORLD.chargerLogs
 
     def actuateEnsembles(self, potentialEnsembles, components):
         initializedEnsembles = []
