@@ -206,12 +206,12 @@ class AcceptedDronesAssignment(Ensemble):
 ensembles: List[Ensemble]
 
 
-def getEnsembles(world):
+def getEnsembles():
     global ensembles
 
     ensembles = \
-        [PotentialDronesAssignment(charger) for charger in world.chargers] + \
-        [WaitingDronesAssignment(charger) for charger in world.chargers] + \
-        [AcceptedDronesAssignment(charger) for charger in world.chargers]
+        [PotentialDronesAssignment(charger) for charger in WORLD.chargers] + \
+        [WaitingDronesAssignment(charger) for charger in WORLD.chargers] + \
+        [AcceptedDronesAssignment(charger) for charger in WORLD.chargers]
 
     return ensembles

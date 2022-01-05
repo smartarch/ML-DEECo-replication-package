@@ -2,7 +2,7 @@
 Field protection ensembles
 """
 from typing import List, TYPE_CHECKING
-
+from simulation.world import ENVIRONMENT, WORLD
 from simulation.drone_state import DroneState
 from simulation.ensemble import Ensemble, someOf
 from utils.verbose import verbosePrint
@@ -49,8 +49,8 @@ class FieldProtection(Ensemble):
             drone.targetField = self.field
 
 
-def getEnsembles(world):
+def getEnsembles():
 
-    ensembles = [FieldProtection(field) for field in world.fields]
+    ensembles = [FieldProtection(field) for field in WORLD.fields]
 
     return ensembles
