@@ -1,5 +1,5 @@
-drones: 100
-birds: 500
+drones: 45
+birds: 200
 chargers: [
   [515,243],
   [778,235],
@@ -22,7 +22,7 @@ mapHeight: 1000
 droneRadius: 5
 birdSpeed: 1 
 droneSpeed: 1
-chargerCapacity: 5
+chargerCapacity: 4
 chargingRate: 0.04
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
