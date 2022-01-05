@@ -68,8 +68,8 @@ chargeAlertChart = {
     'type':'line',
     'folder':'results//evaluation//charts',
     'filename':'charge-alert',
-    'extention':'tiff',
-    'dpi':300,
+    'extention':'png',
+    'dpi':600,
     'size':(10,8),
     'title':'Simulation Runs in Multiple Maps Tuning Charging Alerts'
 }
@@ -102,12 +102,40 @@ randomBattery = {
     'type':'line',
     'folder':'results//evaluation//charts',
     'filename':'random-battery',
-    'extention':'tiff',
-    'dpi':300,
+    'extention':'png',
+    'dpi':600,
     'size':(10,8),
     'title':'Simulation Runs in Multiple Maps Tuning Starting Battery Decrease'
 }
 
+droneSurvived = {
+    'inputs':[
+        'results//evaluation//vision//drones_survived.csv',
+    ],
+    'subtitles':[
+        'Survived Drones',
+    ],
+    'y':[
+        'Small',
+        'Intense',
+        'Medium',
+        'Large',
+    ],
+    'x':'Iterations',
+    'colors':[
+        'lightblue',
+        'orange',
+        'blue',
+        'green',
+    ],
+    'type':'line',
+    'folder':'results//evaluation//charts',
+    'filename':'droneSurvived',
+    'extention':'png',
+    'dpi':600,
+    'size':(8,6),
+    'title':'Survived Drones in Different Simulation Maps over 500 Iterations'
+}
 class Chart:
     def __init__ (self, chart):
         
@@ -157,7 +185,7 @@ class BarChart(Chart):
                 self.axes[subplot].bar(x+(self.width*(i-1)), yArray, color=self.colors[i], label=y, width=self.width)
             
             self.axes[subplot].legend()
-            self.axes[subplot].set_title(self.subtitles[subplot])
+            self.axes[subplot].set_ylabel(self.subtitles[subplot])
             self.axes[subplot].set_xlabel(self.x)
             self.axes[subplot].set_xticks(x, labels=xLabels)
 
@@ -186,9 +214,9 @@ class LineChart(Chart):
                 self.axes[subplot].plot(x, yArray, color=self.colors[i], label=y)
             
             self.axes[subplot].legend()
-            self.axes[subplot].set_title(self.subtitles[subplot])
+            self.axes[subplot].set_ylabel(self.subtitles[subplot])
             self.axes[subplot].set_xlabel(self.x)
-            self.axes[subplot].set_xticks(x, labels=[f"{xLb:0.2f}" for xLb in xLabels])
+            self.axes[subplot].set_xticks(x, labels=[f"{xLb}" for xLb in xLabels])
 
         if not os.path.exists(self.folder):
             os.mkdir(self.folder)
@@ -204,9 +232,10 @@ class LineChart(Chart):
 def main():
     
     charts = [
-        randomBattery,
-        chargeAlertChart,
-        mapComparisionChart,
+        # randomBattery,
+        # chargeAlertChart,
+        # mapComparisionChart,
+        droneSurvived
 
     ]
 
