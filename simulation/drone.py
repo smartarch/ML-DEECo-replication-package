@@ -1,7 +1,7 @@
 import random
 from typing import Optional, TYPE_CHECKING
 
-from estimators.estimate import Estimate
+from estimators.estimate import Estimate, TimeEstimate, DataCollectorMode
 from estimators.features import FloatFeature, IntEnumFeature
 from simulation.components import Agent
 from simulation.drone_state import DroneState
@@ -30,6 +30,9 @@ class Drone(Agent):
     Count = 0
 
     futureBatteryEstimate = Estimate().inTimeSteps(50).using(WORLD.droneBatteryEstimator)
+    futureStateEstimate = Estimate().inTimeSteps(50).using(WORLD.droneStateEstimator)
+    timeToChargingStateEstimate = TimeEstimate().using(WORLD.timeToChargingEstimator)
+    timeToLowBatteryEstimate = TimeEstimate().using(WORLD.timeToLowBatteryEstimator)
 
     def __init__(self, location):
 
@@ -53,21 +56,47 @@ class Drone(Agent):
     # region Estimates
 
     @futureBatteryEstimate.input(FloatFeature(0, 1))
+    @futureStateEstimate.input(FloatFeature(0, 1))
+    @timeToChargingStateEstimate.input(FloatFeature(0, 1))
+    @timeToLowBatteryEstimate.input(FloatFeature(0, 1))
     def battery(self):
         return self.battery
 
     @futureBatteryEstimate.input(IntEnumFeature(DroneState))
+    @futureStateEstimate.input(IntEnumFeature(DroneState))
+    @timeToChargingStateEstimate.input(IntEnumFeature(DroneState))
+    @timeToLowBatteryEstimate.input(IntEnumFeature(DroneState))
     def drone_state(self):
         return self.state
 
     @futureBatteryEstimate.target()
+    @timeToLowBatteryEstimate.target(FloatFeature(0, 1))
     def battery(self):
         return self.battery
 
-    @futureBatteryEstimate.inputsFilter
-    @futureBatteryEstimate.targetsFilter
+    @futureStateEstimate.target(IntEnumFeature(DroneState))
+    @timeToChargingStateEstimate.target(IntEnumFeature(DroneState))
+    def drone_state(self):
+        return self.state
+
+    @futureBatteryEstimate.inputsValid
+    @futureBatteryEstimate.targetsValid
+    @futureStateEstimate.inputsValid
+    @futureStateEstimate.targetsValid
+    @timeToChargingStateEstimate.inputsValid
+    @timeToChargingStateEstimate.targetsValid
+    @timeToLowBatteryEstimate.inputsValid
+    @timeToLowBatteryEstimate.targetsValid
     def not_terminated(self):
         return self.state != DroneState.TERMINATED
+
+    @timeToLowBatteryEstimate.condition
+    def battery_low(self, battery):
+        return battery < self.alert
+
+    @timeToChargingStateEstimate.condition
+    def charging_state(self, state):
+        return state in (DroneState.CHARGING, DroneState.MOVING_TO_CHARGER)
 
     # endregion
 

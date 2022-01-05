@@ -41,9 +41,6 @@ def run(args):
 
     folder = f"results\\{args.output}"
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
-    estDroneFolder = f"{folder}\\drone_battery"
-    estChargerUtilFolder = f"{folder}\\charger_utilization"
-    estChargerFullFolder = f"{folder}\\charger_full"
 
     if not os.path.exists(f"{folder}\\animations"):
         os.makedirs(f"{folder}\\animations")
@@ -72,34 +69,61 @@ def run(args):
         )
 
     if args.examples:
+        fit_params = {
+            "epochs": 20,
+        }
         droneBatteryEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32],
+            hidden_layers=[32, 32], fit_params=fit_params,
             activation=tf.keras.activations.sigmoid,  # We want a value between 0 and 1
-            outputFolder=estDroneFolder, args=args, name="Drone Battery"
+            outputFolder=f"{folder}\\drone_battery", args=args, name="Drone Battery"
         )
-    else:
-        droneBatteryEstimator = ConstantEstimator(outputFolder=estDroneFolder, args=args, name="Drone Battery")
-
-    if args.examples:
         chargerUtilizationEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32],
-            outputFolder=estChargerUtilFolder, args=args, name="Charger Capacity"
+            hidden_layers=[32, 32], fit_params=fit_params,
+            outputFolder=f"{folder}\\charger_utilization", args=args, name="Charger Capacity"
         )
-    else:
-        chargerUtilizationEstimator = ConstantEstimator(outputFolder=estChargerUtilFolder, args=args, name="Charger Capacity")
-
-    if args.examples:
         chargerFullEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32],
-            outputFolder=estChargerFullFolder, args=args, name="Charger Full"
+            hidden_layers=[32, 32], fit_params=fit_params,
+            outputFolder=f"{folder}\\charger_full", args=args, name="Charger Full"
+        )
+        droneStateEstimator = NeuralNetworkEstimator(
+            hidden_layers=[32, 32], fit_params=fit_params,
+            outputFolder=f"{folder}\\drone_state", args=args, name="Drone State"
+        )
+        timeToChargingEstimator = NeuralNetworkEstimator(
+            hidden_layers=[32, 32], fit_params=fit_params,
+            outputFolder=f"{folder}\\drone_time_to_charging", args=args, name="Time To Charging"
+        )
+        timeToLowBatteryEstimator = NeuralNetworkEstimator(
+            hidden_layers=[32, 32], fit_params=fit_params,
+            outputFolder=f"{folder}\\drone_time_to_low_battery", args=args, name="Time To Low Battery"
         )
     else:
-        chargerFullEstimator = ConstantEstimator(outputFolder=estChargerFullFolder, args=args, name="Charger Full")
+        droneBatteryEstimator = ConstantEstimator(
+            outputFolder=f"{folder}\\drone_battery", args=args, name="Drone Battery"
+        )
+        chargerUtilizationEstimator = ConstantEstimator(
+            outputFolder=f"{folder}\\charger_utilization", args=args, name="Charger Capacity"
+        )
+        chargerFullEstimator = ConstantEstimator(
+            outputFolder=f"{folder}\\charger_full", args=args, name="Charger Full"
+        )
+        droneStateEstimator = ConstantEstimator(
+            outputFolder=f"{folder}\\drone_state", args=args, name="Drone State"
+        )
+        timeToChargingEstimator = ConstantEstimator(
+            outputFolder=f"{folder}\\drone_time_to_charging", args=args, name="Time To Charging"
+        )
+        timeToLowBatteryEstimator = ConstantEstimator(
+            outputFolder=f"{folder}\\drone_time_to_low_battery", args=args, name="Time To Low Battery"
+        )
 
     WORLD.waitingTimeEstimator = waitingTimeEstimator
     WORLD.droneBatteryEstimator = droneBatteryEstimator
     WORLD.chargerUtilizationEstimator = chargerUtilizationEstimator
     WORLD.chargerFullEstimator = chargerFullEstimator
+    WORLD.droneStateEstimator = droneStateEstimator
+    WORLD.timeToChargingEstimator = timeToChargingEstimator
+    WORLD.timeToLowBatteryEstimator = timeToLowBatteryEstimator
 
     # start the main loop
     for t in range(args.train):

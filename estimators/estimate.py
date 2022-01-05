@@ -25,7 +25,7 @@ class DataCollectorMode(Enum):
 
 class DataCollector:
 
-    def __init__(self, begin=DataCollectorMode.First):
+    def __init__(self, begin=DataCollectorMode.All):
         self._records = {}
         self._begin = begin
         self.x = []
@@ -74,8 +74,8 @@ class Estimate:
         self.inputs: List[BoundFeature] = []
         self.extras: List[BoundFeature] = []
         self.targets: List[BoundFeature] = []
-        self.inputsIdFunction = None
-        self.targetsIdFunction = None
+        self.inputsIdFunction = lambda *args: (*args,)
+        self.targetsIdFunction = lambda *args: (*args,)
         self.inputsFilterFunctions: List[Callable] = []
         self.targetsFilterFunctions: List[Callable] = []
         self.dataCollector = DataCollector(**dataCollectorKwargs)
@@ -130,11 +130,11 @@ class Estimate:
         self.targetsIdFunction = function
         return function
 
-    def inputsFilter(self, function):
+    def inputsValid(self, function):
         self.inputsFilterFunctions.append(function)
         return function
 
-    def targetsFilter(self, function):
+    def targetsValid(self, function):
         self.targetsFilterFunctions.append(function)
         return function
 
@@ -246,11 +246,11 @@ class TimeEstimate(Estimate):
 
     def __init__(self, **dataCollectorKwargs):
         super().__init__(**dataCollectorKwargs)
-        self.inputsIdFunction = lambda instance, comp: (instance, comp)
-        self.targetsIdFunction = self.inputsIdFunction
         self.timeFunc = self.time(lambda *args: WORLD.currentTimeStep)
 
         self.targets = [BoundFeature("time", TimeFeature(), None)]
+        self.userTargets = []
+        self.conditionFunctions = []
 
         self.estimateCache = defaultdict(dict)
 
@@ -258,6 +258,24 @@ class TimeEstimate(Estimate):
         self.timeFunc = function
         self.extras = [BoundFeature("time", TimeFeature(), self.timeFunc)]
         return function
+
+    def _addTarget(self, name: str, feature: Feature, function: Callable):
+        self.userTargets.append(BoundFeature(name, feature, function))
+
+    def condition(self, function):
+        self.conditionFunctions.append(function)
+        return function
+
+    def collectTargets(self, *args, id=None):
+        userTargets = [function(*args) for name, feature, function in self.userTargets]
+        for f in self.conditionFunctions:
+            argCount = f.__code__.co_argcount
+            missingArgs = argCount - len(userTargets)
+            # args[0] is the component/ensemble instance (`self` of the condition method)
+            # this way, the condition can be either static, or bound and both will work
+            if not f(*args[:missingArgs], *userTargets):
+                return
+        super().collectTargets(*args, id=id)
 
     def generateTargets(self, *args):
         currentTimeStep = self.timeFunc(*args)
