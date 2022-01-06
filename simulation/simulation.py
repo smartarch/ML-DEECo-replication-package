@@ -22,7 +22,9 @@ class Simulation:
             sum([bird.ate for bird in WORLD.birds]),
             sum([charger.energyConsumed for charger in WORLD.chargers]),
             train+1,
-            iteration+1
+            iteration+1,
+            WORLD.drones[0].alert,
+            ENVIRONMENT.droneBatteryRandomize,
         ]
 
     def collectRates(self, previousRates):
