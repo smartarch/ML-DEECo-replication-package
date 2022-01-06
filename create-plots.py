@@ -43,10 +43,10 @@ mapComparisionChart = {
 
 chargeAlertChart = {
     'inputs':[
-        'results//evaluation//chargeAlert//small//log_baseline_zero.csv',
-        'results//evaluation//chargeAlert//intense//log_baseline_zero.csv',
-        'results//evaluation//chargeAlert//medium//log_baseline_zero.csv',
-        'results//evaluation//chargeAlert//large//log_baseline_zero.csv',
+        'results//evaluation//chargeAlert//small//small_neural_network.csv',
+        'results//evaluation//chargeAlert//intense//intense_neural_network.csv',
+        'results//evaluation//chargeAlert//medium//medium_neural_network.csv',
+        'results//evaluation//chargeAlert//large//large_neural_network.csv',
     ],
     'subtitles':[
         'Small Map',
@@ -65,13 +65,79 @@ chargeAlertChart = {
         'orange',
         'yellowgreen',
     ],
-    'type':'line',
+    'type':'line-rate',
     'folder':'results//evaluation//charts',
     'filename':'charge-alert',
     'extention':'png',
     'dpi':600,
     'size':(10,8),
     'title':'Simulation Runs in Multiple Maps Tuning Charging Alerts'
+}
+
+chargeAlertChartIntense = {
+    'inputs':[
+        #'results//evaluation//chargeAlert//small//small_neural_network.csv',
+        'results//evaluation//chargeAlert//intense//intense_neural_network.csv',
+        #'results//evaluation//chargeAlert//medium//medium_neural_network.csv',
+        #'results//evaluation//chargeAlert//large//large_neural_network.csv',
+    ],
+    'subtitles':[
+        #'Small Map',
+        'Intense Map: Normalized To [0-1]',
+        #'Medium Map',
+        #'Large Map'
+    ],
+    'y':[
+        'Active Drones',
+        'Total Damage',
+        'Energy Consumed',
+    ],
+    'x':'Charge Alert',
+    'colors':[
+        'blue',
+        'orange',
+        'yellowgreen',
+    ],
+    'type':'line-rate',
+    'folder':'results//evaluation//charts',
+    'filename':'charge-alert-intense',
+    'extention':'png',
+    'dpi':600,
+    'size':(10,5),
+    'title':'Simulation Runs in Intense Maps With Different Charging Alerts'
+}
+
+
+chargeAlertChartIntenseNN = {
+    'inputs':[
+        #'results//evaluation//chargeAlert//small//small_neural_network.csv',
+        'results//evaluation//methods//intense-new-charge-alert//drones-intense.csv',
+        #'results//evaluation//chargeAlert//medium//medium_neural_network.csv',
+        #'results//evaluation//chargeAlert//large//large_neural_network.csv',
+    ],
+    'subtitles':[
+        #'Small Map',
+        'Intense Map: Average Alive Drones after 6 Runs',
+        #'Medium Map',
+        #'Large Map'
+    ],
+    'y':[
+        'Charge Alert: 0.2',
+        'Charge Alert: 0.4',
+    ],
+    'x':'Methods',
+    'colors':[
+        'orange',
+        'green',
+    ],
+    'width':0.4,
+    'type':'bar',
+    'folder':'results//evaluation//charts',
+    'filename':'charge-alert-intense-nn',
+    'extention':'png',
+    'dpi':600,
+    'size':(8,8),
+    'title':'Comparing Estimators in Intense Maps With Different Charging Alert'
 }
 
 
@@ -281,6 +347,33 @@ class LineChart(Chart):
         #plt.show()
         plt.close(self.fig)
 
+class LineRateChart(Chart):
+    def __init__(self,chart):
+        Chart.__init__(self,chart)
+    def plot (self):
+
+        for subplot in range(self.subplots):
+            dataFrame = pd.read_csv(self.inputs[subplot])
+            xLabels = dataFrame[self.x]
+            x = np.arange(0,len(xLabels))
+            
+            for i,y in enumerate(self.y):
+                yArray = np.array(dataFrame[y])
+                self.axes[subplot].plot(x, yArray/max(yArray), color=self.colors[i], label=y)
+            
+            self.axes[subplot].legend()
+            self.axes[subplot].set_ylabel(self.subtitles[subplot])
+            self.axes[subplot].set_xlabel(self.x)
+            self.axes[subplot].set_xticks(x, labels=[f"{xLb:0.2f}" for xLb in xLabels])
+
+        if not os.path.exists(self.folder):
+            os.mkdir(self.folder)
+        self.fig.suptitle(self.title, fontsize=12)
+        self.fig.tight_layout()
+        plt.savefig(self.filename)
+        #plt.show()
+        plt.close(self.fig)
+
  
 
 
@@ -288,10 +381,11 @@ def main():
     
     charts = [
         # randomBattery,
-        # chargeAlertChart,
+        #chargeAlertChart,
         # mapComparisionChart,
-        droneAfterNN,
-        energyDamageAfterNN
+        #droneAfterNN,
+        #energyDamageAfterNN,
+        chargeAlertChartIntenseNN
 
     ]
 
@@ -303,6 +397,11 @@ def main():
         if chart['type'] == 'line':
             lineChart = LineChart(chart)
             lineChart.plot()
+
+        if chart['type'] == 'line-rate':
+            lineRateChart = LineRateChart(chart)
+            lineRateChart.plot()
+    
     
 if __name__ == "__main__":
     main()
