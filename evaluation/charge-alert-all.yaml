@@ -1,0 +1,27 @@
+inputs: [
+    'inputs//charge-alert//small-charge-alert.csv',
+    'inputs//charge-alert//intense-charge-alert.csv',
+    'inputs//charge-alert//medium-charge-alert.csv',
+    'inputs//charge-alert//large-charge-alert.csv',
+]
+subtitles: [
+    'Small Map',
+    'Intense Map',
+    'Medium Map',
+    'Large Map'
+]
+y: [
+    'Active Drones',
+    'Total Damage',
+    'Energy Consumed',
+]
+x: 'Charge Alert'
+colors: [
+    'blue',
+    'orange',
+    'yellowgreen',
+]
+type: 'line-rate'
+filename: 'charge-alert-all'
+size: [10,8]
+title: 'Simulation Runs in Multiple Maps Tuning Charging Alerts'

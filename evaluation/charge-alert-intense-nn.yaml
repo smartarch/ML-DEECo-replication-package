@@ -1,0 +1,20 @@
+inputs: [
+    'inputs//charge-alert//intense-charge-alert-drones-nn.csv',
+]
+subtitles: [
+    'Intense Map: Average Alive Drones after 6 Runs',
+]
+y: [
+    'Charge Alert: 0.2',
+    'Charge Alert: 0.4',
+]
+x: 'Methods'
+colors: [
+    'orange',
+    'green',
+]
+width: 0.4
+type: 'bar'
+filename: 'charge-alert-intense-nn'
+size: [8,8]
+title: 'Comparing Estimators in Intense Maps With Different Charging Alert'

@@ -1,0 +1,22 @@
+inputs: [
+    'inputs//charge-alert//intense-charge-alert.csv'
+]
+subtitles: [
+    'Intense Map: Normalized To [0-1]'
+]
+y: [
+    'Active Drones',
+    'Total Damage',
+    'Energy Consumed',
+]
+x: 'Charge Alert'
+colors: [
+    'blue',
+    'orange',
+    'yellowgreen',
+]
+type: 'line-rate'
+filename: 'charge-alert-intense'
+size: [10,5]
+title: 'Simulation Runs in Intense Maps With Different Charging Alerts'
+
