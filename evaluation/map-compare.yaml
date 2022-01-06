@@ -22,7 +22,6 @@ colors: [
     'yellowgreen'
 ]
 type: 'bar'
-width: 0.8
 filename: 'map-compare'
 size: [10,8]
 title: 'Simulation Maps with Different Configurations'

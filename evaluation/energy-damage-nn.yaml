@@ -17,7 +17,6 @@ colors: [
     'blue',
     'green',
 ]
-width: 0.5
 type: 'bar'
 filename: 'energy-damage-nn'
 size: [8,6]

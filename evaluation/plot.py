@@ -50,17 +50,18 @@ class Chart:
 class BarChart(Chart):
     def __init__(self,chart):
         Chart.__init__(self,chart)
-        self.width= chart['width'] / len(chart['y'])
+        self.width= 0.8 / len(self.y) # some space between columns
 
     def plot (self):
         for subplot in range(self.subplots):
             dataFrame = pd.read_csv(self.inputs[subplot])
             xLabels = dataFrame[self.x]
             x = np.arange(0,len(xLabels))
-            
+            startValue = len(self.y)/-2
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                self.axes[subplot].bar(x+(self.width*(i-1)), yArray, color=self.colors[i], label=y, width=self.width)
+                self.axes[subplot].bar(x+(startValue*self.width)+0.2, yArray, color=self.colors[i], label=y,width=self.width)
+                startValue = startValue + 1
             
             self.axes[subplot].legend()
             self.axes[subplot].set_ylabel(self.subtitles[subplot])
@@ -121,7 +122,7 @@ class LineRateChart(Chart):
             self.axes[subplot].legend()
             self.axes[subplot].set_ylabel(self.subtitles[subplot])
             self.axes[subplot].set_xlabel(self.x)
-            self.axes[subplot].set_xticks(x, labels=[f"{xLb:0.2f}" for xLb in xLabels])
+            self.axes[subplot].set_xticks(x, labels=[f"{xLb:0.1f}" for xLb in xLabels])
 
         if not os.path.exists(self.folder):
             os.mkdir(self.folder)

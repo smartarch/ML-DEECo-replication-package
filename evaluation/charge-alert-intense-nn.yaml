@@ -2,7 +2,7 @@ inputs: [
     'inputs//charge-alert//intense-charge-alert-drones-nn.csv',
 ]
 subtitles: [
-    'Intense Map: Average Alive Drones after 6 Runs',
+    'Survived Drones',
 ]
 y: [
     'Charge Alert: 0.2',
@@ -13,7 +13,6 @@ colors: [
     'orange',
     'green',
 ]
-width: 0.4
 type: 'bar'
 filename: 'charge-alert-intense-nn'
 size: [8,8]

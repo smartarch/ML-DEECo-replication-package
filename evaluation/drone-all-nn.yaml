@@ -8,14 +8,13 @@ y: [
     'No Estimator',
     'Neural Network',
 ]
-x: 'Method'
+x: 'Methods'
 colors: [
     'lightblue',
     'orange',
     'blue',
     'green',
 ]
-width: 0.5
 type: 'bar'
 filename: 'drones-nn'
 size: [8,6]

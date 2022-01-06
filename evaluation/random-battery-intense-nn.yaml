@@ -1,0 +1,22 @@
+inputs: [
+    'inputs//battery-random//battery-intense-nn.csv'
+]
+subtitles: [
+    'Intense Map: Normalized To [0-1]'
+]
+y: [
+    'Active Drones',
+    'Total Damage',
+    'Energy Consumed',
+]
+x: 'Trains.Runs'
+colors: [
+    'blue',
+    'orange',
+    'green',
+]
+type: 'line-rate'
+filename: 'battery-random-intense-nn'
+size: [10,5]
+title: 'Simulation Runs in Intense Maps With Neural Network Estimator. Charge Alert: 0.4. Battery Starter: Full'
+
