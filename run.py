@@ -53,7 +53,9 @@ def run(args):
         'Total Damage',
         'Energy Consumed',
         'Train',
-        'Run'
+        'Run',
+        'Charge Alert',
+        'Battery Random Reduction'
     ])
 
     # create the estimators
