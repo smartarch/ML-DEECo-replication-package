@@ -4,8 +4,6 @@ env/
 results/
 .vscode/
 *.gif
-*.csv
-*.png
 *.h5
 
 # Byte-compiled / optimized / DLL files
