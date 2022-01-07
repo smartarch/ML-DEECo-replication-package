@@ -252,8 +252,9 @@ class Estimator(abc.ABC):
             self.evaluate(test_x, test_y, label="Test")
 
         # clear the data
-        self.x = []
-        self.y = []
+        if not self._args.accumulate_data:
+            self.x = []
+            self.y = []
 
 
 #################################
