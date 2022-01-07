@@ -6,7 +6,7 @@ from typing import List, TYPE_CHECKING
 
 from estimators.estimate import DataCollectorMode
 from simulation.world import ENVIRONMENT, WORLD
-from estimators.features import FloatFeature, IntEnumFeature, BinaryFeature
+from estimators.features import FloatFeature, BinaryFeature, CategoricalFeature
 from simulation.ensemble import Ensemble, someOf
 from simulation.drone_state import DroneState
 from utils.verbose import verbosePrint
@@ -85,7 +85,7 @@ class WaitingDronesAssignment(Ensemble):
     def battery(self, drone):
         return drone.battery
 
-    @drones.estimate.input(IntEnumFeature(DroneState))
+    @drones.estimate.input(CategoricalFeature(DroneState))
     def drone_state(self, drone):
         return drone.state
 
@@ -121,7 +121,7 @@ class WaitingDronesAssignment(Ensemble):
     def is_waiting(self, drone):
         return drone in self.charger.waitingDrones
 
-    @drones.estimate.target(BinaryFeature())  # TODO(MT): it is not clear whether we should preprocess the value here (convert True/False to 1/0 or for IntEnumFeature do the one-hot encoding)
+    @drones.estimate.target()
     def is_accepted(self, drone):
         return drone in self.charger.acceptedDrones
 

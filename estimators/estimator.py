@@ -12,7 +12,7 @@ import tensorflow as tf
 import seaborn as sns
 
 from estimators.estimate import Estimate, BoundFeature
-from estimators.features import Feature, CategoricalFeature, IntEnumFeature, FloatFeature, BinaryFeature, TimeFeature
+from estimators.features import Feature, CategoricalFeature, FloatFeature, BinaryFeature, TimeFeature
 from utils.serialization import Log
 from utils.verbose import verbosePrint
 from simulation.world import WORLD
@@ -171,7 +171,7 @@ class Estimator(abc.ABC):
 
             if type(feature) == BinaryFeature:
                 self.evaluate_binary_classification(label, targetName, y_pred, y_true)
-            elif type(feature) in (CategoricalFeature, IntEnumFeature):
+            elif type(feature) == CategoricalFeature:
                 self.evaluate_classification(label, targetName, y_pred, y_true)
             else:
                 self.evaluate_regression(label, targetName, y_pred, y_true)
@@ -349,11 +349,12 @@ class NeuralNetworkEstimator(Estimator):
         if len(self._targets) != 1:
             raise ValueError(f"{self.name} ({self.estimatorName}): Automatic 'activation' inferring is only available for one target feature. Specify the 'activation' manually.")
         targetFeature = self._targets[0][1]
-        if type(targetFeature) == Feature or type(targetFeature) == FloatFeature:
+        if type(targetFeature) == Feature:
             return tf.identity
-        elif type(targetFeature) == IntEnumFeature or type(targetFeature) == CategoricalFeature:
+        elif type(targetFeature) == CategoricalFeature:
             return tf.keras.activations.softmax
-        elif type(targetFeature) == BinaryFeature:
+        # FloatFeature is scaled to [0, 1], so the sigmoid ensures the correct range (which is then properly scaled in postprocess).
+        elif type(targetFeature) == BinaryFeature or type(targetFeature) == FloatFeature:
             return tf.keras.activations.sigmoid
         elif type(targetFeature) == TimeFeature:
             return tf.keras.activations.exponential
@@ -366,7 +367,7 @@ class NeuralNetworkEstimator(Estimator):
         targetFeature = self._targets[0][1]
         if type(targetFeature) == Feature or type(targetFeature) == FloatFeature:
             return tf.losses.MeanSquaredError()
-        elif type(targetFeature) == IntEnumFeature or type(targetFeature) == CategoricalFeature:
+        elif type(targetFeature) == CategoricalFeature:
             return tf.losses.CategoricalCrossentropy()
         elif type(targetFeature) == BinaryFeature:
             return tf.losses.BinaryCrossentropy()

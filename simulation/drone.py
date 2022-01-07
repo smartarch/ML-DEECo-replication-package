@@ -2,7 +2,7 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from estimators.estimate import Estimate, TimeEstimate, DataCollectorMode
-from estimators.features import FloatFeature, IntEnumFeature
+from estimators.features import FloatFeature, CategoricalFeature
 from simulation.components import Agent
 from simulation.drone_state import DroneState
 from simulation.world import ENVIRONMENT, WORLD
@@ -62,10 +62,10 @@ class Drone(Agent):
     def battery(self):
         return self.battery
 
-    @futureBatteryEstimate.input(IntEnumFeature(DroneState))
-    @futureStateEstimate.input(IntEnumFeature(DroneState))
-    @timeToChargingStateEstimate.input(IntEnumFeature(DroneState))
-    @timeToLowBatteryEstimate.input(IntEnumFeature(DroneState))
+    @futureBatteryEstimate.input(CategoricalFeature(DroneState))
+    @futureStateEstimate.input(CategoricalFeature(DroneState))
+    @timeToChargingStateEstimate.input(CategoricalFeature(DroneState))
+    @timeToLowBatteryEstimate.input(CategoricalFeature(DroneState))
     def drone_state(self):
         return self.state
 
@@ -74,8 +74,8 @@ class Drone(Agent):
     def battery(self):
         return self.battery
 
-    @futureStateEstimate.target(IntEnumFeature(DroneState))
-    @timeToChargingStateEstimate.target(IntEnumFeature(DroneState))
+    @futureStateEstimate.target(CategoricalFeature(DroneState))
+    @timeToChargingStateEstimate.target(CategoricalFeature(DroneState))
     def drone_state(self):
         return self.state
 
@@ -95,7 +95,7 @@ class Drone(Agent):
         return battery < self.alert
 
     @timeToChargingStateEstimate.condition
-    def charging_state(self, state):
+    def is_charging_state(self, state):
         return state in (DroneState.CHARGING, DroneState.MOVING_TO_CHARGER)
 
     # endregion

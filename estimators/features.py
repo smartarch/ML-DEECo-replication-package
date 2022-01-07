@@ -1,3 +1,5 @@
+import enum
+from typing import Union, List, Type
 import numpy as np
 import os
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
@@ -22,43 +24,44 @@ class Feature:
         return value[0]
 
 
-class IntEnumFeature(Feature):
-
-    def __init__(self, enumClass):
-        self.enumClass = enumClass
-        self.numItems = len(self.enumClass)
-
-    def getNumFeatures(self):
-        return self.numItems
-
-    def getHeader(self, featureName):
-        return [f"{featureName}_{item}" for item, _ in self.enumClass.__members__.items()]
-
-    def preprocess(self, value):
-        return tf.one_hot(int(value), self.numItems).numpy()
-
-    def postprocess(self, value):
-        return self.enumClass(np.argmax(value))
-
-
 class CategoricalFeature(Feature):
 
-    def __init__(self, categories: list):
+    def __init__(self, categories: Union[List, Type[enum.IntEnum]]):
+        """
+        Feature for a known set of possible categories. Preprocessing is done by one-hot encoding.
+
+        Parameters
+        ----------
+        categories
+            List of possible values or an IntEnum class.
+        """
         self.categories = categories
         self.numItems = len(self.categories)
 
     def getNumFeatures(self):
         return self.numItems
 
+    def isEnum(self):
+        return isinstance(self.categories, type) and issubclass(self.categories, enum.IntEnum)
+
     def getHeader(self, featureName):
-        return [f"{featureName}_{item}" for item in self.categories]
+        if self.isEnum():
+            return [f"{featureName}_{item}" for item, _ in self.categories.__members__.items()]
+        else:
+            return [f"{featureName}_{item}" for item in self.categories]
 
     def preprocess(self, value):
-        index = self.categories.index(value)
+        if self.isEnum():
+            index = int(value)
+        else:
+            index = self.categories.index(value)
         return tf.one_hot(index, self.numItems).numpy()
 
     def postprocess(self, value):
-        return self.categories[np.argmax(value)]
+        if self.isEnum():
+            return self.categories(np.argmax(value))
+        else:
+            return self.categories[np.argmax(value)]
 
 
 class BinaryFeature(Feature):
