@@ -49,6 +49,7 @@ class Environment:
         self.chargerPositions = config['chargers']
         self.fieldCount = len(config['fields'])
         self.fieldPositions = config['fields']
+        self.maxDamage = config['MAX_AVERAGE_DAMAGE']
 
 
 ENVIRONMENT = Environment()
