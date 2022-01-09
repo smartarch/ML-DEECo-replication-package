@@ -1,24 +1,24 @@
-drones: 100
-birds: 200
+drones: 50
+birds: 400
 chargers: [
-  [145,155],
-  [770,55],
-  [779,381],
-  [200,400],
-  [800,564],
-  [300,800]
+  [140,118],
+  [121,226],
+  [120,330], 
+  [260,407],
+  [385,202],
+  [390,103]
 ]
 fields: [
-  [121,97,437,386],
-  [697,73,847,169],
-  [152,532,302,606],
-  [669,448,900,650],
-  [185,729,669,900]
+  [60,48,219,293],
+  [77,266,149,302],
+  [91,364,339,449],
+  [350,43,424,85],
+  [332,225,450,325]
 ]
 
 maxSteps: 500
-mapWidth: 1000
-mapHeight: 1000
+mapWidth: 500
+mapHeight: 500
 droneRadius: 5
 birdSpeed: 1 
 droneSpeed: 1
@@ -28,4 +28,6 @@ droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0.3
  
-
+ 
+ # calculated with all birds set to TERMINATED
+MAX_AVERAGE_DAMAGE: 6918
