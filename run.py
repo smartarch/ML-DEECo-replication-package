@@ -51,9 +51,21 @@ def run(args):
     totalLog = Log([
         'Active Drones',
         'Total Damage',
-        'Energy Consumed',
+        'Alive Drone Rate',
+        'Damage Rate',
         'Train',
         'Run',
+        'Charge Alert',
+        'Battery Random Reduction'
+    ])
+
+    averageLog = Log([
+        'Average Active Drones',
+        'Average Total Damage',
+        'Average Alive Drone Rate',
+        'Average Damage Rate',
+        'Train',
+        'Average Run',
         'Charge Alert',
         'Battery Random Reduction'
     ])
@@ -148,7 +160,8 @@ def run(args):
                     f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
                 verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
-
+        # calculate the average rate
+        averageLog.register(totalLog.average(t*args.number,(t+1)*args.number))
         for estimator in WORLD.estimators:
             estimator.endIteration()
 
@@ -156,9 +169,11 @@ def run(args):
         estimator.saveModel()
 
     totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
+    averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
     if args.chart:
         plots.createLogPlot(
             totalLog.records,
+            averageLog.records,
             f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
             f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
             (args.number, args.train)
