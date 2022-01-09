@@ -11,16 +11,16 @@ class Simulation:
         self.visualize = visualize
         self.folder = folder
         self.MAXDRONES = ENVIRONMENT.droneCount
-        self.MAXDAMAGE = ENVIRONMENT.birdCount * ENVIRONMENT.maxSteps
-        self.MAXENERGY = ENVIRONMENT.chargerCount * ENVIRONMENT.chargerCapacity * ENVIRONMENT.chargingRate * ENVIRONMENT.maxSteps
-
+        self.MAXDAMAGE = ENVIRONMENT.maxDamage 
 
 
     def collectStatistics(self,train,iteration):
         return [
             len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]),
             sum([bird.ate for bird in WORLD.birds]),
-            sum([charger.energyConsumed for charger in WORLD.chargers]),
+            #sum([charger.energyConsumed for charger in WORLD.chargers]), self.MAX_AVERAGE_DAMAGE
+            len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED])/self.MAXDRONES, #rate
+            sum([bird.ate for bird in WORLD.birds])/self.MAXDAMAGE, #rage
             train+1,
             iteration+1,
             WORLD.drones[0].alert,
