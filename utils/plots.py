@@ -7,7 +7,7 @@ font = {'size': 12}
 matplotlib.rc('font', **font)
 
 
-def createLogPlot(log, filename, title, size):
+def createLogPlot(log,averageLog, filename, title, size):
     colors = [
         'blue',
         'orange',
@@ -16,6 +16,7 @@ def createLogPlot(log, filename, title, size):
     ]
     fig, axs = plt.subplots(2, 2, figsize=(16, 9))
     x = np.arange(1, len(log))
+    t = np.arange(1, len(averageLog))
     xtickLabels = (np.arange(0, size[0] * size[1]) % size[0] + 1).tolist()
     labels = log[0]
     array = np.array(log[1:])
@@ -27,9 +28,9 @@ def createLogPlot(log, filename, title, size):
         axs[1, 0]
     ]
 
-    statisticsArray = np.zeros((3, len(log) - 1))
+    statisticsArray = np.array(averageLog[1:])
 
-    for i in range(3):
+    for i in range(2):
         axes[i].set_xlabel(f"{size[0]} Runs per train")
         axes[i].set_ylabel(labels[i])
         axes[i].bar(x, array[:, i], width=width, color=colors[i])
@@ -37,15 +38,11 @@ def createLogPlot(log, filename, title, size):
 
         for j in range(1, size[1]):
             axes[i].axvline(x=j * size[0] + 0.5, color=colors[3])
-        statisticsArray[i] = np.array(
-            array[:, i] / max(array[:, i]))
-        axs[1, 1].plot(x, statisticsArray[i], color=colors[i], label=labels[i])
+        axs[1, 1].plot(t, statisticsArray[:,i+2], color=colors[i], label=labels[i])
 
-    for j in range(1, size[1]):
-        axs[1, 1].axvline(x=j * size[0] + 0.5, color=colors[3])
-    axs[1, 1].set_xlabel(f"{size[0]} Runs per train")
+    axs[1, 1].set_xlabel(f"{size[0]} Trains")
     axs[1, 1].set_ylabel("Rate")
-    axs[1, 1].set_xticks(x, labels=xtickLabels)
+    axs[1, 1].set_xticks(t)
 
     axs[1, 1].legend()
     fig.suptitle(title, fontsize=16)
