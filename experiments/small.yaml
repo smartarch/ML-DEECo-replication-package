@@ -22,5 +22,5 @@ droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0.3
 
- # calculated with all birds set to TERMINATED
+ # calculated with all drones set to TERMINATED
 MAX_AVERAGE_DAMAGE: 2665

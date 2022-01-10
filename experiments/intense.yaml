@@ -1,7 +1,7 @@
-drones: 15
+drones: 25
 birds: 20
 chargers: [
-  [25,30],
+  [25,25],
 ]
 fields: [
   [10,10,20,25],
@@ -15,11 +15,11 @@ droneRadius: 5
 birdSpeed: 1 
 droneSpeed: 1
 
-chargerCapacity: 1
-chargingRate: 0.07
+chargerCapacity: 2
+chargingRate: 0.02
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
-droneBatteryRandomize: 0.3
+droneBatteryRandomize: 0.2
  
- # calculated with all birds set to TERMINATED
+ # calculated with all drones set to TERMINATED
 MAX_AVERAGE_DAMAGE: 2665
