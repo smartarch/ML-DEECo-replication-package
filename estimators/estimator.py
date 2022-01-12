@@ -25,7 +25,7 @@ from simulation.world import WORLD
 
 class Estimator(abc.ABC):
 
-    def __init__(self, *, outputFolder, args, name=""):
+    def __init__(self, *, outputFolder, args, name="", skipEndIteration=False):
         WORLD.estimators.append(self)
 
         self.x = []
@@ -34,6 +34,7 @@ class Estimator(abc.ABC):
         self._outputFolder = outputFolder
         self._args = args
         self.name = name
+        self._skipEndIteration = skipEndIteration
         self._iteration = 0
 
         self._estimates: List[Estimate] = []
@@ -228,28 +229,38 @@ class Estimator(abc.ABC):
         """Called at the end of the iteration. We want to do the training now."""
         self._iteration += 1
 
+        if self._skipEndIteration:
+            return
+
         self.collectData()
         count = len(self.x)
         verbosePrint(f"{self.name} ({self.estimatorName}): iteration {self._iteration} collected {count} records.", 1)
         self.dumpData(f"{self._outputFolder}/{self._iteration}-data.csv")
 
+        test_size = int(self._args.test_split * count)
         if count > 0:
             x = np.array(self.x)
             y = np.array(self.y)
 
-            indices = np.random.permutation(count)
-            test_size = int(self._args.test_split * count)
-            train_x = x[indices[:-test_size], :]
-            train_y = y[indices[:-test_size], :]
-            test_x = x[indices[-test_size:], :]
-            test_y = y[indices[-test_size:], :]
+            if test_size > 0:
+                indices = np.random.permutation(count)
+                train_x = x[indices[:-test_size], :]
+                train_y = y[indices[:-test_size], :]
+                test_x = x[indices[-test_size:], :]
+                test_y = y[indices[-test_size:], :]
+            else:
+                train_x = x
+                train_y = y
+                test_x = x[:0, :]  # empty
+                test_y = y[:0, :]  # empty
 
             verbosePrint(f"{self.name} ({self.estimatorName}): Training {self._iteration} started at {datetime.now()}: ", 1)
             verbosePrint(f"{self.name} ({self.estimatorName}): Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
 
             self.train(train_x, train_y)
             self.evaluate(train_x, train_y, label="Train")
-            self.evaluate(test_x, test_y, label="Test")
+            if test_size > 0:
+                self.evaluate(test_x, test_y, label="Test")
 
         # clear the data
         if not self._args.accumulate_data:
@@ -267,8 +278,8 @@ class ConstantEstimator(Estimator):
     Predicts 0 for each target.
     """
 
-    def __init__(self, value=0., *, outputFolder, args, name):
-        super().__init__(outputFolder=outputFolder, args=args, name=name)
+    def __init__(self, value=0., **kwargs):
+        super().__init__(**kwargs)
         self._value = value
 
     @property
