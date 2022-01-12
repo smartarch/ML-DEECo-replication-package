@@ -31,7 +31,19 @@ class Chart:
         subrows = math.ceil(math.sqrt(self.subplots))
         figsize = (chart['size'][0],chart['size'][1])
         dpi = chart['dpi']
+        if 'lineStyles' in chart:
+            self.lineStyles = chart['lineStyles']
 
+        self.legend = True
+        if 'legend' in chart:
+           self.legend = chart['legend']
+
+        self.width = 0.8
+        if 'width' in chart:
+           self.width = chart['width']
+        self.yLabel = 'Rate'
+        if 'yLabel' in chart:
+           self.yLabel = chart['yLabel']
         self.fig, matrixAxs = plt.subplots(subrows,subcols, figsize=figsize,dpi=dpi)
         self.axes = []
         try:
@@ -48,26 +60,39 @@ class Chart:
         pass
 
 class BarChart(Chart):
+
     def __init__(self,chart):
         Chart.__init__(self,chart)
-        self.width= 0.8 / len(self.y) # some space between columns
+        self.xMap = self.findXMap()
+
+    def findXMap (self):
+        if len(self.y)==1:
+            return [0]
+        elif len(self.y)==2:
+            return [
+                -0.5,
+                0.5
+            ]
 
     def plot (self):
+        self.width = self.width / len(self.y)
         for subplot in range(self.subplots):
             dataFrame = pd.read_csv(self.inputs[subplot])
             xLabels = dataFrame[self.x]
             x = np.arange(0,len(xLabels))
-            startValue = len(self.y)/-2
+            
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                self.axes[subplot].bar(x+(startValue*self.width)+0.2, yArray, color=self.colors[i], label=y,width=self.width)
-                startValue = startValue + 1
-            
-            self.axes[subplot].legend()
-            self.axes[subplot].set_ylabel(self.subtitles[subplot])
+                rect = self.axes[subplot].bar(x+(self.width*self.xMap[i]), yArray, color=self.colors[i], label=y,width=self.width)
+                self.axes[subplot].bar_label(rect, fmt="%.2f")
+                self.axes[subplot].set_ylim(0,max(yArray)*1.2)
+            if self.legend:
+                self.axes[subplot].legend()
+            self.axes[subplot].set_ylabel(self.yLabel)
+            self.axes[subplot].set_title(self.subtitles[subplot])
             self.axes[subplot].set_xlabel(self.x)
             self.axes[subplot].set_xticks(x, labels=xLabels)
-
+            
         if not os.path.exists(self.folder):
             os.mkdir(self.folder)
         self.fig.suptitle(self.title, fontsize=12)
@@ -90,10 +115,12 @@ class LineChart(Chart):
             
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                self.axes[subplot].plot(x, yArray, color=self.colors[i], label=y)
+                self.axes[subplot].plot(x, yArray, color=self.colors[i],linestyle=self.lineStyles[i], label=y)
             
-            self.axes[subplot].legend()
-            self.axes[subplot].set_ylabel(self.subtitles[subplot])
+            if self.legend:
+                self.axes[subplot].legend()
+            self.axes[subplot].set_ylabel(self.yLabel)
+            self.axes[subplot].set_title(self.subtitles[subplot])
             self.axes[subplot].set_xlabel(self.x)
             self.axes[subplot].set_xticks(x, labels=[f"{xLb}" for xLb in xLabels])
 
