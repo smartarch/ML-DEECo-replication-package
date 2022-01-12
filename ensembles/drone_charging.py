@@ -94,7 +94,7 @@ class WaitingDronesAssignment(Ensemble):
         return self.charger.location.distance(drone.location)
 
     @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
-    def accepted_drones_length(self, drone):
+    def accepted_drones_count(self, drone):
         return len(self.charger.acceptedDrones)
 
     @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
@@ -102,7 +102,7 @@ class WaitingDronesAssignment(Ensemble):
         return sum([1 - drone.battery for drone in self.charger.acceptedDrones])
 
     @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
-    def charging_drones_length(self, drone):
+    def charging_drones_count(self, drone):
         return len(self.charger.chargingDrones)
 
     @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
@@ -113,7 +113,13 @@ class WaitingDronesAssignment(Ensemble):
     def potential_drones_with_lower_battery(self, drone):
         return len([d for d in self.charger.potentialDrones if d.battery < drone.battery])
 
-    # TODO: better features
+    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    def waiting_drones_count(self, drone):
+        return len(self.charger.waitingDrones)
+
+    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    def waiting_drones_with_lower_battery(self, drone):
+        return len([d for d in self.charger.waitingDrones if d.battery < drone.battery])
 
     # endregion
 
