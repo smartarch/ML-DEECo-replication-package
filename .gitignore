@@ -2,6 +2,7 @@
 # The environment and result folder are ignored
 env/
 results/
+evaluation/current_results
 .vscode/
 *.gif
 *.h5
