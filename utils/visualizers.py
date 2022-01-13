@@ -9,6 +9,7 @@ COLORS = {
     'field': [206, 215, 193],
     'charger': [204, 204, 0],
     'grid': [255, 255, 255],
+    'corp': [0, 0, 0],
     'text': (0, 0, 0),
     'line': [255,0,0],
 }
@@ -18,6 +19,7 @@ SIZES = {
     'bird': 4,
     'field': 10,
     'charger': 6,
+    'corp': 10,
 }
 
 LEGEND_SIZE = 200
@@ -78,6 +80,7 @@ class Visualizer:
         text = f"{text}\nchargers: {len(self.world.chargers)}"
         text = f"{text}\ncharger capacity: {ENVIRONMENT.chargerCapacity}"
         text = f"{text}\nCharger Queues:"
+        
         for charger in self.world.chargers:
             accepted = set(charger.acceptedDrones)
             waiting = set(charger.waitingDrones)
@@ -98,7 +101,10 @@ class Visualizer:
         for drone in self.world.drones:
             if drone.state == DroneState.TERMINATED:
                 text = f"{text}\n-{drone.id}"
-
+        
+        totalDamage = sum([field.damage for field in self.world.fields])
+        totalCorp = sum([field.allCrops for field in self.world.fields])
+        text = f"{text}\n Damage: {totalDamage}/{totalCorp}"
         return text
 
     def drawLegends(self, draw):
@@ -120,6 +126,10 @@ class Visualizer:
 
         for charger in self.world.chargers:
             self.grid[charger] = self.drawRectangle(array, charger.location, 'charger')
+
+        for field in self.world.fields:
+            for damagedCorp in field.damaged:
+                self.drawRectangle(array, damagedCorp, 'corp')
 
         image = Image.fromarray(array.astype(np.uint8), 'RGB')
         draw = ImageDraw.Draw(image)
