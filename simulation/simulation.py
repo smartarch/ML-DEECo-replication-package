@@ -10,20 +10,20 @@ class Simulation:
     def __init__(self, folder, visualize):
         self.visualize = visualize
         self.folder = folder
-        self.MAXDRONES = ENVIRONMENT.droneCount
-        self.MAXDAMAGE = ENVIRONMENT.maxDamage 
+        self.MAXDRONES = ENVIRONMENT.droneCount if ENVIRONMENT.droneCount > 0 else 1
+        self.MAXDAMAGE = sum([field.allCrops for field in WORLD.fields]) 
 
 
     def collectStatistics(self,train,iteration):
         return [
             len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]),
-            sum([bird.ate for bird in WORLD.birds]),
-            #sum([charger.energyConsumed for charger in WORLD.chargers]), self.MAX_AVERAGE_DAMAGE
+            sum([field.damage for field in WORLD.fields]),
             len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED])/self.MAXDRONES, #rate
-            sum([bird.ate for bird in WORLD.birds])/self.MAXDAMAGE, #rage
+            sum([field.damage for field in WORLD.fields])/self.MAXDAMAGE, #rage
+            ENVIRONMENT.chargerCapacity,
             train+1,
             iteration+1,
-            WORLD.drones[0].alert,
+            0.2,
             ENVIRONMENT.droneBatteryRandomize,
         ]
 
@@ -47,16 +47,16 @@ class Simulation:
     def run(self, filename,train,iteration, args):
 
         components = []
-
-        components.extend(WORLD.drones)
         components.extend(WORLD.birds)
-        components.extend(WORLD.chargers)
+        
+        if ENVIRONMENT.droneCount>0:
+            components.extend(WORLD.drones)             
+            components.extend(WORLD.chargers)
+            from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
+            from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
+            potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
 
-        from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
-        from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
-        potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
-
-        WORLD.initEstimators()
+            WORLD.initEstimators()
 
         if self.visualize:
             visualizer = Visualizer(WORLD)
@@ -67,16 +67,17 @@ class Simulation:
             WORLD.currentTimeStep = i
 
             # Ensembles
-            initializedEnsembles = []
+            # only work if we have any drones
+            if ENVIRONMENT.droneCount > 0:
+                initializedEnsembles = []
 
-            potentialEnsembles = sorted(potentialEnsembles)
-
-            for ens in potentialEnsembles:
-                if ens.materialize(components, initializedEnsembles):
-                    initializedEnsembles.append(ens)
-                    ens.actuate()
-            for ens in initializedEnsembles:
-                ens.collectEstimatesData()
+                potentialEnsembles = sorted(potentialEnsembles)
+                for ens in potentialEnsembles:
+                    if ens.materialize(components, initializedEnsembles):
+                        initializedEnsembles.append(ens)
+                        ens.actuate()
+                for ens in initializedEnsembles:
+                    ens.collectEstimatesData()
 
             # Components
             for component in components:
