@@ -57,8 +57,8 @@ class Estimator(abc.ABC):
 
         verbosePrint(f"Initializing Estimator {self.name} ({self.estimatorName}) with {len(self._estimates)} estimates assigned.", 2)
         if len(self._estimates) == 0:
-            print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
-            raise RuntimeError()  # for debugging, later it can be changed to 'return'
+            #print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
+            return
 
         estimate = self._estimates[0]
         self._inputs = estimate.inputs
