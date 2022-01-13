@@ -114,25 +114,19 @@ class Field:
 
         self.places = []
         self.protectingDrones = {}
+        self.crops = {} # for birds
+        self.damaged = [] # for vis 
+        self.damage = 0
+        
 
-        xCenters = math.ceil((self.bottomRight.x - self.topLeft.x) / self.droneRadius)
-        yCenters = math.ceil((self.bottomRight.y - self.topLeft.y) / self.droneRadius)
+        for i in range(self.topLeft.x+self.droneRadius,self.bottomRight.x,self.droneRadius):
+            for j in range(self.topLeft.y+self.droneRadius,self.bottomRight.y,self.droneRadius):
+                self.places.append(Point(i,j))
 
-        totalXCover = xCenters * self.droneRadius
-        totalYCover = yCenters * self.droneRadius
-
-        startX = int(self.topLeft.x - (totalXCover - (self.bottomRight.x - self.topLeft.x)) / 2)
-        startY = int(self.topLeft.y - (totalYCover - (self.bottomRight.y - self.topLeft.y)) / 2)
-
-        for i in range(xCenters):
-            for j in range(yCenters):
-                self.places.append(Point(startX, startY + (self.droneRadius * j)))
-            startX = startX + self.droneRadius
-
-        # # new approach: how many protecting places there are
-        # for x in range(self.topLeft.x+(self.droneRadius/2), self.bottomRight.x, self.droneRadius):
-        #     for y in range(self.topLeft.y+(self.droneRadius/2), self.bottomRight.y, self.droneRadius):
-        #         self.places.append(Point(x + self.droneRadius, y + self.droneRadius))
+        for i in range(self.topLeft.x,self.bottomRight.x):
+            for j in range(self.topLeft.y, self.bottomRight.y):
+                self.crops[(i, j)]=0
+        self.allCrops = len(self.crops)
 
     def locationPoints(self):
         points = []
@@ -191,7 +185,21 @@ class Field:
 
     def __str__(self):
         return f"{self.id},{self.topLeft},{self.bottomRight}"
-
+    
+    def locationDamaged(self,location):
+        p = (location.x,location.y)
+        if p in self.crops:
+            self.crops[p] = self.crops[p]+1
+            if self.crops[p] == 3:
+                del self.crops[p]
+                self.damaged.append(Point(location.x,location.y))
+                self.damage = self.damage + 1
+        
+    def randomUndamagedCorp(self):
+        if len(self.crops) == 0:
+            return None
+        safe = random.choice([p for p in self.crops])
+        return Point(safe[0],safe[1])
 
 class Component:
     """
@@ -374,7 +382,7 @@ class Bird(Agent):
 
     # # static Counter
     Count = 0
-
+    TimeToEat = 5
     StayProbability = 0.85
     AttackProbability = 0.12
     ReplaceProbability = 0.03
@@ -394,22 +402,32 @@ class Bird(Agent):
         self.field = None
         self.ate = 0
 
-    def findRandomField(self):
-        self.target = Point.random()
-
     def moveToNewField(self):
         self.field = random.choice(WORLD.fields)
-        self.target = self.field.randomLocation()
+        newTarget = self.field.randomUndamagedCorp()
+        if newTarget is None:
+            self.field = None
+            self.state = BirdState.IDLE
+        else:
+            self.target = newTarget
+            self.state = BirdState.MOVING_TO_FIELD
 
     def moveToNoField(self):
         self.field = None
         self.target = random.choice(WORLD.emptyPoints)
+        self.state = BirdState.FLEEING
 
     def moveWithinSameField(self):
         if self.field == None:
             self.moveToNewField()
         else:
-            self.target = self.field.randomLocation()
+            newTarget = self.field.randomUndamagedCorp()
+            if newTarget is None:
+                self.field = None
+                self.state = BirdState.IDLE
+            else:
+                self.target = newTarget
+                self.state = BirdState.MOVING_TO_FIELD
 
     def actuate(self):
         if self.state == BirdState.IDLE:
@@ -420,10 +438,8 @@ class Bird(Agent):
                 # to decide wether attack a farm or just move to another place
                 if probability < Bird.AttackProbability:
                     self.moveToNewField()
-                    self.state = BirdState.MOVING_TO_FIELD
                 else:
                     self.moveToNoField()
-                    self.state = BirdState.FLEEING
 
         if self.state == BirdState.MOVING_TO_FIELD:
             if self.location == self.target:
@@ -445,16 +461,20 @@ class Bird(Agent):
                 self.state = BirdState.EATING
 
         if self.state == BirdState.EATING:
-            self.ate = self.ate + 1
+            self.ate = self.ate 
+            self.field.locationDamaged(self.location)
             probability = random.random()
             if probability > Bird.StayProbability:
                 probability -= Bird.StayProbability
                 if probability < Bird.AttackProbability:
                     self.moveWithinSameField()
-                    self.state = BirdState.MOVING_TO_FIELD
                 else:
                     self.moveToNoField()
                     self.state = BirdState.FLEEING
+            else:
+                self.moveWithinSameField()
+                
+
 
     def __repr__(self):
         return f"{self.id}: state={self.state}, Total Ate={self.ate}"
