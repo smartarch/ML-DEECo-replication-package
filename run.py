@@ -12,32 +12,47 @@ import argparse
 from datetime import datetime
 import random
 import numpy as np
-
+import math
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
-
 from simulation.world import WORLD, ENVIRONMENT  # This import should be first
 from estimators.estimator import ConstantEstimator, NeuralNetworkEstimator
 from simulation.simulation import Simulation
 from utils import plots
 from utils.serialization import Log
 from utils.verbose import setVerboseLevel, verbosePrint
+import importlib
+def run(args,drones,birds):
 
-
-def run(args):
     # Fix random seeds
     random.seed(args.seed)
     np.random.seed(args.seed)
     tf.random.set_seed(args.seed)
 
     # load config from yaml
-    yamlFile = open(args.source, 'r')
+    yamlFile = open(args.input, 'r')
     yamlObject = load(yamlFile, Loader=Loader)
+
+    def findChargerCapacity(yamlObject):
+        margin = 1.3
+        chargers = len(yamlObject['chargers'])
+        drones = yamlObject['drones']
+        
+        c1 = yamlObject['chargingRate']
+        c2 = yamlObject['droneMovingEnergyConsumption'] 
+ 
+        return math.ceil( 
+            (margin*drones*c2)/((chargers*c1)+(chargers*margin*c2))
+        )
+
+    yamlObject['drones']=drones
+    yamlObject['birds']=birds
+    yamlObject['chargerCapacity']=findChargerCapacity(yamlObject)
     ENVIRONMENT.loadConfig(yamlObject)
 
     # prepare folder structure for results
-    yamlFileName = os.path.splitext(os.path.basename(args.source))[0]
+    yamlFileName = os.path.splitext(os.path.basename(args.input))[0]
 
     folder = f"results\\{args.output}"
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
@@ -53,6 +68,7 @@ def run(args):
         'Total Damage',
         'Alive Drone Rate',
         'Damage Rate',
+        'Charger Capacity',
         'Train',
         'Run',
         'Charge Alert',
@@ -64,6 +80,7 @@ def run(args):
         'Average Total Damage',
         'Average Alive Drone Rate',
         'Average Damage Rate',
+        'Charger Capacity',
         'Train',
         'Average Run',
         'Charge Alert',
@@ -162,8 +179,8 @@ def run(args):
             totalLog.register(newLog)
         # calculate the average rate
         averageLog.register(totalLog.average(t*args.number,(t+1)*args.number))
-        for estimator in WORLD.estimators:
-            estimator.endIteration()
+        # for estimator in WORLD.estimators:
+        #     estimator.endIteration()
 
     for estimator in WORLD.estimators:
         estimator.saveModel()
@@ -178,11 +195,20 @@ def run(args):
             f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
             (args.number, args.train)
         )
+    return averageLog
+
+
+
 
 
 def main():
     parser = argparse.ArgumentParser(description='Process YAML source file (S) and run the simulation (N) Times with Model M.')
-    parser.add_argument('source', metavar='source', type=str, help='YAML address to be run.')
+    # since we are using one map, we keep this argument optional with default value as map.yaml
+    parser.add_argument('-i', '--input', type=str, help='YAML address to be run.',required=False,default="experiments\\map.yaml")
+    # number of birds and drones are specified here, default is 1 (one),
+    parser.add_argument('-b', '--birds', help='A range of birds [min,max]',required=False,nargs="+", default=[1])
+    parser.add_argument('-x', '--drones', help='A range of drones [min,max]',required=False,nargs="+", default=[1])
+    parser.add_argument('-f', '--folder', action='store_true', default=False, help='creates sub folders',required=False)
     parser.add_argument('-n', '--number', type=int, help='the number of simulation runs per training.', required=False, default="1")
     parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
     parser.add_argument('-t', '--train', type=int, help='the number of trainings to be performed.', required=False, default="1")
@@ -211,7 +237,46 @@ def main():
     if number <= 0:
         raise argparse.ArgumentTypeError(f"{number} is an invalid positive int value")
 
-    run(args)
+    majorLog = Log([
+        'Total Drones',
+        'Total Birds',
+        'Average Active Drones',
+        'Average Total Damage',
+        'Average Alive Drone Rate',
+        'Average Damage Rate',
+        'Train',
+        'Average Run',
+        'Charge Alert',
+        'Battery Random Reduction'
+    ])
+
+    def createRange(iList):
+        iList = [int(members) for members in iList]
+        if len(iList) == 1:
+            return range(iList[0],iList[0]+1)
+        if len(iList) == 2:
+            assert iList[1] > iList[0],"incorrect range"
+            return range(iList[0],iList[1])
+        if len(iList) == 3:
+            assert iList[1] > iList[0],"incorrect range"
+            return range(iList[0],iList[1],iList[2])
+        return iList
+
+    resultFolder = args.output
+    for drones in createRange(args.drones):
+        print (f"running with {drones} drones")
+        for birds in createRange(args.birds):
+            print (f"\trunning with {birds} birds")
+            if args.folder:
+                args.output = f"{resultFolder}\\d{drones}b{birds}"
+
+            WORLD.estimators = []
+            averageLog = run(args,drones,birds)
+            newList = [drones,birds]
+            newList.extend(averageLog.totalRecord())
+            majorLog.register(newList)
+
+    majorLog.exportNumeric(f"results\\{resultFolder}\\log.csv")
 
 
 if __name__ == "__main__":
