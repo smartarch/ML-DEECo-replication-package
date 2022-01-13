@@ -177,9 +177,9 @@ def run(args,drones,birds):
                 verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
         # calculate the average rate
-        averageLog.register(totalLog.average(t*args.number,(t+1)*args.number))
-        # for estimator in WORLD.estimators:
-        #     estimator.endIteration()
+        averageLog.register(totalLog.average(t*args.number, (t+1)*args.number))
+        for estimator in WORLD.estimators:
+            estimator.endIteration()
 
     for estimator in WORLD.estimators:
         estimator.saveModel()
