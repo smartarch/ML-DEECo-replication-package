@@ -42,11 +42,21 @@ class Log:
         return averageList
 
 
-
-
+    def totalRecord(self):
+        datalist = self.records[1:]
+        count = len(datalist)
+        averageList = [sum([sublist[i] for sublist in datalist])/count for i in range(self.columns)]
+        return averageList
 
     def export(self,filename):
         with open(filename, 'w', newline='') as myFile:
             wr = csv.writer(myFile)
             for rec in self.records:
                 wr.writerow(rec)
+
+    def exportNumeric(self,filename):
+        with open(filename, 'w', newline='') as myFile:
+            wr = csv.writer(myFile)
+            wr.writerow(self.records[0])
+            for rec in self.records[1:]:
+                wr.writerow([f"{k:.2f}" for k in rec])
