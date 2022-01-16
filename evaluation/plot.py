@@ -27,8 +27,8 @@ class Chart:
         self.filename = f"{self.folder}//{chart['filename']}.{chart['extension']}"
         self.x = chart['x']
         self.y = chart['y']
-        subcols = round(math.sqrt(self.subplots))
-        subrows = math.ceil(math.sqrt(self.subplots))
+        subcols = chart['subcols']
+        subrows = chart['subrows']
         figsize = (chart['size'][0],chart['size'][1])
         dpi = chart['dpi']
         if 'lineStyles' in chart:
@@ -96,7 +96,7 @@ class BarChart(Chart):
         if not os.path.exists(self.folder):
             os.mkdir(self.folder)
         self.fig.suptitle(self.title, fontsize=12)
-        self.fig.tight_layout()
+        #self.fig.tight_layout()
         plt.savefig(self.filename)
         #plt.show()
         plt.close(self.fig)
