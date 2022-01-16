@@ -16,7 +16,7 @@ COLORS = {
 
 SIZES = {
     'drone': 5,
-    'bird': 4,
+    'bird': 3,
     'field': 10,
     'charger': 6,
     'corp': 10,
@@ -105,6 +105,7 @@ class Visualizer:
         totalDamage = sum([field.damage for field in self.world.fields])
         totalCorp = sum([field.allCrops for field in self.world.fields])
         text = f"{text}\n Damage: {totalDamage}/{totalCorp}"
+        text = f"{text}\n Charging Rate: {ENVIRONMENT.maxChargingRate}"
         return text
 
     def drawLegends(self, draw):
