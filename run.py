@@ -39,7 +39,7 @@ def run(args,drones,birds):
         chargers = len(yamlObject['chargers'])
         drones = yamlObject['drones']
         
-        c1 = yamlObject['chargingRate']
+        c1 = yamlObject['maxChargingRate']
         c2 = yamlObject['droneMovingEnergyConsumption'] 
  
         return math.ceil( 
@@ -49,7 +49,7 @@ def run(args,drones,birds):
     yamlObject['drones']=drones
     yamlObject['birds']=birds
     yamlObject['maxSteps']=int(args.timesteps)
-    yamlObject['chargerCapacity']= 2 #findChargerCapacity(yamlObject)
+    yamlObject['chargerCapacity']= findChargerCapacity(yamlObject)
     ENVIRONMENT.loadConfig(yamlObject)
 
     # prepare folder structure for results
