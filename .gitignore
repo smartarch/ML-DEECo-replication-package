@@ -2,10 +2,11 @@
 # The environment and result folder are ignored
 env/
 results/
-evaluation/current_results
+evaluation/
 .vscode/
 *.gif
 *.h5
+*.cmd
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
