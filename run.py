@@ -108,7 +108,6 @@ def run(args,drones,birds):
         }
         droneBatteryEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32], fit_params=fit_params,
-            activation=tf.keras.activations.sigmoid,  # We want a value between 0 and 1
             outputFolder=f"{folder}\\drone_battery", args=args, name="Drone Battery"
         )
         chargerUtilizationEstimator = NeuralNetworkEstimator(
@@ -133,22 +132,22 @@ def run(args,drones,birds):
         )
     else:
         droneBatteryEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_battery", args=args, name="Drone Battery"
+            outputFolder=f"{folder}\\drone_battery", args=args, name="Drone Battery", skipEndIteration=True,
         )
         chargerUtilizationEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\charger_utilization", args=args, name="Charger Capacity"
+            outputFolder=f"{folder}\\charger_utilization", args=args, name="Charger Capacity", skipEndIteration=True,
         )
         chargerFullEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\charger_full", args=args, name="Charger Full"
+            outputFolder=f"{folder}\\charger_full", args=args, name="Charger Full", skipEndIteration=True,
         )
         droneStateEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_state", args=args, name="Drone State"
+            outputFolder=f"{folder}\\drone_state", args=args, name="Drone State", skipEndIteration=True,
         )
         timeToChargingEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_time_to_charging", args=args, name="Time To Charging"
+            outputFolder=f"{folder}\\drone_time_to_charging", args=args, name="Time To Charging", skipEndIteration=True,
         )
         timeToLowBatteryEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_time_to_low_battery", args=args, name="Time To Low Battery"
+            outputFolder=f"{folder}\\drone_time_to_low_battery", args=args, name="Time To Low Battery", skipEndIteration=True,
         )
 
     WORLD.waitingTimeEstimator = waitingTimeEstimator
@@ -179,7 +178,7 @@ def run(args,drones,birds):
                 verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
         # calculate the average rate
-        averageLog.register(totalLog.average(t*args.number,(t+1)*args.number))
+        averageLog.register(totalLog.average(t*args.number, (t+1)*args.number))
         for estimator in WORLD.estimators:
             estimator.endIteration()
 

@@ -35,6 +35,7 @@ class CategoricalFeature(Feature):
         categories
             List of possible values or an IntEnum class.
         """
+        assert len(categories) > 0, "CategoricalFeature: The number of categories must be bigger than 0."
         self.categories = categories
         self.numItems = len(self.categories)
 
@@ -73,6 +74,7 @@ class BinaryFeature(Feature):
 class FloatFeature(Feature):
 
     def __init__(self, min, max):
+        # assert min < max, "FloatFeature: The minimum must be strictly smaller than the maximum."  # TODO: this raises exception with 0 drones, otherwise, it seems useful
         self.min = min
         self.max = max
         self.diff = max - min
