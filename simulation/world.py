@@ -25,9 +25,9 @@ class Environment:
     droneBatteryRandomize = 0
     droneMovingEnergyConsumption = 0.01
     droneProtectingEnergyConsumption = 0.005
-    chargingRate = 0.04
+    maxChargingRate = 0.04
     chargerCapacity = 1
-
+    droneStartPositionVariance = 0
     droneCount = 8
     birdCount = 20
     chargerCount = 2
@@ -71,6 +71,8 @@ class World:
             raise RuntimeError("Do not create a new instance of the World. Use the WORLD global variable instead.")
         self.estimators = []
 
+    
+
     # noinspection PyAttributeOutsideInit
     def reset(self):
         """
@@ -79,10 +81,18 @@ class World:
         from simulation.components import Bird, Field, Point
         from simulation.drone import Drone
         from simulation.charger import Charger
+        import random
 
         self.currentTimeStep = 0
+        def randomStartingPoint():
+            variant = ENVIRONMENT.droneStartPositionVariance
+            centerX = ENVIRONMENT.mapWidth / 2
+            centerY = ENVIRONMENT.mapHeight / 2
+            randomX = centerX+ (random.choice([-1,1])*variant*random.random()*centerX)
+            randomY = centerY+ (random.choice([-1,1])*variant*random.random()*centerY)
+            return Point(int(randomX),int(randomY))
 
-        self.drones: List[Drone] = [Drone(Point.randomPoint()) for _ in range(ENVIRONMENT.droneCount)]
+        self.drones: List[Drone] = [Drone(randomStartingPoint()) for _ in range(ENVIRONMENT.droneCount)]
         self.birds: List[Bird] = [Bird(Point.randomPoint()) for _ in range(ENVIRONMENT.birdCount)]
         self.chargers: List[Charger] = [Charger(point) for point in ENVIRONMENT.chargerPositions]
         self.fields: List[Field] = [Field(points) for points in ENVIRONMENT.fieldPositions]
