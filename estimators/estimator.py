@@ -36,6 +36,7 @@ class Estimator(abc.ABC):
         self.name = name
         self._skipEndIteration = skipEndIteration
         self._iteration = 0
+        self._lastMSE = None
 
         self._estimates: List[Estimate] = []
         self._initialized = False
@@ -171,11 +172,11 @@ class Estimator(abc.ABC):
             dataLog.export(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.csv")
 
             if type(feature) == BinaryFeature:
-                self.evaluate_binary_classification(label, targetName, y_pred, y_true)
+                return self.evaluate_binary_classification(label, targetName, y_pred, y_true)
             elif type(feature) == CategoricalFeature:
-                self.evaluate_classification(label, targetName, y_pred, y_true)
+                return self.evaluate_classification(label, targetName, y_pred, y_true)
             else:
-                self.evaluate_regression(label, targetName, y_pred, y_true)
+                return self.evaluate_regression(label, targetName, y_pred, y_true)
 
     def evaluate_regression(self, label, targetName, y_pred, y_true):
         mse = tf.reduce_mean(tf.metrics.mse(y_true, y_pred))
@@ -194,6 +195,7 @@ class Estimator(abc.ABC):
         plt.plot(lims, lims, lw=0.5, c='k')
         plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
         plt.close(fig)
+        return mse
 
     def evaluate_binary_classification(self, label, targetName, y_pred, y_true):
         accuracy = tf.reduce_mean(tf.metrics.binary_accuracy(y_true, y_pred))
@@ -209,6 +211,7 @@ class Estimator(abc.ABC):
         plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
         plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
         plt.close(fig)
+        return accuracy
 
     def evaluate_classification(self, label, targetName, y_pred, y_true):
         accuracy = tf.reduce_mean(tf.metrics.categorical_accuracy(y_true, y_pred))
@@ -224,6 +227,7 @@ class Estimator(abc.ABC):
         plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
         plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
         plt.close(fig)
+        return accuracy
 
     def endIteration(self):
         """Called at the end of the iteration. We want to do the training now."""
@@ -241,6 +245,7 @@ class Estimator(abc.ABC):
         if count > 0:
             x = np.array(self.x)
             y = np.array(self.y)
+            # TODO(MT): shuffle here?
 
             if test_size > 0:
                 indices = np.random.permutation(count)
@@ -257,16 +262,24 @@ class Estimator(abc.ABC):
             verbosePrint(f"{self.name} ({self.estimatorName}): Training {self._iteration} started at {datetime.now()}: ", 1)
             verbosePrint(f"{self.name} ({self.estimatorName}): Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
 
+            self.saveModel()
             self.train(train_x, train_y)
-            self.evaluate(train_x, train_y, label="Train")
+            mse = self.evaluate(train_x, train_y, label="Train")
             if test_size > 0:
-                self.evaluate(test_x, test_y, label="Test")
+                testMSE = self.evaluate(test_x, test_y, label="Test")
+
+            if self._lastMSE is None or self._lastMSE > testMSE:
+                self._lastMSE = testMSE
+            else:
+                self.loadModel()
+            
+
 
         # clear the data
         if not self._args.accumulate_data:
             self.x = []
             self.y = []
-
+        return self._lastMSE
 
 #################################
 # Constant estimator (baseline) #
@@ -407,4 +420,9 @@ class NeuralNetworkEstimator(Estimator):
         trainLog.export(f"{self._outputFolder}/{self._iteration}-training.csv")
 
     def saveModel(self):
+        return
         self._model.save(f"{self._outputFolder}/model.h5")
+
+    def loadModel(self):
+        return
+        self._model = tf.keras.models.load_model(f"{self._outputFolder}/model.h5")
