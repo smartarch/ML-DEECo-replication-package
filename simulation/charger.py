@@ -27,7 +27,7 @@ class Charger(Component):
         Charger.Count = Charger.Count + 1
         Component.__init__(self, location, Charger.Count)
 
-        self.chargingRate = ENVIRONMENT.maxChargingRate
+        self.chargingRate = ENVIRONMENT.chargingRate
         self.chargerCapacity = ENVIRONMENT.chargerCapacity
         self.acceptedCapacity = ENVIRONMENT.chargerCapacity
 
@@ -107,10 +107,10 @@ class Charger(Component):
         for drone in self.chargingDrones:
             # charging rate drops slightly with increased drones in charging
             totalChargingDrones = sum([len(charger.chargingDrones) for charger in WORLD.chargers])
-            uncertainEnergy =  self.chargingRate - (self.chargingRate * 0.3 * round(totalChargingDrones/ENVIRONMENT.chargerCount))
-            ENVIRONMENT.maxChargingRate =  uncertainEnergy
-            drone.battery = drone.battery +  uncertainEnergy
-            self.energyConsumed = self.energyConsumed + uncertainEnergy
+            currentCharingRate =  min(totalChargingDrones*ENVIRONMENT.chargingRate,ENVIRONMENT.totalAvailableChargingEnergy) / totalChargingDrones
+            ENVIRONMENT.currentChargingRate =  currentCharingRate
+            drone.battery = drone.battery +  currentCharingRate
+            self.energyConsumed = self.energyConsumed + currentCharingRate
             if drone.battery >= 1:
                 self.doneCharging(drone)
 
