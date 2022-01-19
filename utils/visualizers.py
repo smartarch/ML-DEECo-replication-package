@@ -22,7 +22,7 @@ SIZES = {
     'corp': 10,
 }
 
-LEGEND_SIZE = 200
+LEGEND_SIZE = 250
 TEXT_MARGIN = 10
 
 
@@ -73,12 +73,13 @@ class Visualizer:
             self.background[i][legendStartPoint] = COLORS['line']
 
     def getLegends(self):
-
-        text = "-- WORLD STATUS --"
-        text = f"{text}\niteration: {self.world.currentTimeStep + 1}"
-        text = f"{text}\nalive drones: {len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED])}"
-        text = f"{text}\nchargers: {len(self.world.chargers)}"
-        text = f"{text}\ncharger capacity: {ENVIRONMENT.chargerCapacity}"
+        totalDamage = sum([field.damage for field in self.world.fields])
+        totalCorp = sum([field.allCrops for field in self.world.fields])
+        text = f"iteration: {self.world.currentTimeStep + 1}"
+        text = f"{text}\nalive drones: {len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED])} - Damage: {totalDamage}/{totalCorp}"
+        text = f"{text}\nchargers: {len(self.world.chargers)} - charger capacity: {ENVIRONMENT.chargerCapacity}"
+        text = f"{text}\nCharging Rate: {sum([len(charger.chargingDrones) for charger in self.world.chargers])} (drones at) {ENVIRONMENT.currentChargingRate:0.3f}"
+        text = f"{text}\nMAX Charging Available: {ENVIRONMENT.totalAvailableChargingEnergy:0.3f}"
         text = f"{text}\nCharger Queues:"
         
         for charger in self.world.chargers:
@@ -87,6 +88,7 @@ class Visualizer:
             potential = set(charger.potentialDrones)
 
             text = f"{text}\n-{charger.id}, C:{len(charger.chargingDrones)}, A:{len(accepted)}, W:{len(waiting - accepted)}, P:{len(potential - waiting - accepted)}"
+
 
             for drone in charger.chargingDrones:
                 text = f"{text}\n--{drone.id}, b:{drone.battery:.2f} - C, t:{drone.timeToDoneCharging():.0f}"
@@ -102,10 +104,7 @@ class Visualizer:
             if drone.state == DroneState.TERMINATED:
                 text = f"{text}\n-{drone.id}"
         
-        totalDamage = sum([field.damage for field in self.world.fields])
-        totalCorp = sum([field.allCrops for field in self.world.fields])
-        text = f"{text}\n Damage: {totalDamage}/{totalCorp}"
-        text = f"{text}\n Charging Rate: {ENVIRONMENT.maxChargingRate}"
+
         return text
 
     def drawLegends(self, draw):
