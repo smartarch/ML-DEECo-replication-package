@@ -26,7 +26,7 @@ class FieldProtection(Ensemble):
             return -len(self.field.places)
         # if there is no drone assigned, it tries to assign at least one
         #return len(self.field.places) / len(self.field.protectingDrones)
-        return -1*(len(self.field.places) - len(self.field.protectingDrones))
+        return len(self.field.protectingDrones) / len(self.field.places)
 
     # @drones.cardinality
     # def drones(self):
