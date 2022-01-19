@@ -23,7 +23,7 @@ from utils import plots
 from utils.serialization import Log
 from utils.verbose import setVerboseLevel, verbosePrint
 import importlib
-def run(args,drones,birds):
+def run(args):
 
     # Fix random seeds
     random.seed(args.seed)
@@ -39,18 +39,24 @@ def run(args,drones,birds):
         chargers = len(yamlObject['chargers'])
         drones = yamlObject['drones']
         
-        c1 = yamlObject['maxChargingRate']
+        c1 = yamlObject['chargingRate']
         c2 = yamlObject['droneMovingEnergyConsumption'] 
  
         return math.ceil( 
             (margin*drones*c2)/((chargers*c1)+(chargers*margin*c2))
         )
 
-    yamlObject['drones']=drones
-    yamlObject['birds']=birds
-    yamlObject['maxSteps']=int(args.timesteps)
+    #yamlObject['drones']=drones
+    #yamlObject['birds']=birds
+    #yamlObject['maxSteps']=int(args.timesteps)
     yamlObject['chargerCapacity']= findChargerCapacity(yamlObject)
+    yamlObject['totalAvailableChargingEnergy']= min(
+                yamlObject['chargerCapacity']*len(yamlObject['chargers'])*yamlObject['chargingRate'],
+                yamlObject['totalAvailableChargingEnergy'])
+    
     ENVIRONMENT.loadConfig(yamlObject)
+    # print (f"chargerCapacity: {yamlObject['chargerCapacity']}")
+    # print( f"totalAvailableChargingEnergy: {yamlObject['totalAvailableChargingEnergy']}")
 
     # prepare folder structure for results
     yamlFileName = os.path.splitext(os.path.basename(args.input))[0]
@@ -161,7 +167,6 @@ def run(args,drones,birds):
     # start the main loop
     for t in range(args.train):
         verbosePrint(f"Iteration {t + 1} started at {datetime.now()}:", 1)
-
         for i in range(args.number):
             verbosePrint(f"Run {i + 1} started at {datetime.now()}:", 2)
 
@@ -178,15 +183,18 @@ def run(args,drones,birds):
                 verbosePrint(f"Charger plot saved.", 3)
             totalLog.register(newLog)
         # calculate the average rate
-        averageLog.register(totalLog.average(t*args.number, (t+1)*args.number))
+        if t > 0:
+            averageLog.register(totalLog.average(t*args.number, (t+1)*args.number))
         for estimator in WORLD.estimators:
-            estimator.endIteration()
-
+            print (f'{estimator.name} - {estimator.endIteration()}')
+            
+        
     for estimator in WORLD.estimators:
          estimator.saveModel()
 
     totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
-    averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
+    if args.train>1:
+        averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
     if args.chart:
         plots.createLogPlot(
             totalLog.records,
@@ -204,12 +212,12 @@ def run(args,drones,birds):
 def main():
     parser = argparse.ArgumentParser(description='Process YAML source file (S) and run the simulation (N) Times with Model M.')
     # since we are using one map, we keep this argument optional with default value as map.yaml
-    parser.add_argument('-i', '--input', type=str, help='YAML address to be run.',required=False,default="experiments\\map.yaml")
+    parser.add_argument('input', type=str, help='YAML address to be run.')
     # number of birds and drones are specified here, default is 1 (one),
-    parser.add_argument('-b', '--birds', help='A range of birds [min,max]',required=False,nargs="+", default=[1])
-    parser.add_argument('-x', '--drones', help='A range of drones [min,max]',required=False,nargs="+", default=[1])
-    parser.add_argument('-m', '--timesteps', help='Maximum timesteps',required=False,default=500)
-    parser.add_argument('-f', '--folder', action='store_true', default=False, help='creates sub folders',required=False)
+    #parser.add_argument('-b', '--birds', help='A range of birds [min,max]',required=False,nargs="+", default=[1])
+    #parser.add_argument('-x', '--drones', help='A range of drones [min,max]',required=False,nargs="+", default=[1])
+    #parser.add_argument('-m', '--timesteps', help='Maximum timesteps',required=False,default=500)
+    #parser.add_argument('-f', '--folder', action='store_true', default=False, help='creates sub folders',required=False)
     parser.add_argument('-n', '--number', type=int, help='the number of simulation runs per training.', required=False, default="1")
     parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
     parser.add_argument('-t', '--train', type=int, help='the number of trainings to be performed.', required=False, default="1")
@@ -238,46 +246,59 @@ def main():
     if number <= 0:
         raise argparse.ArgumentTypeError(f"{number} is an invalid positive int value")
 
-    majorLog = Log([
-        'Drones',
-        'Bird',
-        'Active Drones',
-        'Total Damage',
-        'Alive Drone Rate',
-        'Damage Rate',
-        'Charger Capacity',
-        'Train',
-        'Average Run',
-        'Charge Alert',
-        'Battery Random Reduction'
-    ])
+    run(args)
 
-    def createRange(iList):
-        iList = [int(members) for members in iList]
-        if len(iList) == 1:
-            return range(iList[0],iList[0]+1)
-        if len(iList) == 2:
-            assert iList[1] > iList[0],"incorrect range"
-            return range(iList[0],iList[1])
-        if len(iList) == 3:
-            assert iList[1] > iList[0],"incorrect range"
-            return range(iList[0],iList[1],iList[2])
-        return iList
+    # majorLog = Log([
+    #     'Estimator',
+    #     'Drones',
+    #     'Bird',
+    #     'Active Drones',
+    #     'Total Damage',
+    #     'Alive Drone Rate',
+    #     'Damage Rate',
+    #     'Charger Capacity',
+    #     'Train',
+    #     'Average Run',
+    #     'Charge Alert',
+    #     'Battery Random Reduction'
+    # ])
 
-    resultFolder = args.output
-    for drones in createRange(args.drones):
-        print (f"running with {drones} drones")
-        for birds in createRange(args.birds):
-            print (f"\trunning with {birds} birds")
-            if args.folder:
-                args.output = f"{resultFolder}\\birds-{birds}"
-            averageLog = run(args,drones,birds)
-            newList = [drones,birds]
-            newList.extend(averageLog.totalRecord())
-            majorLog.register(newList)
+    # def createRange(iList):
+    #     iList = [int(members) for members in iList]
+    #     if len(iList) == 1:
+    #         return range(iList[0],iList[0]+1)
+    #     if len(iList) == 2:
+    #         assert iList[1] > iList[0],"incorrect range"
+    #         return range(iList[0],iList[1])
+    #     if len(iList) == 3:
+    #         assert iList[1] > iList[0],"incorrect range"
+    #         return range(iList[0],iList[1],iList[2])
+    #     return iList
 
-    majorLog.exportNumeric(f"results\\{args.output}\\log.csv")
+    # resultFolder = args.output
+    # for drones in createRange(args.drones):
+    #     print (f"running with {drones} drones")
+    #     for birds in createRange(args.birds):
+    #         print (f"\trunning with {birds} birds")
+    #         if args.folder:
+    #             args.output = f"{resultFolder}\\birds-{birds}"
+    #         averageLog = run(args,drones,birds)
+    #         topRow = [
+    #             'no estimator',
+    #             drones,
+    #             birds]
+    #         topRow.extend(averageLog.records[1])
+    #         secondRow = [
+    #             f'{args.train} trains',
+    #             drones,
+    #             birds]
+    #         secondRow.extend(averageLog.totalRecord())
+    #         majorLog.register(topRow)
+    #         majorLog.register(secondRow)
 
+    # majorLog.export(f"results\\{resultFolder}\\log.csv")
+    # path = os.path.realpath(f"results\\{resultFolder}")
+    # os.startfile(path)
 
 if __name__ == "__main__":
     main()
