@@ -181,52 +181,52 @@ class Estimator(abc.ABC):
     def evaluate_regression(self, label, targetName, y_pred, y_true):
         mse = tf.reduce_mean(tf.metrics.mse(y_true, y_pred))
         verbosePrint(f"{label} – {targetName} MSE: {mse}", 2)
-
-        lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
-        # plt.ioff()
-        fig = plt.figure(figsize=(10, 10))
-        plt.axes(aspect='equal')
-        plt.scatter(y_pred, y_true, alpha=0.5)
-        plt.xlabel('Predictions')
-        plt.ylabel('True Values')
-        plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} MSE: {mse:.3f}")
-        plt.xlim(lims)
-        plt.ylim(lims)
-        plt.plot(lims, lims, lw=0.5, c='k')
-        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
-        plt.close(fig)
+        if self._args.chart:
+            lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
+            # plt.ioff()
+            fig = plt.figure(figsize=(10, 10))
+            plt.axes(aspect='equal')
+            plt.scatter(y_pred, y_true, alpha=0.5)
+            plt.xlabel('Predictions')
+            plt.ylabel('True Values')
+            plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} MSE: {mse:.3f}")
+            plt.xlim(lims)
+            plt.ylim(lims)
+            plt.plot(lims, lims, lw=0.5, c='k')
+            plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
+            plt.close(fig)
         return mse
 
     def evaluate_binary_classification(self, label, targetName, y_pred, y_true):
         accuracy = tf.reduce_mean(tf.metrics.binary_accuracy(y_true, y_pred))
         verbosePrint(f"{label} – {targetName} Accuracy: {accuracy}", 2)
-
-        y_true = tf.squeeze(y_true)
-        y_pred = tf.squeeze(y_pred > 0.5)
-        cm = tf.math.confusion_matrix(y_true, y_pred)
-        fig = plt.figure(figsize=(10, 10))
-        sns.heatmap(cm, annot=True)
-        plt.xlabel('Predictions')
-        plt.ylabel('True Values')
-        plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
-        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
-        plt.close(fig)
+        if self._args.chart:
+            y_true = tf.squeeze(y_true)
+            y_pred = tf.squeeze(y_pred > 0.5)
+            cm = tf.math.confusion_matrix(y_true, y_pred)
+            fig = plt.figure(figsize=(10, 10))
+            sns.heatmap(cm, annot=True)
+            plt.xlabel('Predictions')
+            plt.ylabel('True Values')
+            plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
+            plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
+            plt.close(fig)
         return accuracy
 
     def evaluate_classification(self, label, targetName, y_pred, y_true):
         accuracy = tf.reduce_mean(tf.metrics.categorical_accuracy(y_true, y_pred))
         verbosePrint(f"{label} – {targetName} Accuracy: {accuracy}", 2)
-
-        y_true_classes = tf.argmax(y_true, axis=1)
-        y_pred_classes = tf.argmax(y_pred, axis=1)
-        cm = tf.math.confusion_matrix(y_true_classes, y_pred_classes)
-        fig = plt.figure(figsize=(10, 10))
-        sns.heatmap(cm, annot=True)
-        plt.xlabel('Predictions')
-        plt.ylabel('True Values')
-        plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
-        plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
-        plt.close(fig)
+        if self._args.chart:
+            y_true_classes = tf.argmax(y_true, axis=1)
+            y_pred_classes = tf.argmax(y_pred, axis=1)
+            cm = tf.math.confusion_matrix(y_true_classes, y_pred_classes)
+            fig = plt.figure(figsize=(10, 10))
+            sns.heatmap(cm, annot=True)
+            plt.xlabel('Predictions')
+            plt.ylabel('True Values')
+            plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
+            plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
+            plt.close(fig)
         return accuracy
 
     def endIteration(self):

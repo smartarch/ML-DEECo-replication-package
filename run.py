@@ -186,7 +186,7 @@ def run(args):
         if t > 0:
             averageLog.register(totalLog.average(t*args.number, (t+1)*args.number))
         for estimator in WORLD.estimators:
-            print (f'{estimator.name} - {estimator.endIteration()}')
+            estimator.endIteration()
             
         
     for estimator in WORLD.estimators:
