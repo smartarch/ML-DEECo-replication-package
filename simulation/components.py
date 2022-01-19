@@ -114,6 +114,7 @@ class Field:
 
         self.places = []
         self.protectingDrones = {}
+        self.memory = {}
         self.crops = {} # for birds
         self.damaged = [] # for vis 
         self.damage = 0
@@ -155,11 +156,16 @@ class Field:
 
     def assingPlace(self, drone):
         if drone not in self.protectingDrones:
-            listOfEmptyPlaces = [place for place in self.places if
+            if drone not in self.memory:
+                listOfEmptyPlaces = [place for place in self.places if
                                  place not in [self.protectingDrones[d] for d in self.protectingDrones]]
-            if len(listOfEmptyPlaces) <= 0:
-                return random.choice(self.places)
-            self.protectingDrones[drone] = random.choice(listOfEmptyPlaces)
+
+                if len(listOfEmptyPlaces) <= 0:
+                    return random.choice(self.places)
+                self.protectingDrones[drone] = min(listOfEmptyPlaces, key = lambda p: p.distance(drone.location))
+                self.memory[drone] = self.protectingDrones[drone]
+            else:
+                self.protectingDrones[drone] = self.memory[drone]
 
         return self.protectingDrones[drone]
 
