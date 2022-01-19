@@ -139,7 +139,6 @@ class Drone(Agent):
             return False
 
         futureBattery = self.computeBatteryAfterTime(timeToStartCharging)
-
         if futureBattery < 0:
             return False
 
@@ -185,6 +184,8 @@ class Drone(Agent):
             self.target = self.targetCharger.provideLocation(self)
             if self.location != self.targetCharger.location:
                 self.move()
+            else:
+                self.battery = self.battery - self.droneProtectingEnergyConsumption
 
         if self.state == DroneState.MOVING_TO_FIELD:
             if self.location == self.target:
