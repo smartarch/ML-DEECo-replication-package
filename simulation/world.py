@@ -22,10 +22,12 @@ class Environment:
     birdSpeed = 1
     droneSpeed = 1
 
+    totalAvailableChargingEnergy = 0.1
     droneBatteryRandomize = 0
     droneMovingEnergyConsumption = 0.01
     droneProtectingEnergyConsumption = 0.005
-    maxChargingRate = 0.04
+    chargingRate = 0.04
+    currentChargingRate = 0.04
     chargerCapacity = 1
     droneStartPositionVariance = 0
     droneCount = 8
@@ -49,7 +51,7 @@ class Environment:
         self.chargerPositions = config['chargers']
         self.fieldCount = len(config['fields'])
         self.fieldPositions = config['fields']
-
+        self.currentChargingRate = self.chargingRate
 
 ENVIRONMENT = Environment()
 
