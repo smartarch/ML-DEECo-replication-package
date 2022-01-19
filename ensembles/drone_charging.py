@@ -85,9 +85,9 @@ class WaitingDronesAssignment(Ensemble):
     def battery(self, drone):
         return drone.battery
 
-    @drones.estimate.input(CategoricalFeature(DroneState))
-    def drone_state(self, drone):
-        return drone.state
+    # @drones.estimate.input(CategoricalFeature(DroneState))
+    # def drone_state(self, drone):
+    #     return drone.state
 
     @drones.estimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
     def charger_distance(self, drone):
@@ -96,6 +96,32 @@ class WaitingDronesAssignment(Ensemble):
     @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones_count(self, drone):
         return len(self.charger.acceptedDrones)
+
+    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity*ENVIRONMENT.chargerCount))
+    def charger_capacity(self, drone):
+        return ENVIRONMENT.chargerCapacity
+
+
+    @drones.estimate.input(FloatFeature(0, 1))
+    def neighbor_drones_average_battery(self, drone):
+        if drone.targetField is not None:
+            k = len(drone.targetField.protectingDrones)
+            if k == 0:
+                return 0
+            return sum([drone.battery for drone in drone.targetField.protectingDrones])/k
+        else:
+            return 0
+
+    @drones.estimate.input(FloatFeature(0, 1))
+    def neighbor_drones(self, drone):
+        if drone.targetField is not None:
+            return len(drone.targetField.protectingDrones)/len(drone.targetField.places)
+        else:
+            return 0
+
+    @drones.estimate.input(FloatFeature(0, 1))
+    def potential_drones(self, drone):
+        return len(self.charger.potentialDrones)
 
     @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones_missing_battery(self, drone):
