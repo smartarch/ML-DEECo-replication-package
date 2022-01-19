@@ -43,8 +43,10 @@ class Log:
 
 
     def totalRecord(self):
-        datalist = self.records[1:]
+        datalist = self.records[2:]
         count = len(datalist)
+        if count==0:
+            return []
         averageList = [sum([sublist[i] for sublist in datalist])/count for i in range(self.columns)]
         return averageList
 
