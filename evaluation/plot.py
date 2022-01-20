@@ -41,9 +41,9 @@ class Chart:
         self.width = 0.8
         if 'width' in chart:
            self.width = chart['width']
-        self.yLabel = 'Rate'
-        if 'yLabel' in chart:
-           self.yLabel = chart['yLabel']
+
+        self.yLabel = chart['yLabel']
+        self.xLabel = chart['xLabel']
         self.fig, matrixAxs = plt.subplots(subrows,subcols, figsize=figsize,dpi=dpi)
         self.axes = []
         try:
@@ -73,6 +73,13 @@ class BarChart(Chart):
                 -0.5,
                 0.5
             ]
+        elif len(self.y)==4:
+            return [
+                -2,
+                -1,
+                0,
+                1
+            ]
 
     def plot (self):
         self.width = self.width / len(self.y)
@@ -80,17 +87,19 @@ class BarChart(Chart):
             dataFrame = pd.read_csv(self.inputs[subplot])
             xLabels = dataFrame[self.x]
             x = np.arange(0,len(xLabels))
-            
+            maxArray = 0
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
                 rect = self.axes[subplot].bar(x+(self.width*self.xMap[i]), yArray, color=self.colors[i], label=y,width=self.width)
                 self.axes[subplot].bar_label(rect, fmt="%.2f")
-                self.axes[subplot].set_ylim(0,max(yArray)*1.2)
+                if maxArray < max(yArray):
+                    maxArray = max(yArray)
+                self.axes[subplot].set_ylim(0,maxArray*1.2)
             if self.legend:
                 self.axes[subplot].legend()
             self.axes[subplot].set_ylabel(self.yLabel)
             self.axes[subplot].set_title(self.subtitles[subplot])
-            self.axes[subplot].set_xlabel(self.x)
+            self.axes[subplot].set_xlabel(self.xLabel)
             self.axes[subplot].set_xticks(x, labels=xLabels)
             
         if not os.path.exists(self.folder):
@@ -121,7 +130,7 @@ class LineChart(Chart):
                 self.axes[subplot].legend()
             self.axes[subplot].set_ylabel(self.yLabel)
             self.axes[subplot].set_title(self.subtitles[subplot])
-            self.axes[subplot].set_xlabel(self.x)
+            self.axes[subplot].set_xlabel(self.xLabel)
             self.axes[subplot].set_xticks(x, labels=[f"{xLb}" for xLb in xLabels])
 
         if not os.path.exists(self.folder):
