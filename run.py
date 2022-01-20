@@ -102,6 +102,8 @@ def run(args):
     }
     if args.waiting_estimation == "baseline_zero":
         waitingTimeEstimator = ConstantEstimator(**waitingTimeEstimatorArgs)
+    elif args.waiting_estimation == "baseline_five":
+        waitingTimeEstimator = ConstantEstimator(5, **waitingTimeEstimatorArgs)
     else:
         waitingTimeEstimator = NeuralNetworkEstimator(
             args.hidden_layers,
