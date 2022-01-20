@@ -245,7 +245,6 @@ class Estimator(abc.ABC):
         if count > 0:
             x = np.array(self.x)
             y = np.array(self.y)
-            # TODO(MT): shuffle here?
 
             if test_size > 0:
                 indices = np.random.permutation(count)
@@ -262,24 +261,15 @@ class Estimator(abc.ABC):
             verbosePrint(f"{self.name} ({self.estimatorName}): Training {self._iteration} started at {datetime.now()}: ", 1)
             verbosePrint(f"{self.name} ({self.estimatorName}): Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
 
-            self.saveModel()
             self.train(train_x, train_y)
-            mse = self.evaluate(train_x, train_y, label="Train")
+            self.evaluate(train_x, train_y, label="Train")
             if test_size > 0:
-                testMSE = self.evaluate(test_x, test_y, label="Test")
-
-            if self._lastMSE is None or self._lastMSE > testMSE:
-                self._lastMSE = testMSE
-            else:
-                self.loadModel()
-            
-
+                self.evaluate(test_x, test_y, label="Test")
 
         # clear the data
         if not self._args.accumulate_data:
             self.x = []
             self.y = []
-        return self._lastMSE
 
 #################################
 # Constant estimator (baseline) #
