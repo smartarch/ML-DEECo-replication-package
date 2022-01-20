@@ -344,7 +344,8 @@ class NeuralNetworkEstimator(Estimator):
 
     def init(self, **kwargs):
         super().init(**kwargs)
-        self._model = self.constructModel()
+        if self._model is None:
+            self._model = self.constructModel()
 
     def constructModel(self) -> tf.keras.Model:
         numFeatures = sum((feature.getNumFeatures() for _, feature, _ in self._inputs))
