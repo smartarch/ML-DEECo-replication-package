@@ -100,10 +100,8 @@ def run(args):
         "args": args,
         "name": "Waiting Time",
     }
-    if args.waiting_estimation == "baseline_zero":
-        waitingTimeEstimator = ConstantEstimator(**waitingTimeEstimatorArgs)
-    elif args.waiting_estimation == "baseline_five":
-        waitingTimeEstimator = ConstantEstimator(5, **waitingTimeEstimatorArgs)
+    if args.waiting_estimation == "baseline":
+        waitingTimeEstimator = ConstantEstimator(args.baseline, **waitingTimeEstimatorArgs)
     else:
         waitingTimeEstimator = NeuralNetworkEstimator(
             args.hidden_layers,
@@ -229,7 +227,7 @@ def main():
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
     parser.add_argument('-w', '--waiting_estimation', type=str,
                         # choices=["baseline_zero", "neural_network", "queue_missing_battery", "queue_charging_time"],
-                        choices=["baseline_zero", "neural_network"],
+                        choices=["baseline", "neural_network"],
                         help='The estimation model to be used for predicting charger waiting time.', required=False,
                         default="neural_network")
     # parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False,
@@ -238,6 +236,7 @@ def main():
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
+    parser.add_argument('-b', '--baseline', type=int, help='Constant for baseline.', required=False, default=0)
     # TODO(MT): remove?
     parser.add_argument('-e', '--examples', action='store_true', default=False, help='Additional examples for debug purposes.')
     args = parser.parse_args()
