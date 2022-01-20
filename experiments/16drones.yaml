@@ -16,7 +16,7 @@ droneRadius: 5
 birdSpeed: 1 
 droneSpeed: 1
 chargingRate: 0.04
-totalAvailableChargingEnergy: 0.08
+totalAvailableChargingEnergy: 0.12
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0

@@ -25,18 +25,19 @@ from simulation.world import WORLD
 
 class Estimator(abc.ABC):
 
-    def __init__(self, *, outputFolder, args, name="", skipEndIteration=False):
+    def __init__(self, *, outputFolder, args, name="", skipEndIteration=False, printLogs=True):
         WORLD.estimators.append(self)
 
         self.x = []
         self.y = []
-        os.makedirs(outputFolder, exist_ok=True)
+        if outputFolder is not None:
+            os.makedirs(outputFolder, exist_ok=True)
         self._outputFolder = outputFolder
         self._args = args
         self.name = name
         self._skipEndIteration = skipEndIteration
+        self._printLogs = printLogs
         self._iteration = 0
-        self._lastMSE = None
 
         self._estimates: List[Estimate] = []
         self._initialized = False
@@ -51,15 +52,19 @@ class Estimator(abc.ABC):
     def assignEstimate(self, estimate: Estimate):
         self._estimates.append(estimate)
 
+    def verbosePrint(self, message, verbosity):
+        if self._printLogs:
+            verbosePrint(message, verbosity)
+
     def init(self, force=False):
         """This must be run AFTER the input and target features are collected by the estimates."""
         if self._initialized and not force:
-            verbosePrint(f"Already initialized {self.name} ({self.estimatorName}).", 4)
+            self.verbosePrint(f"Already initialized {self.name} ({self.estimatorName}).", 4)
             return
 
-        verbosePrint(f"Initializing Estimator {self.name} ({self.estimatorName}) with {len(self._estimates)} estimates assigned.", 2)
+        self.verbosePrint(f"Initializing Estimator {self.name} ({self.estimatorName}) with {len(self._estimates)} estimates assigned.", 2)
         if len(self._estimates) == 0:
-            #print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
+            # print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
             return
 
         estimate = self._estimates[0]
@@ -69,8 +74,8 @@ class Estimator(abc.ABC):
         input_names = [i.name for i in self._inputs]
         target_names = [t.name for t in self._targets]
 
-        verbosePrint(f"  inputs {input_names}.", 2)
-        verbosePrint(f"  targets {target_names}.", 2)
+        self.verbosePrint(f"  inputs {input_names}.", 2)
+        self.verbosePrint(f"  targets {target_names}.", 2)
 
         for est in self._estimates:
             assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimator {self.name} ({self.estimatorName})"
@@ -180,7 +185,8 @@ class Estimator(abc.ABC):
 
     def evaluate_regression(self, label, targetName, y_pred, y_true):
         mse = tf.reduce_mean(tf.metrics.mse(y_true, y_pred))
-        verbosePrint(f"{label} – {targetName} MSE: {mse}", 2)
+        self.verbosePrint(f"{label} – {targetName} MSE: {mse:.4g}", 2)
+
         if self._args.chart:
             lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
             # plt.ioff()
@@ -195,11 +201,13 @@ class Estimator(abc.ABC):
             plt.plot(lims, lims, lw=0.5, c='k')
             plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
             plt.close(fig)
+
         return mse
 
     def evaluate_binary_classification(self, label, targetName, y_pred, y_true):
         accuracy = tf.reduce_mean(tf.metrics.binary_accuracy(y_true, y_pred))
-        verbosePrint(f"{label} – {targetName} Accuracy: {accuracy}", 2)
+        self.verbosePrint(f"{label} – {targetName} Accuracy: {accuracy:.4g}", 2)
+
         if self._args.chart:
             y_true = tf.squeeze(y_true)
             y_pred = tf.squeeze(y_pred > 0.5)
@@ -211,11 +219,13 @@ class Estimator(abc.ABC):
             plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
             plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
             plt.close(fig)
+
         return accuracy
 
     def evaluate_classification(self, label, targetName, y_pred, y_true):
         accuracy = tf.reduce_mean(tf.metrics.categorical_accuracy(y_true, y_pred))
-        verbosePrint(f"{label} – {targetName} Accuracy: {accuracy}", 2)
+        self.verbosePrint(f"{label} – {targetName} Accuracy: {accuracy:.4g}", 2)
+
         if self._args.chart:
             y_true_classes = tf.argmax(y_true, axis=1)
             y_pred_classes = tf.argmax(y_pred, axis=1)
@@ -227,6 +237,7 @@ class Estimator(abc.ABC):
             plt.title(f"{self.name} ({self.estimatorName})\nIteration {self._iteration}, target: {targetName}\n{label} Accuracy: {accuracy:.3f}")
             plt.savefig(f"{self._outputFolder}/{self._iteration}-evaluation-{label}-{targetName}.png")
             plt.close(fig)
+
         return accuracy
 
     def endIteration(self):
@@ -238,8 +249,9 @@ class Estimator(abc.ABC):
 
         self.collectData()
         count = len(self.x)
-        verbosePrint(f"{self.name} ({self.estimatorName}): iteration {self._iteration} collected {count} records.", 1)
-        self.dumpData(f"{self._outputFolder}/{self._iteration}-data.csv")
+        self.verbosePrint(f"{self.name} ({self.estimatorName}): iteration {self._iteration} collected {count} records.", 1)
+        if self._outputFolder is not None:
+            self.dumpData(f"{self._outputFolder}/{self._iteration}-data.csv")
 
         test_size = int(self._args.test_split * count)
         if count > 0:
@@ -258,10 +270,15 @@ class Estimator(abc.ABC):
                 test_x = x[:0, :]  # empty
                 test_y = y[:0, :]  # empty
 
-            verbosePrint(f"{self.name} ({self.estimatorName}): Training {self._iteration} started at {datetime.now()}: ", 1)
-            verbosePrint(f"{self.name} ({self.estimatorName}): Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
+            self.verbosePrint(f"{self.name} ({self.estimatorName}): Training {self._iteration} started at {datetime.now()}: ", 1)
+            self.verbosePrint(f"{self.name} ({self.estimatorName}): Train data shape: {train_x.shape}, test data shape: {test_x.shape}.", 2)
+
+            self.evaluate(train_x, train_y, label="Before-Train")
+            if test_size > 0:
+                self.evaluate(test_x, test_y, label="Before-Test")
 
             self.train(train_x, train_y)
+
             self.evaluate(train_x, train_y, label="Train")
             if test_size > 0:
                 self.evaluate(test_x, test_y, label="Test")
@@ -271,6 +288,29 @@ class Estimator(abc.ABC):
             self.x = []
             self.y = []
 
+
+################
+# No estimator #
+################
+
+
+class NoEstimator(Estimator):
+    """
+    Does not produce any training logs or outputs. Predicts 0 for each target.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs, outputFolder=None, skipEndIteration=True, printLogs=False)
+
+    @property
+    def estimatorName(self):
+        return f"NoEstimator"
+
+    def predict(self, x):
+        numTargets = sum((feature.getNumFeatures() for _, feature, _ in self._targets))
+        return np.zeros([numTargets])
+
+
 #################################
 # Constant estimator (baseline) #
 #################################
@@ -278,7 +318,7 @@ class Estimator(abc.ABC):
 
 class ConstantEstimator(Estimator):
     """
-    Predicts 0 for each target.
+    Predicts a given constant for each target.
     """
 
     def __init__(self, value=0., **kwargs):
@@ -401,8 +441,12 @@ class NeuralNetworkEstimator(Estimator):
         history = self._model.fit(
             x, y,
             **self._fit_params,
-            verbose=2 if self._args.verbose > 1 else 0
+            verbose=2 if self._args.verbose > 2 else 0
         )
+
+        self.verbosePrint(f"Trained for {len(history.history['loss'])}/{self._fit_params['epochs']} epochs.", 2)
+        self.verbosePrint(f"Training loss: {[f'{h:.4g}' for h in history.history['loss']]}", 3)
+        self.verbosePrint(f"Validation loss: {[f'{h:.4g}' for h in history.history['val_loss']]}", 3)
 
         trainLog = Log(["epoch", "train_loss", "val_loss"])
         epochs = range(1, self._fit_params["epochs"] + 1)
@@ -411,9 +455,7 @@ class NeuralNetworkEstimator(Estimator):
         trainLog.export(f"{self._outputFolder}/{self._iteration}-training.csv")
 
     def saveModel(self):
-        return
         self._model.save(f"{self._outputFolder}/model.h5")
 
     def loadModel(self):
-        return
         self._model = tf.keras.models.load_model(f"{self._outputFolder}/model.h5")

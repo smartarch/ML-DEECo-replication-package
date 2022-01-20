@@ -17,7 +17,7 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by d
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 from simulation.world import WORLD, ENVIRONMENT  # This import should be first
-from estimators.estimator import ConstantEstimator, NeuralNetworkEstimator
+from estimators.estimator import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
 from simulation.simulation import Simulation
 from utils import plots
 from utils.serialization import Log
@@ -137,23 +137,23 @@ def run(args):
             outputFolder=f"{folder}\\drone_time_to_low_battery", args=args, name="Time To Low Battery"
         )
     else:
-        droneBatteryEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_battery", args=args, name="Drone Battery", skipEndIteration=True,
+        droneBatteryEstimator = NoEstimator(
+            args=args, name="Drone Battery"
         )
-        chargerUtilizationEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\charger_utilization", args=args, name="Charger Capacity", skipEndIteration=True,
+        chargerUtilizationEstimator = NoEstimator(
+            args=args, name="Charger Capacity"
         )
-        chargerFullEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\charger_full", args=args, name="Charger Full", skipEndIteration=True,
+        chargerFullEstimator = NoEstimator(
+            args=args, name="Charger Full"
         )
-        droneStateEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_state", args=args, name="Drone State", skipEndIteration=True,
+        droneStateEstimator = NoEstimator(
+            args=args, name="Drone State"
         )
-        timeToChargingEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_time_to_charging", args=args, name="Time To Charging", skipEndIteration=True,
+        timeToChargingEstimator = NoEstimator(
+            args=args, name="Time To Charging"
         )
-        timeToLowBatteryEstimator = ConstantEstimator(
-            outputFolder=f"{folder}\\drone_time_to_low_battery", args=args, name="Time To Low Battery", skipEndIteration=True,
+        timeToLowBatteryEstimator = NoEstimator(
+            args=args, name="Time To Low Battery"
         )
 
     WORLD.waitingTimeEstimator = waitingTimeEstimator
