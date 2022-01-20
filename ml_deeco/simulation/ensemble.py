@@ -2,10 +2,10 @@ import operator
 from collections import defaultdict
 from typing import Dict, Any, TYPE_CHECKING
 
-from estimators.estimate import TimeEstimate, ListWithEstimate, Estimate, DataCollectorMode
+from ml_deeco.estimators.estimate import TimeEstimate, ListWithEstimate, Estimate
 
 if TYPE_CHECKING:
-    from estimators.estimator import Estimator
+    from ml_deeco.estimators.estimator import Estimator
 
 
 class someOf():

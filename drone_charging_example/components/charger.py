@@ -1,15 +1,15 @@
 import random
 from typing import List, TYPE_CHECKING
 
-from estimators.estimate import Estimate
-from estimators.features import FloatFeature, CategoricalFeature, BinaryFeature
-from simulation.world import ENVIRONMENT, WORLD
-from simulation.components import Component, Point
-from simulation.drone_state import DroneState
-from utils.verbose import verbosePrint
+from ml_deeco.estimators.estimate import Estimate
+from ml_deeco.estimators.features import FloatFeature, CategoricalFeature, BinaryFeature
+from drone_charging_example.world import ENVIRONMENT, WORLD
+from ml_deeco.simulation.components import Component, Point
+from drone_charging_example.components.drone_state import DroneState
+from ml_deeco.utils.verbose import verbosePrint
 
 if TYPE_CHECKING:
-    from simulation.drone import Drone
+    from drone_charging_example.components.drone import Drone
 
 
 class Charger(Component):

@@ -3,7 +3,6 @@ Estimator methods
 """
 import abc
 import os
-import sys
 from datetime import datetime
 from typing import List
 import numpy as np
@@ -11,11 +10,11 @@ from matplotlib import pyplot as plt
 import tensorflow as tf
 import seaborn as sns
 
-from estimators.estimate import Estimate, BoundFeature
-from estimators.features import Feature, CategoricalFeature, FloatFeature, BinaryFeature, TimeFeature
-from utils.serialization import Log
-from utils.verbose import verbosePrint
-from simulation.world import WORLD
+from ml_deeco.estimators.estimate import Estimate, BoundFeature
+from ml_deeco.estimators.features import Feature, CategoricalFeature, FloatFeature, BinaryFeature, TimeFeature
+from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
+from ml_deeco.utils.serialization import Log
+from ml_deeco.utils.verbose import verbosePrint
 
 
 #########################
@@ -26,7 +25,7 @@ from simulation.world import WORLD
 class Estimator(abc.ABC):
 
     def __init__(self, *, outputFolder, args, name="", skipEndIteration=False, printLogs=True):
-        WORLD.estimators.append(self)
+        SIMULATION_GLOBALS.estimators.append(self)
 
         self.x = []
         self.y = []
@@ -370,6 +369,7 @@ class NeuralNetworkEstimator(Estimator):
         self._fit_params = DEFAULT_FIT_PARAMS.copy()
         if fit_params:
             self._fit_params.update(fit_params)
+        # noinspection PyTypeChecker
         self._model: tf.keras.Model = None
 
     def init(self, **kwargs):

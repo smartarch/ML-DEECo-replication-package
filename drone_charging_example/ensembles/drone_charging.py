@@ -4,16 +4,16 @@ Drone charging ensembles
 import math
 from typing import List, TYPE_CHECKING
 
-from estimators.estimate import DataCollectorMode
-from simulation.world import ENVIRONMENT, WORLD
-from estimators.features import FloatFeature, BinaryFeature, CategoricalFeature
-from simulation.ensemble import Ensemble, someOf
-from simulation.drone_state import DroneState
-from utils.verbose import verbosePrint
-from simulation.drone import Drone
+from drone_charging_example.world import ENVIRONMENT, WORLD
+from ml_deeco.estimators.features import FloatFeature
+from ml_deeco.simulation.ensemble import Ensemble, someOf
+from drone_charging_example.components.drone_state import DroneState
+from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
+from ml_deeco.utils.verbose import verbosePrint
+from drone_charging_example.components.drone import Drone
 
 if TYPE_CHECKING:
-    from simulation.charger import Charger
+    from drone_charging_example.components.charger import Charger
 
 
 # The order of the ensemble is:
@@ -222,7 +222,7 @@ class AcceptedDronesAssignment(Ensemble):
                 continue
             waitingDronesAssignment = next(filter(lambda e: isinstance(e, WaitingDronesAssignment) and e.charger == self.charger, ensembles))
             WORLD.chargerLog.register([
-                WORLD.currentTimeStep,
+                SIMULATION_GLOBALS.currentTimeStep,
                 drone.id,
                 drone.battery,
                 WaitingDronesAssignment.drones.estimate.estimate(waitingDronesAssignment, drone),

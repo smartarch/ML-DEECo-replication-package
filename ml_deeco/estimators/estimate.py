@@ -7,11 +7,11 @@ from typing import Callable, List, TYPE_CHECKING
 
 import numpy as np
 
-from estimators.features import Feature, TimeFeature
-from simulation.world import WORLD
+from ml_deeco.estimators.features import Feature, TimeFeature
+from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
 
 if TYPE_CHECKING:
-    from estimators.estimator import Estimator
+    from ml_deeco.estimators.estimator import Estimator
 
 
 BoundFeature = namedtuple('BoundFeature', ('name', 'feature', 'function'))
@@ -70,6 +70,7 @@ class DataCollector:
 class Estimate:
 
     def __init__(self, **dataCollectorKwargs):
+        # noinspection PyTypeChecker
         self.estimator: 'Estimator' = None
         self.inputs: List[BoundFeature] = []
         self.extras: List[BoundFeature] = []
@@ -149,9 +150,9 @@ class Estimate:
 
     def inTimeSteps(self, timeSteps):
         """Automatically collect the data with fixed time difference between inputs and targets."""
-        self.targetsFilterFunctions.append(lambda *args: WORLD.currentTimeStep >= timeSteps)
-        self.inputsIdFunction = lambda *args: (*args, WORLD.currentTimeStep)
-        self.targetsIdFunction = lambda *args: (*args, WORLD.currentTimeStep - timeSteps)
+        self.targetsFilterFunctions.append(lambda *args: SIMULATION_GLOBALS.currentTimeStep >= timeSteps)
+        self.inputsIdFunction = lambda *args: (*args, SIMULATION_GLOBALS.currentTimeStep)
+        self.targetsIdFunction = lambda *args: (*args, SIMULATION_GLOBALS.currentTimeStep - timeSteps)
         return self
 
     # estimation
@@ -246,7 +247,7 @@ class TimeEstimate(Estimate):
 
     def __init__(self, **dataCollectorKwargs):
         super().__init__(**dataCollectorKwargs)
-        self.timeFunc = self.time(lambda *args: WORLD.currentTimeStep)
+        self.timeFunc = self.time(lambda *args: SIMULATION_GLOBALS.currentTimeStep)
 
         self.targets = [BoundFeature("time", TimeFeature(), None)]
         self.userTargets = []

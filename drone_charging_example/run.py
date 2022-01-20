@@ -2,6 +2,10 @@
     This file contains a simple experiment run
 """
 from yaml import load
+
+from drone_charging_example.components.drone_state import DroneState
+from drone_charging_example.utils.visualizers import Visualizer
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -13,63 +17,138 @@ from datetime import datetime
 import random
 import numpy as np
 import math
+
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
-from simulation.world import WORLD, ENVIRONMENT  # This import should be first
-from estimators.estimator import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
-from simulation.simulation import Simulation
-from utils import plots
-from utils.serialization import Log
-from utils.verbose import setVerboseLevel, verbosePrint
-import importlib
-def run(args):
+from drone_charging_example.world import WORLD, ENVIRONMENT  # This import should be first
+from ml_deeco.estimators.estimator import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
+from ml_deeco.simulation.simulation import run_simulation, SIMULATION_GLOBALS
+from drone_charging_example.utils import plots
+from ml_deeco.utils.serialization import Log
+from ml_deeco.utils.verbose import setVerboseLevel, verbosePrint
 
+
+def run(args):
     # Fix random seeds
     random.seed(args.seed)
     np.random.seed(args.seed)
     tf.random.set_seed(args.seed)
 
+    yamlObject = loadConfig(args)
+
+    folder, yamlFileName = prepareFoldersForResults(args)
+    estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
+
+    averageLog, totalLog = createLogs()
+
+    waitingTimeEstimator = createEstimators(args, folder, estWaitingFolder)
+
+    # start the main loop
+    for t in range(args.train):
+        verbosePrint(f"Iteration {t + 1} started at {datetime.now()}:", 1)
+
+        for i in range(args.number):
+
+            components, ensembles = WORLD.reset()
+            if args.animation:
+                visualizer = Visualizer(WORLD)
+                visualizer.drawFields()
+
+            def stepCallback(components, materializedEnsembles, iteration):
+                # Collect statistics
+                for chargerIndex in range(len(WORLD.chargers)):
+                    charger = WORLD.chargers[chargerIndex]
+                    accepted = set(charger.acceptedDrones)
+                    waiting = set(charger.waitingDrones)
+                    potential = set(charger.potentialDrones)
+                    WORLD.chargerLogs[chargerIndex].register([
+                        # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
+                        len(charger.chargingDrones),
+                        len(accepted),
+                        len(waiting - accepted),
+                        len(potential - waiting - accepted),
+                    ])
+
+                if args.animation:
+                    visualizer.drawComponents(i + 1)
+
+            verbosePrint(f"Run {i + 1} started at {datetime.now()}:", 2)
+            run_simulation(components, ensembles, ENVIRONMENT.maxSteps, stepCallback)
+
+            totalLog.register(collectStatistics(t, i))
+            WORLD.chargerLog.export(f"{folder}/charger_logs/{yamlFileName}_{t + 1}_{i + 1}.csv")
+
+            if args.animation:
+                verbosePrint(f"Saving animation...", 3)
+                visualizer.createAnimation(f"{folder}/animations/{yamlFileName}_{t + 1}_{i + 1}.gif")
+                verbosePrint(f"Animation saved.", 3)
+
+            if args.chart:
+                verbosePrint(f"Saving charger plot...", 3)
+                plots.createChargerPlot(
+                    WORLD.chargerLogs,
+                    f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
+                    f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                verbosePrint(f"Charger plot saved.", 3)
+
+        # calculate the average rate
+        if t > 0:
+            averageLog.register(totalLog.average(t * args.number, (t + 1) * args.number))
+        for estimator in SIMULATION_GLOBALS.estimators:
+            estimator.endIteration()
+
+    for estimator in SIMULATION_GLOBALS.estimators:
+        estimator.saveModel()
+
+    totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
+    if args.train > 1:
+        averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
+    if args.chart:
+        plots.createLogPlot(
+            totalLog.records,
+            averageLog.records,
+            f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
+            f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
+            (args.number, args.train)
+        )
+    return averageLog
+
+
+def loadConfig(args):
     # load config from yaml
     yamlFile = open(args.input, 'r')
     yamlObject = load(yamlFile, Loader=Loader)
 
-    def findChargerCapacity(yamlObject):
-        margin = 1.3
-        chargers = len(yamlObject['chargers'])
-        drones = yamlObject['drones']
-        
-        c1 = yamlObject['chargingRate']
-        c2 = yamlObject['droneMovingEnergyConsumption'] 
- 
-        return math.ceil( 
-            (margin*drones*c2)/((chargers*c1)+(chargers*margin*c2))
-        )
+    # yamlObject['drones']=drones
+    # yamlObject['birds']=birds
+    # yamlObject['maxSteps']=int(args.timesteps)
+    yamlObject['chargerCapacity'] = findChargerCapacity(yamlObject)
+    yamlObject['totalAvailableChargingEnergy'] = min(
+        yamlObject['chargerCapacity'] * len(yamlObject['chargers']) * yamlObject['chargingRate'],
+        yamlObject['totalAvailableChargingEnergy'])
 
-    #yamlObject['drones']=drones
-    #yamlObject['birds']=birds
-    #yamlObject['maxSteps']=int(args.timesteps)
-    yamlObject['chargerCapacity']= findChargerCapacity(yamlObject)
-    yamlObject['totalAvailableChargingEnergy']= min(
-                yamlObject['chargerCapacity']*len(yamlObject['chargers'])*yamlObject['chargingRate'],
-                yamlObject['totalAvailableChargingEnergy'])
-    
     ENVIRONMENT.loadConfig(yamlObject)
     # print (f"chargerCapacity: {yamlObject['chargerCapacity']}")
     # print( f"totalAvailableChargingEnergy: {yamlObject['totalAvailableChargingEnergy']}")
 
-    # prepare folder structure for results
-    yamlFileName = os.path.splitext(os.path.basename(args.input))[0]
+    return yamlObject
 
-    folder = f"results\\{args.output}"
-    estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
 
-    if not os.path.exists(f"{folder}\\animations"):
-        os.makedirs(f"{folder}\\animations")
+def findChargerCapacity(yamlObject):
+    margin = 1.3
+    chargers = len(yamlObject['chargers'])
+    drones = yamlObject['drones']
 
-    if not os.path.exists(f"{folder}\\charger_logs"):
-        os.makedirs(f"{folder}\\charger_logs")
+    c1 = yamlObject['chargingRate']
+    c2 = yamlObject['droneMovingEnergyConsumption']
 
+    return math.ceil(
+        (margin * drones * c2) / ((chargers * c1) + (chargers * margin * c2))
+    )
+
+
+def createLogs():
     totalLog = Log([
         'Active Drones',
         'Total Damage',
@@ -81,7 +160,6 @@ def run(args):
         'Charge Alert',
         'Battery Random Reduction'
     ])
-
     averageLog = Log([
         'Active Drones',
         'Total Damage',
@@ -93,7 +171,22 @@ def run(args):
         'Charge Alert',
         'Battery Random Reduction'
     ])
+    return averageLog, totalLog
 
+
+def prepareFoldersForResults(args):
+    # prepare folder structure for results
+    yamlFileName = os.path.splitext(os.path.basename(args.input))[0]
+    folder = f"results\\{args.output}"
+
+    if not os.path.exists(f"{folder}\\animations"):
+        os.makedirs(f"{folder}\\animations")
+    if not os.path.exists(f"{folder}\\charger_logs"):
+        os.makedirs(f"{folder}\\charger_logs")
+    return folder, yamlFileName
+
+
+def createEstimators(args, folder, estWaitingFolder):
     # create the estimators
     waitingTimeEstimatorArgs = {
         "outputFolder": estWaitingFolder,
@@ -107,7 +200,6 @@ def run(args):
             args.hidden_layers,
             **waitingTimeEstimatorArgs
         )
-
     if args.examples:
         fit_params = {
             "epochs": 20,
@@ -155,7 +247,6 @@ def run(args):
         timeToLowBatteryEstimator = NoEstimator(
             args=args, name="Time To Low Battery"
         )
-
     WORLD.waitingTimeEstimator = waitingTimeEstimator
     WORLD.droneBatteryEstimator = droneBatteryEstimator
     WORLD.chargerUtilizationEstimator = chargerUtilizationEstimator
@@ -163,50 +254,24 @@ def run(args):
     WORLD.droneStateEstimator = droneStateEstimator
     WORLD.timeToChargingEstimator = timeToChargingEstimator
     WORLD.timeToLowBatteryEstimator = timeToLowBatteryEstimator
-
-    # start the main loop
-    for t in range(args.train):
-        verbosePrint(f"Iteration {t + 1} started at {datetime.now()}:", 1)
-        for i in range(args.number):
-            verbosePrint(f"Run {i + 1} started at {datetime.now()}:", 2)
-
-            WORLD.reset()
-            simulation = Simulation(folder, visualize=args.animation)
-            newLog, chargerLogs = simulation.run(yamlFileName,t,i, args)
-
-            if args.chart:
-                verbosePrint(f"Saving charger plot...", 3)
-                plots.createChargerPlot(
-                    chargerLogs,
-                    f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                    f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
-                verbosePrint(f"Charger plot saved.", 3)
-            totalLog.register(newLog)
-        # calculate the average rate
-        if t > 0:
-            averageLog.register(totalLog.average(t*args.number, (t+1)*args.number))
-        for estimator in WORLD.estimators:
-            estimator.endIteration()
-            
-        
-    for estimator in WORLD.estimators:
-         estimator.saveModel()
-
-    totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
-    if args.train>1:
-        averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
-    if args.chart:
-        plots.createLogPlot(
-            totalLog.records,
-            averageLog.records,
-            f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
-            f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
-            (args.number, args.train)
-        )
-    return averageLog
+    return waitingTimeEstimator
 
 
+def collectStatistics(train, iteration):
+    MAXDRONES = ENVIRONMENT.droneCount if ENVIRONMENT.droneCount > 0 else 1
+    MAXDAMAGE = sum([field.allCrops for field in WORLD.fields])
 
+    return [
+        len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]),
+        sum([field.damage for field in WORLD.fields]),
+        len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]) / MAXDRONES,  # rate
+        sum([field.damage for field in WORLD.fields]) / MAXDAMAGE,  # rage
+        ENVIRONMENT.chargerCapacity,
+        train + 1,
+        iteration + 1,
+        0.2,
+        ENVIRONMENT.droneBatteryRandomize,
+    ]
 
 
 def main():
@@ -214,10 +279,10 @@ def main():
     # since we are using one map, we keep this argument optional with default value as map.yaml
     parser.add_argument('input', type=str, help='YAML address to be run.')
     # number of birds and drones are specified here, default is 1 (one),
-    #parser.add_argument('-b', '--birds', help='A range of birds [min,max]',required=False,nargs="+", default=[1])
-    #parser.add_argument('-x', '--drones', help='A range of drones [min,max]',required=False,nargs="+", default=[1])
-    #parser.add_argument('-m', '--timesteps', help='Maximum timesteps',required=False,default=500)
-    #parser.add_argument('-f', '--folder', action='store_true', default=False, help='creates sub folders',required=False)
+    # parser.add_argument('-b', '--birds', help='A range of birds [min,max]',required=False,nargs="+", default=[1])
+    # parser.add_argument('-x', '--drones', help='A range of drones [min,max]',required=False,nargs="+", default=[1])
+    # parser.add_argument('-m', '--timesteps', help='Maximum timesteps',required=False,default=500)
+    # parser.add_argument('-f', '--folder', action='store_true', default=False, help='creates sub folders',required=False)
     parser.add_argument('-n', '--number', type=int, help='the number of simulation runs per training.', required=False, default="1")
     parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
     parser.add_argument('-t', '--train', type=int, help='the number of trainings to be performed.', required=False, default="1")
@@ -232,13 +297,13 @@ def main():
                         default="neural_network")
     # parser.add_argument('-q', '--queue_type', type=str, choices=["fifo", "priority"], help='Charging waiting queue.', required=False,
     #                     default="fifo")
-    parser.add_argument('-d', '--accumulate_data', action='store_true', default=False, help='False = use only training data from last iteration.\nTrue = accumulate training data from all previous iterations.')
+    parser.add_argument('-d', '--accumulate_data', action='store_true', default=False,
+                        help='False = use only training data from last iteration.\nTrue = accumulate training data from all previous iterations.')
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
     parser.add_argument('-b', '--baseline', type=int, help='Constant for baseline.', required=False, default=0)
-    # TODO(MT): remove?
-    parser.add_argument('-e', '--examples', action='store_true', default=False, help='Additional examples for debug purposes.')
+    parser.add_argument('-e', '--examples', action='store_true', default=False, help='Additional examples.')
     args = parser.parse_args()
 
     number = args.number
@@ -300,6 +365,7 @@ def main():
     # majorLog.export(f"results\\{resultFolder}\\log.csv")
     # path = os.path.realpath(f"results\\{resultFolder}")
     # os.startfile(path)
+
 
 if __name__ == "__main__":
     main()

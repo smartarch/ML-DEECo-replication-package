@@ -12,8 +12,8 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/en2-drone-charging/run.py" />
-    <option name="PARAMETERS" value="experiments/16drones.yaml -n 3 -t 5 -o 16/nn_d -v 2 -c -d --waiting_estimation=neural_network --hidden_layers 256 256" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/en2-drone-charging/drone_charging_example/run.py" />
+    <option name="PARAMETERS" value="drone_charging_example/experiments/16drones.yaml -n 3 -t 5 -o 16/nn_d -v 2 -c -d --waiting_estimation=neural_network --hidden_layers 256 256" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

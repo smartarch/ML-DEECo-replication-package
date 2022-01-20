@@ -1,10 +1,10 @@
 from typing import List, TYPE_CHECKING
 
-from utils.serialization import Log
+from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
+from ml_deeco.utils.serialization import Log
 
 if TYPE_CHECKING:
-    from estimators.estimator import Estimator
-
+    from ml_deeco.estimators.estimator import Estimator
 
 MAX_RANDOM_POINTS = 100
 
@@ -53,6 +53,7 @@ class Environment:
         self.fieldPositions = config['fields']
         self.currentChargingRate = self.chargingRate
 
+
 ENVIRONMENT = Environment()
 
 
@@ -71,31 +72,29 @@ class World:
     def __init__(self):
         if 'WORLD' in locals():
             raise RuntimeError("Do not create a new instance of the World. Use the WORLD global variable instead.")
-        self.estimators = []
-
-    
 
     # noinspection PyAttributeOutsideInit
     def reset(self):
         """
         Call this before the world is used.
         """
-        from simulation.components import Bird, Field, Point
-        from simulation.drone import Drone
-        from simulation.charger import Charger
+        from ml_deeco.simulation.components import Point
+        from drone_charging_example.components.bird import Bird
+        from drone_charging_example.components.field import Field
+        from drone_charging_example.components.drone import Drone
+        from drone_charging_example.components.charger import Charger
         import random
 
-        self.currentTimeStep = 0
         def randomStartingPoint():
             variant = ENVIRONMENT.droneStartPositionVariance
             centerX = ENVIRONMENT.mapWidth / 2
             centerY = ENVIRONMENT.mapHeight / 2
-            randomX = centerX+ (random.choice([-1,1])*variant*random.random()*centerX)
-            randomY = centerY+ (random.choice([-1,1])*variant*random.random()*centerY)
-            return Point(int(randomX),int(randomY))
+            randomX = centerX + (random.choice([-1, 1]) * variant * random.random() * centerX)
+            randomY = centerY + (random.choice([-1, 1]) * variant * random.random() * centerY)
+            return Point(int(randomX), int(randomY))
 
         self.drones: List[Drone] = [Drone(randomStartingPoint()) for _ in range(ENVIRONMENT.droneCount)]
-        self.birds: List[Bird] = [Bird(Point.randomPoint()) for _ in range(ENVIRONMENT.birdCount)]
+        self.birds: List[Bird] = [Bird(Point.random(0, 0, ENVIRONMENT.mapWidth, ENVIRONMENT.mapHeight)) for _ in range(ENVIRONMENT.birdCount)]
         self.chargers: List[Charger] = [Charger(point) for point in ENVIRONMENT.chargerPositions]
         self.fields: List[Field] = [Field(points) for points in ENVIRONMENT.fieldPositions]
 
@@ -112,10 +111,20 @@ class World:
 
         self.createLogs()
 
-    def initEstimators(self):
-        """Initialize the estimators. This has to be called after the components and ensembles are imported."""
-        for est in self.estimators:
-            est.init()
+        components = []
+        components.extend(WORLD.birds)
+
+        if ENVIRONMENT.droneCount > 0:
+            components.extend(WORLD.drones)
+            components.extend(WORLD.chargers)
+            from drone_charging_example.ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
+            from drone_charging_example.ensembles.drone_charging import getEnsembles as droneChargingEnsembles
+            potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
+            SIMULATION_GLOBALS.initEstimators()
+        else:
+            potentialEnsembles = []
+
+        return components, potentialEnsembles
 
     # noinspection PyAttributeOutsideInit
     def createLogs(self):

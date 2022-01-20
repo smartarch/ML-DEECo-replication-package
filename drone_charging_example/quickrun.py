@@ -1,4 +1,5 @@
-""" 
+# TODO: do we use this?
+"""
     This file contains a simple experiment run
 """
 from yaml import load
@@ -17,12 +18,12 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by d
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 
-from simulation.world import WORLD, ENVIRONMENT  # This import should be first
-from estimators.estimator import ConstantEstimator, NeuralNetworkEstimator
-from simulation.simulation import Simulation
-from utils import plots
-from utils.serialization import Log
-from utils.verbose import setVerboseLevel, verbosePrint
+from drone_charging_example.world import WORLD, ENVIRONMENT  # This import should be first
+from ml_deeco.estimators.estimator import ConstantEstimator, NeuralNetworkEstimator
+from ml_deeco.simulation.simulation import Simulation
+from drone_charging_example.utls import plots
+from ml_deeco.utils.serialization import Log
+from ml_deeco.utils.verbose import setVerboseLevel, verbosePrint
 
 
 def run(args):
@@ -216,3 +217,109 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# def collectRates(self, previousRates):
+#     if previousRates is None:
+#         previousRates ={
+#             'Damage':0,
+#             'Energy':0,
+#         }
+#     return [
+#         WORLD.currentTimeStep,
+#         WORLD.drones[0].alert,
+#         ENVIRONMENT.droneBatteryRandomize,
+#         len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED]),
+#         len([drone for drone in WORLD.drones if drone.state != DroneState.TERMINATED])/self.MAXDRONES,
+#         sum([bird.ate for bird in WORLD.birds])-previousRates['Damage'],
+#         sum([bird.ate for bird in WORLD.birds]),
+#         sum([charger.energyConsumed for charger in WORLD.chargers])-previousRates['Energy'],
+#         sum([charger.energyConsumed for charger in WORLD.chargers])
+#     ]
+#
+#
+# def quickrun(self, filename, train, iteration, args):
+#     log = Log([
+#         'Iterations',
+#         'Charge Alert',
+#         'Battery Randomize',
+#         'Alive Drones',
+#         'Drone Live Rate',
+#         'Damage',
+#         'Cumulative Damage',
+#         'Consumed Energy',
+#         'Cumulative Consumed Energy'
+#     ])
+#     components = []
+#
+#     components.extend(WORLD.drones)
+#
+#     components.extend(WORLD.birds)
+#     components.extend(WORLD.chargers)
+#
+#     from drone_charging_example.ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
+#     from drone_charging_example.ensembles.drone_charging import getEnsembles as droneChargingEnsembles
+#     potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
+#
+#     WORLD.initEstimators()
+#
+#     if self.visualize:
+#         visualizer = Visualizer(WORLD)
+#         visualizer.drawFields()
+#     previousRates = None
+#     for i in range(ENVIRONMENT.maxSteps):
+#         verbosePrint(f"Step {i + 1}:", 3)
+#         WORLD.currentTimeStep = i
+#
+#         # Ensembles
+#         initializedEnsembles = []
+#
+#         potentialEnsembles = sorted(potentialEnsembles)
+#
+#         for ens in potentialEnsembles:
+#             if ens.materialize(components, initializedEnsembles):
+#                 initializedEnsembles.append(ens)
+#                 ens.actuate()
+#
+#         # Components
+#         for component in components:
+#             component.actuate()
+#             component.collectEstimatesData()
+#             verbosePrint(f"{component}", 4)
+#
+#         if i % 50 == 0:
+#             rate = self.collectRates(previousRates)
+#             previousRates = {
+#                 'Damage': rate[5],
+#                 'Energy': rate[7]
+#             }
+#             log.register(rate)
+#
+#         # # Collect statistics
+#         # for chargerIndex in range(len(self.world.chargers)):
+#         #     charger = self.world.chargers[chargerIndex]
+#         #     accepted = set(charger.acceptedDrones)
+#         #     waiting = set(charger.waitingDrones)
+#         #     potential = set(charger.potentialDrones)
+#         #     self.world.chargerLogs[chargerIndex].register([
+#         #         # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
+#         #         len(charger.chargingDrones),
+#         #         len(accepted),
+#         #         len(waiting - accepted),
+#         #         len(potential - waiting - accepted),
+#         #     ])
+#
+#         if self.visualize:
+#             visualizer.drawComponents(i + 1)
+#
+#     if self.visualize:
+#         verbosePrint(f"Saving animation...", 3)
+#         visualizer.createAnimation(f"{self.folder}/animations/{filename}_{train + 1}_{iteration + 1}.gif")
+#         verbosePrint(f"Animation saved.", 3)
+#
+#     WORLD.chargerLog.export(f"{self.folder}/charger_logs/{filename}_{train + 1}_{iteration + 1}.csv")
+#
+#     WORLD.currentTimeStep = ENVIRONMENT.maxSteps
+#     log.register(self.collectRates(previousRates))
+#     log.export(f"{self.folder}/{filename}_{train + 1}_{iteration + 1}.csv")
+#     return self.collectStatistics(train, iteration), WORLD.chargerLogs

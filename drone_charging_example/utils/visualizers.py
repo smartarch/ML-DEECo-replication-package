@@ -1,7 +1,8 @@
 from PIL import Image, ImageDraw
 import numpy as np
-from simulation.drone_state import DroneState
-from simulation.world import ENVIRONMENT
+from drone_charging_example.components.drone_state import DroneState
+from drone_charging_example.world import ENVIRONMENT
+from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
 
 COLORS = {
     'drone': [0, 0, 255],
@@ -75,7 +76,7 @@ class Visualizer:
     def getLegends(self):
         totalDamage = sum([field.damage for field in self.world.fields])
         totalCorp = sum([field.allCrops for field in self.world.fields])
-        text = f"iteration: {self.world.currentTimeStep + 1}"
+        text = f"Step: {SIMULATION_GLOBALS.currentTimeStep + 1}"
         text = f"{text}\nalive drones: {len([drone for drone in self.world.drones if drone.state != DroneState.TERMINATED])} - Damage: {totalDamage}/{totalCorp}"
         text = f"{text}\nchargers: {len(self.world.chargers)} - charger capacity: {ENVIRONMENT.chargerCapacity}"
         text = f"{text}\nCharging Rate: {sum([len(charger.chargingDrones) for charger in self.world.chargers])} (drones at) {ENVIRONMENT.currentChargingRate:0.3f}"
