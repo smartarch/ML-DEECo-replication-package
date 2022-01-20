@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="debug (baseline zero)" type="PythonConfigurationType" factoryName="Python" folderName="Debug">
+  <configuration default="false" name="new (nn 256-256)  -d" type="PythonConfigurationType" factoryName="Python">
     <module name="2022-SEAMS" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/en2-drone-charging/run.py" />
-    <option name="PARAMETERS" value="experiments/debug.yaml -n 1 -t 1 -o debug/debug -v 4 -a -c --waiting_estimation=baseline_zero" />
+    <option name="PARAMETERS" value="experiments/16drones.yaml -n 3 -t 5 -o 16/nn_d -v 2 -c -d --waiting_estimation=neural_network --hidden_layers 256 256" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
