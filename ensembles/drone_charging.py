@@ -152,23 +152,26 @@ class WaitingDronesAssignment(Ensemble):
     @drones.estimate.inputsValid
     def is_waiting(self, drone):
         return drone in self.charger.waitingDrones
+        # return drone.state != DroneState.TERMINATED
 
     @drones.estimate.target()
     def is_accepted(self, drone):
         return drone in self.charger.acceptedDrones
 
-    @staticmethod
-    @drones.estimate.condition
-    def condition(targetValue):
-        return targetValue
+    # This is the same as the following condition
+    # @staticmethod
+    # @drones.estimate.condition
+    # def condition(targetValue):
+    #     return targetValue
 
     @drones.estimate.condition
     def condition(self, targetValue):
         return targetValue
 
-    @drones.estimate.condition
-    def condition(self, drone, targetValue):
-        return targetValue
+    # This is the same as the previous condition
+    # @drones.estimate.condition
+    # def condition(self, drone, targetValue):
+    #     return targetValue
 
     def actuate(self):
 
