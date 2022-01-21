@@ -71,10 +71,10 @@ class BinaryFeature(Feature):
         return super().postprocess(value) > 0.5
 
 
-class FloatFeature(Feature):
+class NumericFeature(Feature):
 
     def __init__(self, min, max):
-        # assert min < max, "FloatFeature: The minimum must be strictly smaller than the maximum."  # TODO: this raises exception with 0 drones, otherwise, it seems useful
+        # assert min < max, "NumericFeature: The minimum must be strictly smaller than the maximum."  # TODO: this raises exception with 0 drones, otherwise, it seems useful
         self.min = min
         self.max = max
         self.diff = max - min

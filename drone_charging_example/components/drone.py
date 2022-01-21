@@ -2,7 +2,7 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from ml_deeco.estimators.estimate import Estimate, TimeEstimate
-from ml_deeco.estimators.features import FloatFeature, CategoricalFeature
+from ml_deeco.estimators.features import NumericFeature, CategoricalFeature
 from ml_deeco.simulation.components import Agent
 from drone_charging_example.components.drone_state import DroneState
 from drone_charging_example.world import ENVIRONMENT, WORLD
@@ -55,10 +55,10 @@ class Drone(Agent):
 
     # region Estimates
 
-    @futureBatteryEstimate.input(FloatFeature(0, 1))
-    @futureStateEstimate.input(FloatFeature(0, 1))
-    @timeToChargingStateEstimate.input(FloatFeature(0, 1))
-    @timeToLowBatteryEstimate.input(FloatFeature(0, 1))
+    @futureBatteryEstimate.input(NumericFeature(0, 1))
+    @futureStateEstimate.input(NumericFeature(0, 1))
+    @timeToChargingStateEstimate.input(NumericFeature(0, 1))
+    @timeToLowBatteryEstimate.input(NumericFeature(0, 1))
     def battery(self):
         return self.battery
 
@@ -70,7 +70,7 @@ class Drone(Agent):
         return self.state
 
     @futureBatteryEstimate.target()
-    @timeToLowBatteryEstimate.target(FloatFeature(0, 1))
+    @timeToLowBatteryEstimate.target(NumericFeature(0, 1))
     def battery(self):
         return self.battery
 

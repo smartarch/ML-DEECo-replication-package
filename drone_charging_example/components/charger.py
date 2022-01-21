@@ -2,7 +2,7 @@ import random
 from typing import List, TYPE_CHECKING
 
 from ml_deeco.estimators.estimate import Estimate
-from ml_deeco.estimators.features import FloatFeature, CategoricalFeature, BinaryFeature
+from ml_deeco.estimators.features import NumericFeature, CategoricalFeature, BinaryFeature
 from drone_charging_example.world import ENVIRONMENT, WORLD
 from ml_deeco.simulation.components import Component, Point
 from drone_charging_example.components.drone_state import DroneState
@@ -40,24 +40,24 @@ class Charger(Component):
 
     # region Estimates
 
-    @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
-    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
+    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
     def potential_drones(self):
         return len(self.potentialDrones)
 
-    @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
-    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
+    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
     def waiting_drones(self):
         return len(self.waitingDrones)
 
-    @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
-    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
+    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones(self):
         return len(self.acceptedDrones)
 
-    @chargerUtilizationEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     @chargerUtilizationEstimate.target(CategoricalFeature(list(range(ENVIRONMENT.chargerCapacity + 1))))
-    @chargerFullEstimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     def charging_drones(self):
         return len(self.chargingDrones)
 

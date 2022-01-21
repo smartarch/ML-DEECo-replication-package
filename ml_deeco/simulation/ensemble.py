@@ -19,7 +19,7 @@ class someOf():
 
         self.cardinalityFn = None
         self.selectFn = None
-        self.priorityFn = lambda _ens, _comp: 0
+        self.utilityFn = lambda _ens, _comp: 0
 
         self.selections: Dict[Ensemble, Any] = defaultdict(lambda: None)
 
@@ -39,9 +39,9 @@ class someOf():
         self.selectFn = selectFn
         return self
 
-    def priority(self, priorityFn):
+    def utility(self, utilityFn):
         """Bigger number -> earlier selection"""
-        self.priorityFn = priorityFn
+        self.utilityFn = utilityFn
         return self
 
     def reset(self, instance):
@@ -59,14 +59,14 @@ class someOf():
         return [comp for comp in components if
                 self.selectFn(instance, comp, otherEnsembles)]
 
-    def assignPriority(self, instance, components):
-        return [(self.priorityFn(instance, comp), comp) for comp in components]
+    def assignUtility(self, instance, components):
+        return [(self.utilityFn(instance, comp), comp) for comp in components]
 
     def selectComponents(self, instance, allComponents, otherEnsembles):
         filteredComponents = self.filterComponentsByType(instance, allComponents)
         filteredComponents = self.filterPreviouslySelectedComponents(instance, filteredComponents)
         filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
-        return self.assignPriority(instance, filteredComponents)
+        return self.assignUtility(instance, filteredComponents)
 
     def execute(self, instance, allComponents, otherEnsembles):
         assert(self.cardinalityFn is not None)
@@ -83,7 +83,7 @@ class someOf():
         sel = self.selectComponents(instance, allComponents, otherEnsembles)
         for idx in range(cardinalityMax):
             if len(sel) > 0:
-                priority, comp = max(sel, key=operator.itemgetter(0))
+                utility, comp = max(sel, key=operator.itemgetter(0))
                 self.selections[instance].append(comp)
                 sel = self.selectComponents(instance, allComponents, otherEnsembles)
 
@@ -139,7 +139,7 @@ class someOfWithEstimate(someOf):
         self.estimate.cacheEstimates(instance, filteredComponents)
         filteredComponents = self.filterPreviouslySelectedComponents(instance, filteredComponents)
         filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
-        return self.assignPriority(instance, filteredComponents)
+        return self.assignUtility(instance, filteredComponents)
 
 
 class oneOf(someOf):

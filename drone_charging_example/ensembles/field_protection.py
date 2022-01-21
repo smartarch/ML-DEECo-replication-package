@@ -25,7 +25,7 @@ class FieldProtection(Ensemble):
         if len(self.field.protectingDrones) == 0:
             return -len(self.field.places)
         # if there is no drone assigned, it tries to assign at least one
-        #return len(self.field.places) / len(self.field.protectingDrones)
+        # return len(self.field.places) / len(self.field.protectingDrones)
         return len(self.field.protectingDrones) / len(self.field.places)
 
     # @drones.cardinality
@@ -35,11 +35,11 @@ class FieldProtection(Ensemble):
     # choose this if not selected
     @drone.select
     def drone(self, drone, otherEnsembles):
-        #return not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones) and \
+        # return not any(ens for ens in otherEnsembles if isinstance(ens, FieldProtection) and drone in ens.drones) and \
         return drone.state == DroneState.IDLE and \
                len(self.field.places) > len(self.field.protectingDrones)
 
-    @drone.priority
+    @drone.utility
     def drones(self, drone):
         return - self.field.closestDistanceToDrone(drone)
 
@@ -52,6 +52,5 @@ class FieldProtection(Ensemble):
 
 
 def getEnsembles():
-
     ensembles = [FieldProtection(field) for field in WORLD.fields]
     return ensembles

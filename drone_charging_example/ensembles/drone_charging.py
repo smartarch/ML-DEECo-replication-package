@@ -5,7 +5,7 @@ import math
 from typing import List, TYPE_CHECKING
 
 from drone_charging_example.world import ENVIRONMENT, WORLD
-from ml_deeco.estimators.features import FloatFeature, CategoricalFeature
+from ml_deeco.estimators.features import NumericFeature, CategoricalFeature
 from ml_deeco.simulation.ensemble import Ensemble, someOf
 from drone_charging_example.components.drone_state import DroneState
 from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
@@ -81,7 +81,7 @@ class DroneChargingAssignment(Ensemble):
 
     # region Features
 
-    @drones.estimate.input(FloatFeature(0, 1))
+    @drones.estimate.input(NumericFeature(0, 1))
     def battery(self, drone):
         return drone.battery
 
@@ -89,20 +89,19 @@ class DroneChargingAssignment(Ensemble):
     def drone_state(self, drone):
         return drone.state
 
-    @drones.estimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
+    @drones.estimate.input(NumericFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
     def charger_distance(self, drone):
         return self.charger.location.distance(drone.location)
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones_count(self, drone):
         return len(self.charger.acceptedDrones)
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity*ENVIRONMENT.chargerCount))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity * ENVIRONMENT.chargerCount))
     def charger_capacity(self, drone):
         return ENVIRONMENT.chargerCapacity
 
-
-    @drones.estimate.input(FloatFeature(0, 1))
+    @drones.estimate.input(NumericFeature(0, 1))
     def neighbor_drones_average_battery(self, drone):
         if drone.targetField is not None:
             k = len(drone.targetField.protectingDrones)
@@ -112,38 +111,38 @@ class DroneChargingAssignment(Ensemble):
         else:
             return 0
 
-    @drones.estimate.input(FloatFeature(0, 1))
+    @drones.estimate.input(NumericFeature(0, 1))
     def neighbor_drones(self, drone):
         if drone.targetField is not None:
             return len(drone.targetField.protectingDrones)/len(drone.targetField.places)
         else:
             return 0
 
-    @drones.estimate.input(FloatFeature(0, 1))
+    @drones.estimate.input(NumericFeature(0, 1))
     def potential_drones(self, drone):
         return len(self.charger.potentialDrones)
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     def accepted_drones_missing_battery(self, drone):
         return sum([1 - drone.battery for drone in self.charger.acceptedDrones])
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     def charging_drones_count(self, drone):
         return len(self.charger.chargingDrones)
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     def charging_drones_missing_battery(self, drone):
         return sum([1 - drone.battery for drone in self.charger.chargingDrones])
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
     def potential_drones_with_lower_battery(self, drone):
         return len([d for d in self.charger.potentialDrones if d.battery < drone.battery])
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.chargerCapacity))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
     def waiting_drones_count(self, drone):
         return len(self.charger.waitingDrones)
 
-    @drones.estimate.input(FloatFeature(0, ENVIRONMENT.droneCount))
+    @drones.estimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
     def waiting_drones_with_lower_battery(self, drone):
         return len([d for d in self.charger.waitingDrones if d.battery < drone.battery])
 
@@ -151,10 +150,9 @@ class DroneChargingAssignment(Ensemble):
 
     @drones.estimate.inputsValid
     @drones.estimate.targetsValid
-    def is_waiting(self, drone):
+    def is_preassigned(self, drone):
         # return drone in self.drones
-        return drone.state != DroneState.TERMINATED \
-               and drone in self.charger.potentialDrones
+        return drone in self.charger.potentialDrones
 
     @drones.estimate.target()
     def is_accepted(self, drone):
@@ -208,7 +206,7 @@ class AcceptedDronesAssignment(Ensemble):
             drone in self.charger.waitingDrones and \
             self.charger.timeToDoneCharging(len(self.drones)) <= drone.timeToFlyToCharger()
 
-    @drones.priority
+    @drones.utility
     def drones(self, drone):
         if drone in self.charger.acceptedDrones:
             return 1  # keep the accepted drones from previous time steps

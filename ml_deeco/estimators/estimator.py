@@ -11,7 +11,7 @@ import tensorflow as tf
 import seaborn as sns
 
 from ml_deeco.estimators.estimate import Estimate, BoundFeature
-from ml_deeco.estimators.features import Feature, CategoricalFeature, FloatFeature, BinaryFeature, TimeFeature
+from ml_deeco.estimators.features import Feature, CategoricalFeature, NumericFeature, BinaryFeature, TimeFeature
 from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
 from ml_deeco.utils.serialization import Log
 from ml_deeco.utils.verbose import verbosePrint
@@ -408,8 +408,8 @@ class NeuralNetworkEstimator(Estimator):
             return tf.identity
         elif type(targetFeature) == CategoricalFeature:
             return tf.keras.activations.softmax
-        # FloatFeature is scaled to [0, 1], so the sigmoid ensures the correct range (which is then properly scaled in postprocess).
-        elif type(targetFeature) == BinaryFeature or type(targetFeature) == FloatFeature:
+        # NumericFeature is scaled to [0, 1], so the sigmoid ensures the correct range (which is then properly scaled in postprocess).
+        elif type(targetFeature) == BinaryFeature or type(targetFeature) == NumericFeature:
             return tf.keras.activations.sigmoid
         elif type(targetFeature) == TimeFeature:
             return tf.keras.activations.exponential
@@ -420,7 +420,7 @@ class NeuralNetworkEstimator(Estimator):
         if len(self._targets) != 1:
             raise ValueError(f"{self.name} ({self.estimatorName}): Automatic 'loss' inferring is only available for one target feature. Specify the 'loss' manually.")
         targetFeature = self._targets[0][1]
-        if type(targetFeature) == Feature or type(targetFeature) == FloatFeature:
+        if type(targetFeature) == Feature or type(targetFeature) == NumericFeature:
             return tf.losses.MeanSquaredError()
         elif type(targetFeature) == CategoricalFeature:
             return tf.losses.CategoricalCrossentropy()
