@@ -79,10 +79,10 @@ class World:
         Call this before the world is used.
         """
         from ml_deeco.simulation.components import Point
-        from drone_charging_example.components.bird import Bird
-        from drone_charging_example.components.field import Field
-        from drone_charging_example.components.drone import Drone
-        from drone_charging_example.components.charger import Charger
+        from components.bird import Bird
+        from components.field import Field
+        from components.drone import Drone
+        from components.charger import Charger
         import random
 
         def randomStartingPoint():
@@ -117,8 +117,8 @@ class World:
         if ENVIRONMENT.droneCount > 0:
             components.extend(WORLD.drones)
             components.extend(WORLD.chargers)
-            from drone_charging_example.ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
-            from drone_charging_example.ensembles.drone_charging import getEnsembles as droneChargingEnsembles
+            from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
+            from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
             potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
             SIMULATION_GLOBALS.initEstimators()
         else:

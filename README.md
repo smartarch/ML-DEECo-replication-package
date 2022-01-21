@@ -4,8 +4,16 @@ The project file regarding the ensembles of drones and chargers.
 
 ## How to run the example
 
-```
+Install ML-DEEco
 
 ```
+cd ml_deeco
+pip install --editable .
+```
 
-*TODO*
+Change directory to the example and run it.
+
+```
+cd ../drone_charging_example
+py -3 run.py experiments/16drones.yaml -n 1 -t 3 -o 16/nn_test -v 2
+```

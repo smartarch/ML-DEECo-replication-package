@@ -1,8 +1,8 @@
 from PIL import Image, ImageDraw
 import numpy as np
 
-from drone_charging_example.components.drone_state import DroneState
-from drone_charging_example.world import ENVIRONMENT
+from components.drone_state import DroneState
+from world import ENVIRONMENT
 
 from ml_deeco.simulation import SIMULATION_GLOBALS
 

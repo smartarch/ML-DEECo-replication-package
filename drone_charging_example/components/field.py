@@ -1,7 +1,7 @@
 import math
 import random
 
-from drone_charging_example.world import ENVIRONMENT
+from world import ENVIRONMENT
 
 from ml_deeco.simulation import Point
 

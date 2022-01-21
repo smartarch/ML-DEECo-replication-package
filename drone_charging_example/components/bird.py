@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 
-from drone_charging_example.world import ENVIRONMENT, WORLD
+from world import ENVIRONMENT, WORLD
 from ml_deeco.simulation import Agent
 
 

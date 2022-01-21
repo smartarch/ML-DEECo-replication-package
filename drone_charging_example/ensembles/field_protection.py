@@ -3,15 +3,15 @@ Field protection ensembles
 """
 from typing import TYPE_CHECKING
 
-from drone_charging_example.world import WORLD
-from drone_charging_example.components.drone_state import DroneState
-from drone_charging_example.components.drone import Drone
+from world import WORLD
+from components.drone_state import DroneState
+from components.drone import Drone
 
 from ml_deeco.simulation import Ensemble, oneOf
 from ml_deeco.utils import verbosePrint
 
 if TYPE_CHECKING:
-    from drone_charging_example.components.field import Field
+    from components.field import Field
 
 
 class FieldProtection(Ensemble):

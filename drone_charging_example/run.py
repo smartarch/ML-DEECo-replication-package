@@ -18,10 +18,10 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by d
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 
-from drone_charging_example.world import WORLD, ENVIRONMENT  # This import should be first
-from drone_charging_example.components.drone_state import DroneState
-from drone_charging_example.utils.visualizers import Visualizer
-from drone_charging_example.utils import plots
+from world import WORLD, ENVIRONMENT  # This import should be first
+from components.drone_state import DroneState
+from utils.visualizers import Visualizer
+from utils import plots
 
 from ml_deeco.estimators import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
 from ml_deeco.simulation import run_simulation, SIMULATION_GLOBALS

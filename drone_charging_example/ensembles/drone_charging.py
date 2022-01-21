@@ -4,16 +4,16 @@ Drone charging ensembles
 import math
 from typing import List, TYPE_CHECKING
 
-from drone_charging_example.world import ENVIRONMENT, WORLD
-from drone_charging_example.components.drone_state import DroneState
-from drone_charging_example.components.drone import Drone
+from world import ENVIRONMENT, WORLD
+from components.drone_state import DroneState
+from components.drone import Drone
 
 from ml_deeco.estimators import NumericFeature, CategoricalFeature
 from ml_deeco.simulation import SIMULATION_GLOBALS, Ensemble, someOf
 from ml_deeco.utils import verbosePrint
 
 if TYPE_CHECKING:
-    from drone_charging_example.components.charger import Charger
+    from components.charger import Charger
 
 
 # The order of the ensemble is:
