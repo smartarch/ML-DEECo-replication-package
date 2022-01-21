@@ -1,7 +1,7 @@
 import math
 import random
 
-from ml_deeco.estimators.estimate import Estimate
+from ml_deeco.estimators import Estimate
 
 
 class Point:

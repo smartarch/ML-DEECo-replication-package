@@ -1,4 +1,4 @@
-from ml_deeco.utils.verbose import verbosePrint
+from ml_deeco.utils import verbosePrint
 
 
 class SimulationGlobals:

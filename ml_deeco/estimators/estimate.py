@@ -7,11 +7,11 @@ from typing import Callable, List, TYPE_CHECKING
 
 import numpy as np
 
-from ml_deeco.estimators.features import Feature, TimeFeature
-from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
+from ml_deeco.estimators import Feature, TimeFeature
+from ml_deeco.simulation import SIMULATION_GLOBALS
 
 if TYPE_CHECKING:
-    from ml_deeco.estimators.estimator import Estimator
+    from ml_deeco.estimators import Estimator
 
 
 BoundFeature = namedtuple('BoundFeature', ('name', 'feature', 'function'))

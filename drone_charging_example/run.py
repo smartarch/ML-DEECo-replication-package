@@ -2,10 +2,6 @@
     This file contains a simple experiment run
 """
 from yaml import load
-
-from drone_charging_example.components.drone_state import DroneState
-from drone_charging_example.utils.visualizers import Visualizer
-
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -21,12 +17,15 @@ import math
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
+
 from drone_charging_example.world import WORLD, ENVIRONMENT  # This import should be first
-from ml_deeco.estimators.estimator import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
-from ml_deeco.simulation.simulation import run_simulation, SIMULATION_GLOBALS
+from drone_charging_example.components.drone_state import DroneState
+from drone_charging_example.utils.visualizers import Visualizer
 from drone_charging_example.utils import plots
-from ml_deeco.utils.serialization import Log
-from ml_deeco.utils.verbose import setVerboseLevel, verbosePrint
+
+from ml_deeco.estimators import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
+from ml_deeco.simulation import run_simulation, SIMULATION_GLOBALS
+from ml_deeco.utils import setVerboseLevel, verbosePrint, Log
 
 
 def run(args):

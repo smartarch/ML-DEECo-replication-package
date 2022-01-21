@@ -1,10 +1,10 @@
 from typing import List, TYPE_CHECKING
 
-from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
-from ml_deeco.utils.serialization import Log
+from ml_deeco.simulation import SIMULATION_GLOBALS
+from ml_deeco.utils import Log
 
 if TYPE_CHECKING:
-    from ml_deeco.estimators.estimator import Estimator
+    from ml_deeco.estimators import Estimator
 
 MAX_RANDOM_POINTS = 100
 

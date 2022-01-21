@@ -2,7 +2,7 @@ import random
 from enum import Enum
 
 from drone_charging_example.world import ENVIRONMENT, WORLD
-from ml_deeco.simulation.components import Agent
+from ml_deeco.simulation import Agent
 
 
 class BirdState(Enum):

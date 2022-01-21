@@ -10,11 +10,9 @@ from matplotlib import pyplot as plt
 import tensorflow as tf
 import seaborn as sns
 
-from ml_deeco.estimators.estimate import Estimate, BoundFeature
-from ml_deeco.estimators.features import Feature, CategoricalFeature, NumericFeature, BinaryFeature, TimeFeature
-from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
-from ml_deeco.utils.serialization import Log
-from ml_deeco.utils.verbose import verbosePrint
+from ml_deeco.estimators import Feature, CategoricalFeature, NumericFeature, BinaryFeature, TimeFeature, Estimate, BoundFeature
+from ml_deeco.simulation import SIMULATION_GLOBALS
+from ml_deeco.utils import Log, verbosePrint
 
 
 #########################

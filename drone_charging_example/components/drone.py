@@ -1,12 +1,12 @@
 import random
 from typing import Optional, TYPE_CHECKING
 
-from ml_deeco.estimators.estimate import Estimate, TimeEstimate
-from ml_deeco.estimators.features import NumericFeature, CategoricalFeature
-from ml_deeco.simulation.components import Agent
 from drone_charging_example.components.drone_state import DroneState
 from drone_charging_example.world import ENVIRONMENT, WORLD
-from ml_deeco.utils.verbose import verbosePrint
+
+from ml_deeco.estimators import NumericFeature, CategoricalFeature, Estimate, TimeEstimate
+from ml_deeco.simulation import Agent
+from ml_deeco.utils import verbosePrint
 
 if TYPE_CHECKING:
     from drone_charging_example.components.charger import Charger
