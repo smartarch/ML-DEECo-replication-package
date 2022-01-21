@@ -7,12 +7,12 @@
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/en2-drone-charging" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/en2-drone-charging/drone_charging_example" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="C:\Users\micha\OneDrive - Univerzita Karlova\Research\2022-SEAMS\en2-drone-charging\drone_charging_example\run.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/en2-drone-charging/drone_charging_example/run.py" />
     <option name="PARAMETERS" value="experiments/16drones.yaml -n 1 -t 5 -o 16/nn_20 -v 2 -c --waiting_estimation=neural_network --hidden_layers 20" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
