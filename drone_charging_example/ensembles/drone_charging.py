@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 
 
 # The order of the ensemble is:
-#  1. PotentialDronesAssignment
-#  2. WaitingDronesAssignment
+#  1. DroneChargingPreassignment
+#  2. DroneChargingAssignment
 #  3. AcceptedDronesAssignment
 
 
-class PotentialDronesAssignment(Ensemble):
+class DroneChargingPreassignment(Ensemble):
 
     charger: 'Charger'
 
@@ -48,10 +48,10 @@ class PotentialDronesAssignment(Ensemble):
         for drone in self.drones:
             drone.closestCharger = self.charger
 
-        verbosePrint(f"PotentialDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
+        verbosePrint(f"DroneChargingPreassignment: assigned {len(self.drones)} to {self.charger.id}", 4)
 
 
-class WaitingDronesAssignment(Ensemble):
+class DroneChargingAssignment(Ensemble):
 
     charger: 'Charger'
 
@@ -177,7 +177,7 @@ class WaitingDronesAssignment(Ensemble):
 
     def actuate(self):
 
-        verbosePrint(f"WaitingDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
+        verbosePrint(f"DroneChargingAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
 
         self.charger.waitingDrones = self.drones
 
@@ -222,12 +222,12 @@ class AcceptedDronesAssignment(Ensemble):
         for drone in self.drones:
             if drone in self.charger.acceptedDrones:
                 continue
-            waitingDronesAssignment = next(filter(lambda e: isinstance(e, WaitingDronesAssignment) and e.charger == self.charger, ensembles))
+            waitingDronesAssignment = next(filter(lambda e: isinstance(e, DroneChargingAssignment) and e.charger == self.charger, ensembles))
             WORLD.chargerLog.register([
                 SIMULATION_GLOBALS.currentTimeStep,
                 drone.id,
                 drone.battery,
-                WaitingDronesAssignment.drones.estimate.estimate(waitingDronesAssignment, drone),
+                DroneChargingAssignment.drones.estimate.estimate(waitingDronesAssignment, drone),
                 drone.energyToFlyToCharger(),
                 drone.timeToDoneCharging(),
                 self.charger.id,
@@ -247,8 +247,8 @@ def getEnsembles():
     global ensembles
 
     ensembles = \
-        [PotentialDronesAssignment(charger) for charger in WORLD.chargers] + \
-        [WaitingDronesAssignment(charger) for charger in WORLD.chargers] + \
+        [DroneChargingPreassignment(charger) for charger in WORLD.chargers] + \
+        [DroneChargingAssignment(charger) for charger in WORLD.chargers] + \
         [AcceptedDronesAssignment(charger) for charger in WORLD.chargers]
 
     return ensembles
