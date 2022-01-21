@@ -4,7 +4,7 @@ The project file regarding the ensembles of drones and chargers.
 
 ## How to run the example
 
-Install ML-DEEco
+Install ML-DEECo
 
 ```
 cd ml_deeco

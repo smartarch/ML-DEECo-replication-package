@@ -26,8 +26,6 @@ class Bird(Agent):
 
     """
 
-    # # static Counter
-    Count = 0
     TimeToEat = 5
     StayProbability = 0.85
     AttackProbability = 0.12
@@ -40,8 +38,7 @@ class Bird(Agent):
             location):
         self.speed = ENVIRONMENT.birdSpeed
 
-        Bird.Count = Bird.Count + 1
-        Agent.__init__(self, location, self.speed, Bird.Count)
+        Agent.__init__(self, location, self.speed)
 
         self.state = BirdState.IDLE
         self.target = None

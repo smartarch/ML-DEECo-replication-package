@@ -17,15 +17,11 @@ class Charger(Component):
     The drone charger component.
     """
 
-    # static Counter
-    Count = 0
-
     chargerUtilizationEstimate = Estimate().inTimeSteps(20).using(WORLD.chargerUtilizationEstimator)
     chargerFullEstimate = Estimate().inTimeSteps(20).using(WORLD.chargerFullEstimator)
 
     def __init__(self, location):
-        Charger.Count = Charger.Count + 1
-        Component.__init__(self, location, Charger.Count)
+        Component.__init__(self, location)
 
         self.chargingRate = ENVIRONMENT.chargingRate
         self.chargerCapacity = ENVIRONMENT.chargerCapacity

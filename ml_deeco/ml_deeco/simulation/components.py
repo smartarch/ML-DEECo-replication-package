@@ -1,53 +1,38 @@
 import math
 import random
+from typing import Union, List, Tuple
 
 from ml_deeco.estimators import Estimate
 
 
 class Point:
     """
-        The class represents a point on the world. X and Y are values from 0 to width or height.
-        ...
+    Represents a location in the 2D world.
 
-        Attributes
-        ----------
-        x : int
-            Value of current position on the map on X-axis
-        y : int
-            Value of current position on the map on X-axis
-
-        Properties
-        ----------
-        X: int
-            sets and gets the value of X, throws an exception if value < 0.
-        Y: int
-            sets and gets the value of Y, throws an exception if value < 0.
-
-        Operands
-        --------
-        __sub__(p1,p2): returns (int,int)
-            is called as p1-p2
-            returns the result of p1-p2 where p1 and p2 are points.
-        __eq__(p1,p2): returns bool
-            is called as p1==p2
-            returns the result of P1=P2 where P1 and P2 are points.
-        __getitem__(point,index): returns int
-             is called as point[index]
-             if index=0, it returns point.x, otherwise it returns point.y
-        
-        Methods
-        -------
-        distance(other): returns int
-            returns the distance between the current point and other point.
-        
-        static random(maxWidth, maxHeight): returns a Point
-            creates a random point with margin of 1.
-
+    Attributes
+    ----------
+    x : float
+        The x-coordinate of the point.
+    y : float
+        The y-coordinate of the point.
     """
 
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    def __init__(self, *coordinates: Union[float, List[float], Tuple[float, float]]):
+        """
+        Constructs a point from either
+        x and y coordinates as two numbers (two arguments), or
+        a list / tuple containing two numbers.
+        """
+        if len(coordinates) == 1:
+            assert type(coordinates) == list or type(coordinates) == tuple
+            assert len(coordinates[0]) == 2  # type: ignore
+            self.x = coordinates[0][0]  # type: ignore
+            self.y = coordinates[0][1]  # type: ignore
+        elif len(coordinates) == 2:
+            self.x = coordinates[0]
+            self.y = coordinates[1]
+        else:
+            raise ValueError("Point must have two coordinates.")
 
     def __sub__(self, other):
         return self.x - other.x, self.y - other.y
@@ -55,161 +40,121 @@ class Point:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
-    # def __getitem__(self, index):
-    #     if index==0:
-    #         return self.x
-    #     else:
-    #         return self.y
-
     def __str__(self):
-        return f"{self.x},{self.y}"
+        return f"{self.x}, {self.y}"
 
-    def distance(self, other):
+    def __repr__(self):
+        return f"Point({self.x}, {self.y})"
+
+    def distance(self, other: 'Point') -> float:
+        """Distance between the current point and other point."""
         dx = other.x - self.x
         dy = other.y - self.y
         dl = math.sqrt(dx * dx + dy * dy)
         return dl
 
     @staticmethod
-    def random(x1, y1, x2, y2):
+    def random(x1: int, y1: int, x2: int, y2: int):
+        """Returns a random point in the specified rectangular area."""
         return Point(random.randrange(x1, x2), random.randrange(y1, y2))
 
 
-class Component:
+class ComponentMeta(type):
     """
-        Component class is used to represent A component on the map. 
-        Components are all elements that are on the map such as Birds, Drones, Chargers and Charging Stations.
+    Metaclass for Component. Uses a counter to automatically generate the component ID.
+    """
 
-        Attributes
-        ----------
-        location : point.Point
-            the current location of the agent on the map as [x,y]
-        id : int
-            the number of component created with this type to be used as ID.
-        world : World 
-                the world that the components are living in.
-        Methods
-        -------
-        actuate()
-            Abstract method that is developed on the derived classes level.
-        
-        locationPoints()
-            return the current point as a list object.
+    def __new__(mcs, name, bases, namespace):
+        namespace['_count'] = 0  # initialize the counter
+        return super().__new__(mcs, name, bases, namespace)
+
+
+class Component(metaclass=ComponentMeta):
+    """
+    Base class for all components.
+
+    Attributes
+    ----------
+    location : Point
+        The current location of the component on the 2D map.
+    id : str
+        Identifier of the component. Generated automatically.
     """
     location: Point
     id: str
+    _count = 0  # Number of components of each type
 
-    def __init__(self, location, componentID):
+    def __init__(self, location: Point):
         """
-            Initiate the Component object.
-            After the derived type is identified, it gives a string ID
-            For instance, if the derived class is a Drone, and there are already 4 drones,
-            the new Drone will get `Drone_5` as its id.
-            
-        
-            Parameters
-            ----------
-            location : point.Point
-                the current location of the agent on the map as [x,y]. 
-                It can be sent as an instace of Point or just a list of two points.
 
-            id : int
-                the number of component created with this type to be used as ID.
-
-            world : World 
-                the world that the components are living in.
+        Parameters
+        ----------
+        location : Point
+            The initial location of the component.
         """
-        child_type = type(self).__name__
-        self.id = "%s_%d" % (child_type, componentID)
+        # generate the ID
+        cls = type(self)
+        cls._count += 1
+        self.id = "%s_%d" % (cls.__name__, cls._count)
 
-        if isinstance(location, Point):
-            self.location = location
-        else:
-            self.location = Point(location[0], location[1])
+        self.location = location
 
     def actuate(self):
         """
-            An abstract method to be developed by the derived instances.
+        Behavior of the component which is executed once per time step. Should be developed by the framework user.
         """
         pass
 
     def collectEstimatesData(self):
+        """
+        Collects data for Estimates. This is called from the simulation after a step is performed.
+        """
         estimates = [fld for (fldName, fld) in type(self).__dict__.items()
                      if not fldName.startswith('__') and isinstance(fld, Estimate)]
         for estimate in estimates:
             estimate.collectInputs(self)
             estimate.collectTargets(self)
 
-    def locationPoints(self):
-        """
-            locationPoints()
-                return the current point as a list object.
-        """
-        return [self.location.x, self.location.y]
-
 
 class Agent(Component):
     """
     Extending component with mobility.
-    Agents can move, where components are all elements on a map that are constant or moving.
-    Agent class is used to represent an Agent.
-    Agents are elements that move around a map and perform actions.
-    In this simulation, agents are Drones and Birds.
-
-    ...
 
     Attributes
     ----------
-    reporter : simulations.serializer.Report
-        A static variable that points to the corresponding report object
-    location : point.Point
-        the current location of the agent on the map as [x,y]
-     world : World
-            the world that the components are living in.
     speed : float
-        the speed of the agent to be determined as point rate/tick.
-    count : int
-        the number of component created with this type to be used as ID.
-
-    Methods
-    -------
-    report(timeStep)
-        register the current status of the agent to the connected report object.
+        The speed of the agent (movement per step).
 
     move(target)
         move the current location toward the target
     """
 
-    def __init__(self, location, speed, componentID):
+    def __init__(self, location, speed):
         """
-            Initiate the Agent object.
-            Parameters
-            ----------
-            location : point.Point
-                the current location of the agent on the map as [x,y].
 
-            speed : float
-                the speed of the agent to be determined as point rate/tick.
-            world : World 
-                the world that the components are living in.
-            count : int
-                the number of component created with this type to be used as ID.
-        """
-        Component.__init__(self, location, componentID)
-        self.speed = speed
-
-    def move(self, target):
-        """
-        Moves the object from self.location to the target.
         Parameters
         ----------
-        target : point.Point
-            the target location on the map as [x,y].
-
+        location : Point
+            The initial location of the agent.
         speed : float
-            the speed of the agent to be determined as point rate/tick.
-        count : int
-            the number of component created with this type to be used as ID.
+            The initial speed.
+        """
+        Component.__init__(self, location)
+        self.speed = speed
+
+    def move(self, target: Point):
+        """
+        Moves the agent towards the target (based on current speed).
+
+        Parameters
+        ----------
+        target : Point
+            The target location.
+
+        Returns
+        -------
+        bool
+            True if the agent reached the target location.
         """
         dx = target.x - self.location.x
         dy = target.y - self.location.y
@@ -217,5 +162,7 @@ class Agent(Component):
         if dl >= self.speed:
             self.location = Point(self.location.x + dx * self.speed / dl,
                                   self.location.y + dy * self.speed / dl)
+            return False
         else:
             self.location = target
+            return True

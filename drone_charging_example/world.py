@@ -95,7 +95,7 @@ class World:
 
         self.drones: List[Drone] = [Drone(randomStartingPoint()) for _ in range(ENVIRONMENT.droneCount)]
         self.birds: List[Bird] = [Bird(Point.random(0, 0, ENVIRONMENT.mapWidth, ENVIRONMENT.mapHeight)) for _ in range(ENVIRONMENT.birdCount)]
-        self.chargers: List[Charger] = [Charger(point) for point in ENVIRONMENT.chargerPositions]
+        self.chargers: List[Charger] = [Charger(Point(position)) for position in ENVIRONMENT.chargerPositions]
         self.fields: List[Field] = [Field(points) for points in ENVIRONMENT.fieldPositions]
 
         self.totalPlaces = sum([len(f.places) for f in self.fields])

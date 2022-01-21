@@ -26,8 +26,6 @@ class Drone(Agent):
         Target: is the target component, it could be a place, a charger, a bird, or anything else.
         Static Count for the Drones
     """
-    # static Counter
-    Count = 0
 
     futureBatteryEstimate = Estimate().inTimeSteps(50).using(WORLD.droneBatteryEstimator)
     futureStateEstimate = Estimate().inTimeSteps(50).using(WORLD.droneStateEstimator)
@@ -50,8 +48,7 @@ class Drone(Agent):
         self.closestCharger: Optional[Charger] = None
         self.alert = 0.2
 
-        Drone.Count = Drone.Count + 1
-        Agent.__init__(self, location, self.droneSpeed, Drone.Count)
+        Agent.__init__(self, location, self.droneSpeed)
 
     # region Estimates
 
