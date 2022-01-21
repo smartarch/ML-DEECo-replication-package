@@ -69,17 +69,14 @@ class BarChart(Chart):
         if len(self.y)==1:
             return [0]
         elif len(self.y)==2:
-            return [
-                -0.5,
-                0.5
-            ]
+            return [ -1,0  ]
         elif len(self.y)==4:
             return [
-                -2,
-                -1,
-                0,
-                1
-            ]
+                -2, -1,  0,  1    ]
+
+        elif len(self.y)==6:
+            return [-3,-2,-1,0,1,2]
+
 
     def plot (self):
         self.width = self.width / len(self.y)
@@ -90,12 +87,12 @@ class BarChart(Chart):
             maxArray = 0
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                rect = self.axes[subplot].bar(x+(self.width*self.xMap[i]), yArray, color=self.colors[i], label=y,width=self.width)
+                rect = self.axes[subplot].bar(x+(self.width*self.xMap[i])+(self.width/2), yArray, color=self.colors[i], label=y,width=self.width)
                 self.axes[subplot].bar_label(rect, fmt="%.2f")
                 if maxArray < max(yArray):
                     maxArray = max(yArray)
                 self.axes[subplot].set_ylim(0,maxArray*1.2)
-            if self.legend:
+            if self.legend[subplot]:
                 self.axes[subplot].legend()
             self.axes[subplot].set_ylabel(self.yLabel)
             self.axes[subplot].set_title(self.subtitles[subplot])
@@ -126,7 +123,7 @@ class LineChart(Chart):
                 yArray = np.array(dataFrame[y])
                 self.axes[subplot].plot(x, yArray, color=self.colors[i],linestyle=self.lineStyles[i], label=y)
             
-            if self.legend:
+            if self.legend[subplot]:
                 self.axes[subplot].legend()
             self.axes[subplot].set_ylabel(self.yLabel)
             self.axes[subplot].set_title(self.subtitles[subplot])
