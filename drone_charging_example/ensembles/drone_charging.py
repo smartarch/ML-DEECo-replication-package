@@ -5,7 +5,7 @@ import math
 from typing import List, TYPE_CHECKING
 
 from drone_charging_example.world import ENVIRONMENT, WORLD
-from ml_deeco.estimators.features import FloatFeature
+from ml_deeco.estimators.features import FloatFeature, CategoricalFeature
 from ml_deeco.simulation.ensemble import Ensemble, someOf
 from drone_charging_example.components.drone_state import DroneState
 from ml_deeco.simulation.simulation import SIMULATION_GLOBALS
@@ -85,9 +85,9 @@ class WaitingDronesAssignment(Ensemble):
     def battery(self, drone):
         return drone.battery
 
-    # @drones.estimate.input(CategoricalFeature(DroneState))
-    # def drone_state(self, drone):
-    #     return drone.state
+    @drones.estimate.input(CategoricalFeature(DroneState))
+    def drone_state(self, drone):
+        return drone.state
 
     @drones.estimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
     def charger_distance(self, drone):
@@ -150,9 +150,11 @@ class WaitingDronesAssignment(Ensemble):
     # endregion
 
     @drones.estimate.inputsValid
+    @drones.estimate.targetsValid
     def is_waiting(self, drone):
-        return drone in self.charger.waitingDrones
-        # return drone.state != DroneState.TERMINATED
+        # return drone in self.drones
+        return drone.state != DroneState.TERMINATED \
+               and drone in self.charger.potentialDrones
 
     @drones.estimate.target()
     def is_accepted(self, drone):

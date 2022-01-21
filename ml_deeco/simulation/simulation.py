@@ -27,7 +27,7 @@ def materialize_ensembles(components, ensembles):
             initializedEnsembles.append(ens)
             ens.actuate()
     for ens in initializedEnsembles:
-        ens.collectEstimatesData()
+        ens.collectEstimatesData(components)
 
     return initializedEnsembles
 

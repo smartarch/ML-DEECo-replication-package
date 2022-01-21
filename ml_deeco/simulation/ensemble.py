@@ -126,9 +126,10 @@ class someOfWithEstimate(someOf):
         sel.estimate = estimate
         return sel
 
-    def collectEstimateData(self, instance):
-        selected = self.get(instance, type(instance))
-        for comp in selected:
+    def collectEstimateData(self, instance, allComponents):
+        # selected = self.get(instance, type(instance))
+        filteredComponents = self.filterComponentsByType(instance, allComponents)
+        for comp in filteredComponents:
             self.estimate.collectInputs(instance, comp)
             self.estimate.collectTargets(instance, comp)
 
@@ -182,7 +183,7 @@ class Ensemble:
     def __lt__(self, other):
         return self.priority() > other.priority()
 
-    def collectEstimatesData(self):
+    def collectEstimatesData(self, components):
         compWithEstimateFields = [fld for (fldName, fld) in type(self).__dict__.items() if not fldName.startswith('__') and isinstance(fld, someOfWithEstimate)]
         for field in compWithEstimateFields:
-            field.collectEstimateData(self)
+            field.collectEstimateData(self, components)
