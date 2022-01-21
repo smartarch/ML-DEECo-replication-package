@@ -85,9 +85,9 @@ class WaitingDronesAssignment(Ensemble):
     def battery(self, drone):
         return drone.battery
 
-    # @drones.estimate.input(CategoricalFeature(DroneState))
-    # def drone_state(self, drone):
-    #     return drone.state
+    @drones.estimate.input(CategoricalFeature(DroneState))
+    def drone_state(self, drone):
+        return drone.state
 
     @drones.estimate.input(FloatFeature(0, math.sqrt(ENVIRONMENT.mapWidth ** 2 + ENVIRONMENT.mapHeight ** 2)))
     def charger_distance(self, drone):
@@ -150,9 +150,11 @@ class WaitingDronesAssignment(Ensemble):
     # endregion
 
     @drones.estimate.inputsValid
+    @drones.estimate.targetsValid
     def is_waiting(self, drone):
-        return drone in self.charger.waitingDrones
-        # return drone.state != DroneState.TERMINATED
+        # return drone in self.drones
+        return drone.state != DroneState.TERMINATED \
+               and drone in self.charger.potentialDrones
 
     @drones.estimate.target()
     def is_accepted(self, drone):

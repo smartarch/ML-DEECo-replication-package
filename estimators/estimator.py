@@ -104,7 +104,7 @@ class Estimator(abc.ABC):
 
         dataLog.export(fileName)
 
-    def saveModel(self):
+    def saveModel(self, suffix=""):
         pass
 
     @abc.abstractmethod
@@ -454,8 +454,13 @@ class NeuralNetworkEstimator(Estimator):
             trainLog.register(row)
         trainLog.export(f"{self._outputFolder}/{self._iteration}-training.csv")
 
-    def saveModel(self):
-        self._model.save(f"{self._outputFolder}/model.h5")
+    def saveModel(self, suffix=""):
+        suffix = str(suffix)
+        if suffix:
+            filename = f"model_{suffix}.h5"
+        else:
+            filename = "model.h5"
+        self._model.save(f"{self._outputFolder}/{filename}")
 
     def loadModel(self):
         self._model = tf.keras.models.load_model(f"{self._outputFolder}/model.h5")

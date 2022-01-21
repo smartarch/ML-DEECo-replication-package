@@ -14,7 +14,7 @@ import random
 import numpy as np
 import math
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 from simulation.world import WORLD, ENVIRONMENT  # This import should be first
 from estimators.estimator import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
@@ -29,6 +29,10 @@ def run(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
     tf.random.set_seed(args.seed)
+
+    # Set number of threads
+    tf.config.threading.set_inter_op_parallelism_threads(args.threads)
+    tf.config.threading.set_intra_op_parallelism_threads(args.threads)
 
     # load config from yaml
     yamlFile = open(args.input, 'r')
@@ -105,6 +109,9 @@ def run(args):
     else:
         waitingTimeEstimator = NeuralNetworkEstimator(
             args.hidden_layers,
+            fit_params={
+                "batch_size": 256,
+            },
             **waitingTimeEstimatorArgs
         )
 
@@ -185,12 +192,10 @@ def run(args):
         # calculate the average rate
         if t > 0:
             averageLog.register(totalLog.average(t*args.number, (t+1)*args.number))
+
         for estimator in WORLD.estimators:
             estimator.endIteration()
-            
-        
-    for estimator in WORLD.estimators:
-         estimator.saveModel()
+            estimator.saveModel(t + 1)
 
     totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
     if args.train>1:
@@ -239,6 +244,7 @@ def main():
     parser.add_argument('-b', '--baseline', type=int, help='Constant for baseline.', required=False, default=0)
     # TODO(MT): remove?
     parser.add_argument('-e', '--examples', action='store_true', default=False, help='Additional examples for debug purposes.')
+    parser.add_argument('--threads', type=int, help='Number of CPU threads TF can use.', required=False, default=4)
     args = parser.parse_args()
 
     number = args.number

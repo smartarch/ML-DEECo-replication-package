@@ -77,7 +77,7 @@ class Simulation:
                         initializedEnsembles.append(ens)
                         ens.actuate()
                 for ens in initializedEnsembles:
-                    ens.collectEstimatesData()
+                    ens.collectEstimatesData(components)
 
             # Components
             for component in components:
