@@ -22,7 +22,7 @@ from ml_deeco.utils import Log, verbosePrint
 
 class Estimator(abc.ABC):
 
-    def __init__(self, *, outputFolder, args, name="", skipEndIteration=False, printLogs=True):
+    def __init__(self, *, outputFolder, name="", skipEndIteration=False, testSplit=0.2, printLogs=True, accumulateData=False, saveCharts=True):
         SIMULATION_GLOBALS.estimators.append(self)
 
         self.x = []
@@ -30,10 +30,13 @@ class Estimator(abc.ABC):
         if outputFolder is not None:
             os.makedirs(outputFolder, exist_ok=True)
         self._outputFolder = outputFolder
-        self._args = args
         self.name = name
         self._skipEndIteration = skipEndIteration
+        self._testSplit = testSplit
         self._printLogs = printLogs
+        self._accumulateData = accumulateData
+        self._saveCharts = saveCharts
+
         self._iteration = 0
 
         self._estimates: List[Estimate] = []
@@ -184,7 +187,7 @@ class Estimator(abc.ABC):
         mse = tf.reduce_mean(tf.metrics.mse(y_true, y_pred))
         self.verbosePrint(f"{label} – {targetName} MSE: {mse:.4g}", 2)
 
-        if self._args.chart:
+        if self._saveCharts and self._outputFolder is not None:
             lims = min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())
             # plt.ioff()
             fig = plt.figure(figsize=(10, 10))
@@ -205,7 +208,7 @@ class Estimator(abc.ABC):
         accuracy = tf.reduce_mean(tf.metrics.binary_accuracy(y_true, y_pred))
         self.verbosePrint(f"{label} – {targetName} Accuracy: {accuracy:.4g}", 2)
 
-        if self._args.chart:
+        if self._saveCharts and self._outputFolder is not None:
             y_true = tf.squeeze(y_true)
             y_pred = tf.squeeze(y_pred > 0.5)
             cm = tf.math.confusion_matrix(y_true, y_pred)
@@ -223,7 +226,7 @@ class Estimator(abc.ABC):
         accuracy = tf.reduce_mean(tf.metrics.categorical_accuracy(y_true, y_pred))
         self.verbosePrint(f"{label} – {targetName} Accuracy: {accuracy:.4g}", 2)
 
-        if self._args.chart:
+        if self._saveCharts and self._outputFolder is not None:
             y_true_classes = tf.argmax(y_true, axis=1)
             y_pred_classes = tf.argmax(y_pred, axis=1)
             cm = tf.math.confusion_matrix(y_true_classes, y_pred_classes)
@@ -250,7 +253,7 @@ class Estimator(abc.ABC):
         if self._outputFolder is not None:
             self.dumpData(f"{self._outputFolder}/{self._iteration}-data.csv")
 
-        test_size = int(self._args.test_split * count)
+        test_size = int(self._testSplit * count)
         if count > 0:
             x = np.array(self.x)
             y = np.array(self.y)
@@ -281,7 +284,7 @@ class Estimator(abc.ABC):
                 self.evaluate(test_x, test_y, label="Test")
 
         # clear the data
-        if not self._args.accumulate_data:
+        if not self._accumulateData:
             self.x = []
             self.y = []
 
@@ -439,7 +442,7 @@ class NeuralNetworkEstimator(Estimator):
         history = self._model.fit(
             x, y,
             **self._fit_params,
-            verbose=2 if self._args.verbose > 2 else 0
+            verbose=0,
         )
 
         self.verbosePrint(f"Trained for {len(history.history['loss'])}/{self._fit_params['epochs']} epochs.", 2)

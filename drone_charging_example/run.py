@@ -15,7 +15,7 @@ import numpy as np
 import math
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # Report only TF errors by default
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU in TF. The models are small, so it is actually faster to use the CPU.
 import tensorflow as tf
 
 from world import WORLD, ENVIRONMENT  # This import should be first
@@ -190,20 +190,25 @@ def prepareFoldersForResults(args):
 
 def createEstimators(args, folder, estWaitingFolder):
     # create the estimators
+    commonArgs = {
+        "accumulateData": args.accumulate_data,
+        "saveCharts": args.chart,
+        "testSplit": args.test_split,
+    }
     waitingTimeEstimatorArgs = {
         "outputFolder": estWaitingFolder,
-        "args": args,
         "name": "Waiting Time",
     }
     if args.waiting_estimation == "baseline":
-        waitingTimeEstimator = ConstantEstimator(args.baseline, **waitingTimeEstimatorArgs)
+        waitingTimeEstimator = ConstantEstimator(args.baseline, **waitingTimeEstimatorArgs, **commonArgs)
     else:
         waitingTimeEstimator = NeuralNetworkEstimator(
             args.hidden_layers,
             fit_params={
                 "batch_size": 256,
             },
-            **waitingTimeEstimatorArgs
+            **waitingTimeEstimatorArgs,
+            **commonArgs,
         )
     if args.examples:
         fit_params = {
@@ -211,46 +216,52 @@ def createEstimators(args, folder, estWaitingFolder):
         }
         droneBatteryEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32], fit_params=fit_params,
-            outputFolder=f"{folder}\\drone_battery", args=args, name="Drone Battery"
+            **commonArgs,
+            outputFolder=f"{folder}\\drone_battery", name="Drone Battery"
         )
         chargerUtilizationEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32], fit_params=fit_params,
-            outputFolder=f"{folder}\\charger_utilization", args=args, name="Charger Capacity"
+            **commonArgs,
+            outputFolder=f"{folder}\\charger_utilization", name="Charger Capacity"
         )
         chargerFullEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32], fit_params=fit_params,
-            outputFolder=f"{folder}\\charger_full", args=args, name="Charger Full"
+            **commonArgs,
+            outputFolder=f"{folder}\\charger_full", name="Charger Full"
         )
         droneStateEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32], fit_params=fit_params,
-            outputFolder=f"{folder}\\drone_state", args=args, name="Drone State"
+            **commonArgs,
+            outputFolder=f"{folder}\\drone_state", name="Drone State"
         )
         timeToChargingEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32], fit_params=fit_params,
-            outputFolder=f"{folder}\\drone_time_to_charging", args=args, name="Time To Charging"
+            **commonArgs,
+            outputFolder=f"{folder}\\drone_time_to_charging", name="Time To Charging"
         )
         timeToLowBatteryEstimator = NeuralNetworkEstimator(
             hidden_layers=[32, 32], fit_params=fit_params,
-            outputFolder=f"{folder}\\drone_time_to_low_battery", args=args, name="Time To Low Battery"
+            **commonArgs,
+            outputFolder=f"{folder}\\drone_time_to_low_battery", name="Time To Low Battery"
         )
     else:
         droneBatteryEstimator = NoEstimator(
-            args=args, name="Drone Battery"
+            **commonArgs, name="Drone Battery"
         )
         chargerUtilizationEstimator = NoEstimator(
-            args=args, name="Charger Capacity"
+            **commonArgs, name="Charger Capacity"
         )
         chargerFullEstimator = NoEstimator(
-            args=args, name="Charger Full"
+            **commonArgs, name="Charger Full"
         )
         droneStateEstimator = NoEstimator(
-            args=args, name="Drone State"
+            **commonArgs, name="Drone State"
         )
         timeToChargingEstimator = NoEstimator(
-            args=args, name="Time To Charging"
+            **commonArgs, name="Time To Charging"
         )
         timeToLowBatteryEstimator = NoEstimator(
-            args=args, name="Time To Low Battery"
+            **commonArgs, name="Time To Low Battery"
         )
     WORLD.waitingTimeEstimator = waitingTimeEstimator
     WORLD.droneBatteryEstimator = droneBatteryEstimator
