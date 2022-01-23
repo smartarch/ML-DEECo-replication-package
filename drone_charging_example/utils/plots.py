@@ -7,7 +7,7 @@ font = {'size': 12}
 matplotlib.rc('font', **font)
 
 
-def createLogPlot(log,averageLog, filename, title, size):
+def createLogPlot(log, averageLog, filename, title, size):
     colors = [
         'blue',
         'orange',
@@ -15,11 +15,11 @@ def createLogPlot(log,averageLog, filename, title, size):
         'red'
     ]
     fig, axs = plt.subplots(2, 2, figsize=(16, 9))
-    x = np.arange(1, len(log))
-    t = np.arange(1, len(averageLog))
+    x = np.arange(1, len(log.records) + 1)
+    t = np.arange(1, len(averageLog.records) + 1)
     xtickLabels = (np.arange(0, size[0] * size[1]) % size[0] + 1).tolist()
-    labels = log[0]
-    array = np.array(log[1:])
+    labels = log.header
+    array = np.array(log.records)
     width = 0.35
 
     axes = [
@@ -28,7 +28,7 @@ def createLogPlot(log,averageLog, filename, title, size):
         axs[1, 0]
     ]
 
-    statisticsArray = np.array(averageLog[1:])
+    statisticsArray = np.array(averageLog.records)
 
     for i in range(2):
         axes[i].set_xlabel(f"{size[0]} Runs per train")
@@ -38,7 +38,7 @@ def createLogPlot(log,averageLog, filename, title, size):
 
         for j in range(1, size[1]):
             axes[i].axvline(x=j * size[0] + 0.5, color=colors[3])
-        axs[1, 1].plot(t, statisticsArray[:,i+2], color=colors[i], label=labels[i])
+        axs[1, 1].plot(t, statisticsArray[:, i + 2], color=colors[i], label=labels[i])
 
     axs[1, 1].set_xlabel(f"{size[0]} Trains")
     axs[1, 1].set_ylabel("Rate")
@@ -62,10 +62,10 @@ def createChargerPlot(logs, filename, title):
     fig, axs = plt.subplots(len(logs), figsize=(10, 10))
     if len(logs) == 1:
         axs = [axs]
-    x = np.arange(1, len(logs[0].records))
-    labels = logs[0].records[0]
+    x = np.arange(1, len(logs[0].records) + 1)
+    labels = logs[0].header
     for i in range(len(logs)):
-        array = np.array(logs[i].records[1:])
+        array = np.array(logs[i].records)
         axs[i].bar(x, array[:, 0], color=colors[0], label=labels[0], width=1)
         bottom = array[:, 0]
         for j in range(1, array.shape[1]):

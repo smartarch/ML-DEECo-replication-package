@@ -124,6 +124,3 @@ class Charger(Component):
 
     def __repr__(self):
         return f"{self.id}: C={len(self.chargingDrones)}, A={len(self.acceptedDrones)}, W={len(self.waitingDrones)}, P={len(self.potentialDrones)}"
-
-    def report(self, iteration):
-        pass

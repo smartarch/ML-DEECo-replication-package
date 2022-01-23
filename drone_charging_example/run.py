@@ -24,6 +24,7 @@ from world import WORLD, ENVIRONMENT  # This import should be first
 from components.drone_state import DroneState
 from utils.visualizers import Visualizer
 from utils import plots
+from utils.average_log import AverageLog
 
 from ml_deeco.estimators import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
 from ml_deeco.simulation import run_experiment, SIMULATION_GLOBALS
@@ -118,8 +119,8 @@ def run(args):
         averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
     if args.chart:
         plots.createLogPlot(
-            totalLog.records,
-            averageLog.records,
+            totalLog,
+            averageLog,
             f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
             f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
             (args.number, args.train)
@@ -161,7 +162,7 @@ def findChargerCapacity(yamlObject):
 
 
 def createLogs():
-    totalLog = Log([
+    totalLog = AverageLog([
         'Active Drones',
         'Total Damage',
         'Alive Drone Rate',
@@ -172,7 +173,7 @@ def createLogs():
         'Charge Alert',
         'Battery Random Reduction'
     ])
-    averageLog = Log([
+    averageLog = AverageLog([
         'Active Drones',
         'Total Damage',
         'Alive Drone Rate',
