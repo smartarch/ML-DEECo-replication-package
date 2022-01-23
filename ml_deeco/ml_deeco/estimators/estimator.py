@@ -352,7 +352,7 @@ class NeuralNetworkEstimator(Estimator):
     def estimatorName(self):
         return f"Neural network {self._hidden_layers}"
 
-    def __init__(self, hidden_layers, activation=None, loss=None, fit_params=None, **kwargs):
+    def __init__(self, hidden_layers, activation=None, loss=None, fit_params=None, optimizer=None, **kwargs):
         """
         Parameters
         ----------
@@ -362,10 +362,13 @@ class NeuralNetworkEstimator(Estimator):
             Activation function for the last layer. Default is no activation (identity).
         loss: tf.keras.losses.Loss
         fit_params: dict
+        optimizer: tf.optimizers.Optimizer
+            Default is `tf.optimizers.Adam()`.
         """
         super().__init__(**kwargs)
         self._hidden_layers = hidden_layers
         self._activation = activation
+        self._optimizer = optimizer
         self._loss = loss
         self._fit_params = DEFAULT_FIT_PARAMS.copy()
         if fit_params:
@@ -394,8 +397,10 @@ class NeuralNetworkEstimator(Estimator):
         output = tf.keras.layers.Dense(numTargets, activation=self._activation)(hidden)
 
         model = tf.keras.Model(inputs=inputs, outputs=output)
+
+        optimizer = self._optimizer if self._optimizer else tf.optimizers.Adam()
         model.compile(
-            tf.optimizers.Adam(),
+            optimizer,
             self._loss,
         )
 

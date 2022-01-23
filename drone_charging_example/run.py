@@ -46,6 +46,7 @@ def run(args):
     averageLog, totalLog = createLogs()
 
     waitingTimeEstimator = createEstimators(args, folder, estWaitingFolder)
+    WORLD.initEstimators()
 
     # start the main loop
     for t in range(args.train):
@@ -54,6 +55,7 @@ def run(args):
         for i in range(args.number):
 
             components, ensembles = WORLD.reset()
+
             if args.animation:
                 visualizer = Visualizer(WORLD)
                 visualizer.drawFields()

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from ml_deeco.utils import verbosePrint
 
 
@@ -42,13 +44,40 @@ def actuate_components(components):
 
 def run_simulation(components, ensembles, steps, stepCallback=None):
 
-    for i in range(steps):
+    for step in range(steps):
 
-        verbosePrint(f"Step {i + 1}:", 3)
-        SIMULATION_GLOBALS.currentTimeStep = i
+        verbosePrint(f"Step {step + 1}:", 3)
+        SIMULATION_GLOBALS.currentTimeStep = step
 
         materializedEnsembles = materialize_ensembles(components, ensembles)
         actuate_components(components)
 
         if stepCallback:
-            stepCallback(components, materializedEnsembles, i)
+            stepCallback(components, materializedEnsembles, step)
+
+
+def run_experiment(iterations, simulations, steps, prepareSimulation, prepareIteration=None,
+                   iterationCallback=None, simulationCallback=None, stepCallback=None):
+
+    SIMULATION_GLOBALS.initEstimators()
+
+    for iteration in range(iterations):
+        verbosePrint(f"Iteration {iteration + 1} started at {datetime.now()}:", 1)
+        if prepareIteration:
+            prepareIteration(iteration)
+
+        for simulation in range(simulations):
+            verbosePrint(f"Simulation {simulation + 1} started at {datetime.now()}:", 2)
+
+            components, ensembles = prepareSimulation(iteration, simulation)
+
+            run_simulation(components, ensembles, steps, stepCallback)
+
+            if simulationCallback:
+                simulationCallback(components, ensembles, iteration, simulation)
+
+        for estimator in SIMULATION_GLOBALS.estimators:
+            estimator.endIteration()
+
+        if iterationCallback:
+            iterationCallback(iteration)

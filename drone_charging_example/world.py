@@ -73,6 +73,19 @@ class World:
         if 'WORLD' in locals():
             raise RuntimeError("Do not create a new instance of the World. Use the WORLD global variable instead.")
 
+    @staticmethod
+    def initEstimators():
+        # import all Components and Ensembles with Estimates
+
+        # noinspection PyUnresolvedReferences
+        from components.drone import Drone
+        # noinspection PyUnresolvedReferences
+        from components.charger import Charger
+        # noinspection PyUnresolvedReferences
+        from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
+
+        SIMULATION_GLOBALS.initEstimators()
+
     # noinspection PyAttributeOutsideInit
     def reset(self):
         """
@@ -120,7 +133,6 @@ class World:
             from ensembles.field_protection import getEnsembles as fieldProtectionEnsembles
             from ensembles.drone_charging import getEnsembles as droneChargingEnsembles
             potentialEnsembles = fieldProtectionEnsembles() + droneChargingEnsembles()
-            SIMULATION_GLOBALS.initEstimators()
         else:
             potentialEnsembles = []
 
