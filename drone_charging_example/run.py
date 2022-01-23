@@ -1,6 +1,8 @@
 """ 
     This file contains a simple experiment run
 """
+from typing import Optional
+
 from yaml import load
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -24,11 +26,15 @@ from utils.visualizers import Visualizer
 from utils import plots
 
 from ml_deeco.estimators import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
-from ml_deeco.simulation import run_simulation, SIMULATION_GLOBALS
+from ml_deeco.simulation import run_experiment, SIMULATION_GLOBALS
 from ml_deeco.utils import setVerboseLevel, verbosePrint, Log
 
 
 def run(args):
+    """
+    Runs `args.trains` times _iteration_ of [`args.number` times _simulation_ + 1 training].
+    """
+
     # Fix random seeds
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -44,66 +50,68 @@ def run(args):
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
 
     averageLog, totalLog = createLogs()
+    visualizer: Optional[Visualizer] = None
 
     waitingTimeEstimator = createEstimators(args, folder, estWaitingFolder)
     WORLD.initEstimators()
 
-    # start the main loop
-    for t in range(args.train):
-        verbosePrint(f"Iteration {t + 1} started at {datetime.now()}:", 1)
+    def prepareSimulation(i, s):
+        """Prepares the _Simulation_ (formerly known as _Run_)."""
+        components, ensembles = WORLD.reset()
+        if args.animation:
+            nonlocal visualizer
+            visualizer = Visualizer(WORLD)
+            visualizer.drawFields()
+        return components, ensembles
 
-        for i in range(args.number):
+    def stepCallback(components, materializedEnsembles, step):
+        """Collect statistics after one _Step_ of the _Simulation_."""
+        for chargerIndex in range(len(WORLD.chargers)):
+            charger = WORLD.chargers[chargerIndex]
+            accepted = set(charger.acceptedDrones)
+            waiting = set(charger.waitingDrones)
+            potential = set(charger.potentialDrones)
+            WORLD.chargerLogs[chargerIndex].register([
+                # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
+                len(charger.chargingDrones),
+                len(accepted),
+                len(waiting - accepted),
+                len(potential - waiting - accepted),
+            ])
 
-            components, ensembles = WORLD.reset()
+        if args.animation:
+            visualizer.drawComponents(step + 1)
 
-            if args.animation:
-                visualizer = Visualizer(WORLD)
-                visualizer.drawFields()
+    def simulationCallback(components, ensembles, t, i):
+        """Collect statistics after each _Simulation_ is done."""
+        totalLog.register(collectStatistics(t, i))
+        WORLD.chargerLog.export(f"{folder}/charger_logs/{yamlFileName}_{t + 1}_{i + 1}.csv")
 
-            def stepCallback(components, materializedEnsembles, iteration):
-                # Collect statistics
-                for chargerIndex in range(len(WORLD.chargers)):
-                    charger = WORLD.chargers[chargerIndex]
-                    accepted = set(charger.acceptedDrones)
-                    waiting = set(charger.waitingDrones)
-                    potential = set(charger.potentialDrones)
-                    WORLD.chargerLogs[chargerIndex].register([
-                        # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
-                        len(charger.chargingDrones),
-                        len(accepted),
-                        len(waiting - accepted),
-                        len(potential - waiting - accepted),
-                    ])
+        if args.animation:
+            verbosePrint(f"Saving animation...", 3)
+            visualizer.createAnimation(f"{folder}/animations/{yamlFileName}_{t + 1}_{i + 1}.gif")
+            verbosePrint(f"Animation saved.", 3)
 
-                if args.animation:
-                    visualizer.drawComponents(i + 1)
+        if args.chart:
+            verbosePrint(f"Saving charger plot...", 3)
+            plots.createChargerPlot(
+                WORLD.chargerLogs,
+                f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
+                f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+            verbosePrint(f"Charger plot saved.", 3)
 
-            verbosePrint(f"Run {i + 1} started at {datetime.now()}:", 2)
-            run_simulation(components, ensembles, ENVIRONMENT.maxSteps, stepCallback)
-
-            totalLog.register(collectStatistics(t, i))
-            WORLD.chargerLog.export(f"{folder}/charger_logs/{yamlFileName}_{t + 1}_{i + 1}.csv")
-
-            if args.animation:
-                verbosePrint(f"Saving animation...", 3)
-                visualizer.createAnimation(f"{folder}/animations/{yamlFileName}_{t + 1}_{i + 1}.gif")
-                verbosePrint(f"Animation saved.", 3)
-
-            if args.chart:
-                verbosePrint(f"Saving charger plot...", 3)
-                plots.createChargerPlot(
-                    WORLD.chargerLogs,
-                    f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                    f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
-                verbosePrint(f"Charger plot saved.", 3)
+    def iterationCallback(t):
+        """Aggregate statistics from all _Simulations_ in one _Iteration_."""
 
         # calculate the average rate
         if t > 0:
             averageLog.register(totalLog.average(t * args.number, (t + 1) * args.number))
 
         for estimator in SIMULATION_GLOBALS.estimators:
-            estimator.endIteration()
             estimator.saveModel(t + 1)
+
+    run_experiment(args.train, args.number, ENVIRONMENT.maxSteps, prepareSimulation,
+                   iterationCallback=iterationCallback, simulationCallback=simulationCallback, stepCallback=stepCallback)
 
     totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
     if args.train > 1:

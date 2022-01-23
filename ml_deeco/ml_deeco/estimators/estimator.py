@@ -62,7 +62,7 @@ class Estimator(abc.ABC):
             self.verbosePrint(f"Already initialized {self.name} ({self.estimatorName}).", 4)
             return
 
-        self.verbosePrint(f"Initializing Estimator {self.name} ({self.estimatorName}) with {len(self._estimates)} estimates assigned.", 2)
+        self.verbosePrint(f"Initializing Estimator {self.name} ({self.estimatorName}) with {len(self._estimates)} estimates assigned.", 1)
         if len(self._estimates) == 0:
             # print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
             return
@@ -74,8 +74,8 @@ class Estimator(abc.ABC):
         input_names = [i.name for i in self._inputs]
         target_names = [t.name for t in self._targets]
 
-        self.verbosePrint(f"  inputs {input_names}.", 2)
-        self.verbosePrint(f"  targets {target_names}.", 2)
+        self.verbosePrint(f"inputs {input_names}.", 2)
+        self.verbosePrint(f"targets {target_names}.", 2)
 
         for est in self._estimates:
             assert [i.name for i in est.inputs] == input_names, f"Estimate {est} has inconsistent input features with the assigned estimator {self.name} ({self.estimatorName})"
