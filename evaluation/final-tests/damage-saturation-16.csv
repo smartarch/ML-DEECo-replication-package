@@ -1,0 +1,5 @@
+﻿Birds,Drones,Saturation,Baseline - Damage,Machine Learning Estimator - Damage,Baseline - Terminated Drones,Machine Learning Estimator - Terminated Drones
+100,16,50%,0.327641409,0.279402348,0.5625,0.155
+100,16,66%,0.278548559,0.240554963,0.375,0.02375
+100,16,83%,0.219850587,0.227321238,0.375,0.02125
+100,16,100%,0.189967983,0.225186766,0.3125,0.01375

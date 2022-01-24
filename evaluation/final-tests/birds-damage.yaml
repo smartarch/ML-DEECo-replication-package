@@ -1,0 +1,41 @@
+inputs: [
+    'final-tests//damage-10-12.csv',
+]
+subtitles: [ ''
+]
+y: [
+    '8 Drones - Baseline',
+    '8 Drones - Machine Learning Based',
+    '10 Drones - Baseline',
+    '10 Drones - Machine Learning Based',
+    '12 Drones - Baseline',
+    '12 Drones - Machine Learning Based',
+]
+yLen: 3
+yLabel: 'Damaged Crops / Total Crops'
+x: 'Bird Group Size'
+xLabel: 'Birds'
+colors: [
+    'red',
+    'tan',
+    'seagreen',
+    'silver',
+    'blue',
+    'gray',
+]
+foreColors: [
+    'black',
+    'white',
+    'black',
+    'white',
+    'black',
+    'white',
+]
+legend :   [ True]
+type: 'bar'
+width: 0.85
+subcols: 1
+subrows: 1
+filename: 'birds-damage'
+size: [12,8]
+title: 'Comparing Birds Attack Size: Baseline vs Machine Learning Estimator'
