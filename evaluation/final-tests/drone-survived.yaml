@@ -5,8 +5,7 @@ subtitles: [
     ''
 ]
 y: [
-    'Neural Network',
-    #'Neural Network - Trained with latest siumlation data',
+    'Machine Learning Based',
     'Baseline',
 
 ]
@@ -15,9 +14,12 @@ yLabel: 'Survived Drones'
 x: 'Drones'
 xLabel: 'Starting Drones'
 colors: [
-    'tan',
     'seagreen',
-    'midnightblue',
+    'silver',
+]
+foreColors: [
+    'black',
+    'white',
 ]
 legend : [True]
 type: 'bar'
@@ -26,4 +28,4 @@ subcols: 1
 subrows: 1
 filename: 'drones'
 size: [12,8]
-title: 'Comparing Survived Drones: Baseline vs Neural Network Estimators'
+title: 'Comparing Survived Drones: Baseline vs Machine Learning Estimators'

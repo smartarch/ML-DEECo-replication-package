@@ -27,6 +27,7 @@ class Chart:
         self.filename = f"{self.folder}//{chart['filename']}.{chart['extension']}"
         self.x = chart['x']
         self.y = chart['y']
+        self.foreColors = chart['foreColors'] 
         subcols = chart['subcols']
         subrows = chart['subrows']
         figsize = (chart['size'][0],chart['size'][1])
@@ -82,7 +83,7 @@ class BarChart(Chart):
                 if i%(len(self.y)/self.yLen)==0:
                     start = start + barWidth 
                 rect = self.axes[subplot].bar(x+start, yArray, color=self.colors[i], label=y,width=barWidth)
-                self.axes[subplot].bar_label(rect, fmt="%.2f")
+                self.axes[subplot].bar_label(rect, fmt="%.2f",color=self.foreColors[i], fontsize=14)
                 if maxArray < max(yArray):
                     maxArray = max(yArray)
                 self.axes[subplot].set_ylim(0,maxArray*1.2)

@@ -1,4 +1,4 @@
-﻿Drones,Baseline,Baseline (Rate),Neural Network,Neural Network - Trained with all siumlations data (Rate),Neural Network - Trained with latest siumlation data,Neural Network - Trained with latest siumlation data (Rate)
+﻿Drones,Baseline,Baseline (Rate),Machine Learning Based,Machine Learning Based - Trained with all siumlations data (Rate),Machine Learning Based - Trained with latest siumlation data,Machine Learning Based - Trained with latest siumlation data (Rate)
 8,4.5,0.5625,7.99,0.99875,7.665,0.958125
 10,5.25,0.525,9.58,0.958,9.275,0.9275
 12,5,0.416666667,10.945,0.912083333,10.315,0.859583333
