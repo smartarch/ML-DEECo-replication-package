@@ -1,6 +1,6 @@
 # ML-DEECo: Machine Learning-enabled Component Model for Dynamically Adapting Systems
 
-This is an accompanying repository to the paper *ML-DEECo: Machine Learning-enabled Component Model for Dynamically Adapting Systems* by Milad Ashqi Abdullah, Michal Töpfer, Tomáš Bureš, Petr Hnětynka and Martin Kruliš submitted to SEAMS 2022.
+This is an accompanying repository to the paper *ML-DEECo: Machine Learning-enabled Component Model for Dynamically Adapting Systems* by Milad Abdullah, Michal Töpfer, Tomáš Bureš, Petr Hnětynka and Martin Kruliš submitted to SEAMS 2022.
 
 ## Contents
 

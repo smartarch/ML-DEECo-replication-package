@@ -22,7 +22,24 @@ from ml_deeco.utils import Log, verbosePrint
 
 class Estimator(abc.ABC):
 
-    def __init__(self, *, outputFolder, name="", skipEndIteration=False, testSplit=0.2, printLogs=True, accumulateData=False, saveCharts=True):
+    def __init__(self, *, outputFolder=None, name="", skipEndIteration=False, testSplit=0.2, printLogs=True, accumulateData=False, saveCharts=True):
+        """
+        Parameters
+        ----------
+        outputFolder: Optional[str]
+            The collected training data and evaluation of the training is exported there. Set to `None` to disable export.
+        name: str
+            String to identify the `Estimator` in the printed output of the framework (if `printLogs` is `True` and verbosity level was set by `ml_deeco.utils.setVerboseLevel`).
+        skipEndIteration: bool
+            Skip the training and evaluation of the model. This can be used to disable the `Estimator` temporarily while experimenting with different models.
+        testSplit: float
+            The fraction of the data to be used for evaluation.
+        printLogs: bool
+        accumulateData: bool
+            If set to `True`, data from all previous iterations are used for training. If set to `False` (default), only the data from the last iteration are used for training.
+        saveCharts: bool
+            If `True`, charts are generated from the evaluation of the model.
+        """
         SIMULATION_GLOBALS.estimators.append(self)
 
         self.x = []
@@ -47,6 +64,7 @@ class Estimator(abc.ABC):
     @property
     @abc.abstractmethod
     def estimatorName(self):
+        """Identification of the ML model."""
         return ""
 
     def assignEstimate(self, estimate: Estimate):
@@ -57,7 +75,7 @@ class Estimator(abc.ABC):
             verbosePrint(message, verbosity)
 
     def init(self, force=False):
-        """This must be run AFTER the input and target features are collected by the estimates."""
+        """This must be run AFTER the input and target features are specified by the estimates."""
         if self._initialized and not force:
             self.verbosePrint(f"Already initialized {self.name} ({self.estimatorName}).", 4)
             return
@@ -347,6 +365,9 @@ DEFAULT_FIT_PARAMS = {
 
 
 class NeuralNetworkEstimator(Estimator):
+    """
+    Predictions based on a neural network.
+    """
 
     @property
     def estimatorName(self):
@@ -358,12 +379,14 @@ class NeuralNetworkEstimator(Estimator):
         ----------
         hidden_layers: list[int]
             Neuron counts for hidden layers.
-        activation: Callable
-            Activation function for the last layer. Default is no activation (identity).
-        loss: tf.keras.losses.Loss
+        activation: Optional[Callable]
+            Optional parameter to override the default activation function of the last layer, which is inferred from the target.
+        loss: Optional[tf.keras.losses.Loss]
+            Optional parameter to override the default activation function of the last layer, which is inferred from the target.
         fit_params: dict
+            Additional parameters for the training function of the neural network (https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit). The defaults are set in `DEFAULT_FIT_PARAMS`.
         optimizer: tf.optimizers.Optimizer
-            Default is `tf.optimizers.Adam()`.
+            Optional optimizer for the model. Default is `tf.optimizers.Adam()`.
         """
         super().__init__(**kwargs)
         self._hidden_layers = hidden_layers

@@ -3,7 +3,7 @@ Estimates
 """
 from collections import namedtuple, defaultdict
 from enum import Enum, auto
-from typing import Callable, List, TYPE_CHECKING
+from typing import Callable, List, TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -68,6 +68,9 @@ class DataCollector:
 
 
 class Estimate:
+    """
+    Implementation of the value estimate (both regression and classification). Predicts a future value based on current observations.
+    """
 
     def __init__(self, **dataCollectorKwargs):
         # noinspection PyTypeChecker
@@ -82,6 +85,7 @@ class Estimate:
         self.dataCollector = DataCollector(**dataCollectorKwargs)
 
     def using(self, estimator: 'Estimator'):
+        """Assigns an estimator to the estimate."""
         self.estimator = estimator
         estimator.assignEstimate(self)
         return self
@@ -96,8 +100,8 @@ class Estimate:
 
     # decorators (definition of inputs and outputs)
 
-    def input(self, feature=None):
-        """Defines an input feature"""
+    def input(self, feature: Optional[Feature] = None):
+        """Defines an input feature."""
         if feature is None:
             feature = Feature()
 
@@ -112,8 +116,8 @@ class Estimate:
         self._addExtra(function.__name__, function)
         return function
 
-    def target(self, feature=None):
-        """Defines a target value"""
+    def target(self, feature: Optional[Feature] = None):
+        """Defines a target value."""
         if feature is None:
             feature = Feature()
 
@@ -124,18 +128,22 @@ class Estimate:
         return addTargetFunction
 
     def inputsId(self, function):
+        """Defines the function for matching the inputs with according targets. Unless there is a specific need for modifying the default behavior, do not use this decorator."""
         self.inputsIdFunction = function
         return function
 
     def targetsId(self, function):
+        """Defines the function for matching the targets with according inputs. Unless there is a specific need for modifying the default behavior, do not use this decorator."""
         self.targetsIdFunction = function
         return function
 
     def inputsValid(self, function):
+        """Guard for detecting whether the inputs are valid and can be used for training. Use this as a decorator."""
         self.inputsFilterFunctions.append(function)
         return function
 
     def targetsValid(self, function):
+        """Guard for detecting whether the targets are valid and can be used for training. Use this as a decorator."""
         self.targetsFilterFunctions.append(function)
         return function
 
@@ -157,7 +165,9 @@ class Estimate:
 
     # estimation
 
+    # TODO(MT): remove the collect parameter
     def estimate(self, *args, collect=False):
+        """Computes the estimate (based on the current values of the attributes)."""
 
         x = self.generateRecord(*args)
         if collect:
@@ -244,6 +254,9 @@ class Estimate:
 
 
 class TimeEstimate(Estimate):
+    """
+    Implementation of the time-to-condition estimate.
+    """
 
     def __init__(self, **dataCollectorKwargs):
         super().__init__(**dataCollectorKwargs)
@@ -256,6 +269,7 @@ class TimeEstimate(Estimate):
         self.estimateCache = defaultdict(dict)
 
     def time(self, function):
+        """Defines how to measure time for the time-to-condition estimate. The default uses the current time step of the simulation, so if the simulation is run using our `run_simulation`, there is no need to overriding the default behavior using this function."""
         self.timeFunc = function
         self.extras = [BoundFeature("time", TimeFeature(), self.timeFunc)]
         return function
@@ -264,10 +278,12 @@ class TimeEstimate(Estimate):
         self.userTargets.append(BoundFeature(name, feature, function))
 
     def condition(self, function):
+        """Defines the condition for the time-to-condition estimate. If multiple conditions are defined, they are considered in an "and" manner."""
         self.conditionFunctions.append(function)
         return function
 
     def collectTargets(self, *args, id=None):
+        # TODO(MT): return back to using a condition without the targets and remove this
         userTargets = [function(*args) for name, feature, function in self.userTargets]
         for f in self.conditionFunctions:
             argCount = f.__code__.co_argcount
@@ -296,6 +312,7 @@ class TimeEstimate(Estimate):
             return super().estimate(*args)
 
     def cacheEstimates(self, instance, comps):
+        """Computes the estimates for all components in a batch at the same time and caches the results."""
         records = np.array([self.generateRecord(instance, comp) for comp in comps])
         predictions = self.estimator.predictBatch(records)
 

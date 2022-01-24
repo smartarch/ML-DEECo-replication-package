@@ -179,10 +179,12 @@ class someOfWithEstimate(someOf):
         self.estimate.targetsIdFunction = self.estimate.inputsIdFunction
 
     def using(self, estimator: 'Estimator'):
+        """Assigns an estimator to the estimate."""
         self.estimate.using(estimator)
         return self
 
     def inTimeSteps(self, timeSteps):
+        """Automatically collect the data with fixed time difference between inputs and targets."""
         self.estimate.inTimeSteps(timeSteps)
         return self
 
