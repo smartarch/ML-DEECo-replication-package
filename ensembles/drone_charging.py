@@ -219,23 +219,23 @@ class AcceptedDronesAssignment(Ensemble):
         verbosePrint(f"AcceptedDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
 
         # logging  TODO: do we still need this?
-        for drone in self.drones:
-            if drone in self.charger.acceptedDrones:
-                continue
-            waitingDronesAssignment = next(filter(lambda e: isinstance(e, WaitingDronesAssignment) and e.charger == self.charger, ensembles))
-            WORLD.chargerLog.register([
-                WORLD.currentTimeStep,
-                drone.id,
-                drone.battery,
-                WaitingDronesAssignment.drones.estimate.estimate(waitingDronesAssignment, drone),
-                drone.energyToFlyToCharger(),
-                drone.timeToDoneCharging(),
-                self.charger.id,
-                len(self.charger.potentialDrones),
-                len(self.charger.waitingDrones),
-                len(self.charger.acceptedDrones),
-                len(self.charger.chargingDrones),
-            ])
+        # for drone in self.drones:
+        #     if drone in self.charger.acceptedDrones:
+        #         continue
+        #     waitingDronesAssignment = next(filter(lambda e: isinstance(e, WaitingDronesAssignment) and e.charger == self.charger, ensembles))
+        #     WORLD.chargerLog.register([
+        #         WORLD.currentTimeStep,
+        #         drone.id,
+        #         drone.battery,
+        #         WaitingDronesAssignment.drones.estimate.estimate(waitingDronesAssignment, drone),
+        #         drone.energyToFlyToCharger(),
+        #         drone.timeToDoneCharging(),
+        #         self.charger.id,
+        #         len(self.charger.potentialDrones),
+        #         len(self.charger.waitingDrones),
+        #         len(self.charger.acceptedDrones),
+        #         len(self.charger.chargingDrones),
+        #     ])
 
         self.charger.acceptedDrones = self.drones
 
