@@ -120,8 +120,8 @@ class Field:
         self.damage = 0
         
 
-        for i in range(self.topLeft.x+self.droneRadius,self.bottomRight.x,self.droneRadius):
-            for j in range(self.topLeft.y+self.droneRadius,self.bottomRight.y,self.droneRadius):
+        for i in range(self.topLeft.x+self.droneRadius,self.bottomRight.x,round(self.droneRadius*1.5)):
+            for j in range(self.topLeft.y+self.droneRadius,self.bottomRight.y,round(self.droneRadius*1.5)):
                 self.places.append(Point(i,j))
 
         for i in range(self.topLeft.x,self.bottomRight.x):
@@ -157,12 +157,11 @@ class Field:
     def assingPlace(self, drone):
         if drone not in self.protectingDrones:
             if drone not in self.memory:
-                listOfEmptyPlaces = [place for place in self.places if
-                                 place not in [self.protectingDrones[d] for d in self.protectingDrones]]
-
+                listOfEmptyPlaces = [place for place in self.places if place not in [self.memory[d] for d in self.memory]]
                 if len(listOfEmptyPlaces) <= 0:
-                    return random.choice(self.places)
-                self.protectingDrones[drone] = min(listOfEmptyPlaces, key = lambda p: p.distance(drone.location))
+                    self.protectingDrones[drone] = random.choice(self.places)
+                else:
+                    self.protectingDrones[drone] = min(listOfEmptyPlaces, key = lambda p: p.distance(drone.location))
                 self.memory[drone] = self.protectingDrones[drone]
             else:
                 self.protectingDrones[drone] = self.memory[drone]
@@ -172,6 +171,9 @@ class Field:
     def unassign(self, drone):
         if drone in self.protectingDrones:
             del self.protectingDrones[drone]
+            if drone.state == 5:    # terminated
+                del self.memory[drone]
+
 
     def randomLocation(self):
         return Point.random(self.topLeft.x, self.topLeft.y, self.bottomRight.x, self.bottomRight.y)
@@ -196,7 +198,7 @@ class Field:
         p = (location.x,location.y)
         if p in self.crops:
             self.crops[p] = self.crops[p]+1
-            if self.crops[p] == 3:
+            if self.crops[p] == 2:
                 del self.crops[p]
                 self.damaged.append(Point(location.x,location.y))
                 self.damage = self.damage + 1
@@ -388,7 +390,7 @@ class Bird(Agent):
 
     # # static Counter
     Count = 0
-    TimeToEat = 5
+    TimeToEat = 3
     StayProbability = 0.85
     AttackProbability = 0.12
     ReplaceProbability = 0.03
