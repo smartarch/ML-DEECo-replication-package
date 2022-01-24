@@ -59,7 +59,7 @@ def createChargerPlot(logs, filename, title):
         'lightcoral',
         'lightblue',
     ]
-    fig, axs = plt.subplots(len(logs), figsize=(10, 10))
+    fig, axs = plt.subplots(len(logs), figsize=(10, 12))
     if len(logs) == 1:
         axs = [axs]
     x = np.arange(1, len(logs[0].records) + 1)
@@ -78,6 +78,6 @@ def createChargerPlot(logs, filename, title):
         axs[i].set_ylabel("Drones")
     fig.suptitle(title, fontsize=16)
     fig.tight_layout()
-    plt.savefig(filename + ".png")
+    plt.savefig(filename + ".png",dpi=600)
     # plt.show()
     plt.close(fig)

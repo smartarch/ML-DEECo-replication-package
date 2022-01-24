@@ -37,18 +37,17 @@ class Field:
         self.places = []
         self.protectingDrones = {}
         self.memory = {}
-        self.crops = {} # for birds
-        self.damaged = [] # for vis
+        self.crops = {}  # for birds
+        self.damaged = []  # for vis
         self.damage = 0
 
+        for i in range(self.topLeft.x + self.droneRadius, self.bottomRight.x, round(self.droneRadius * 1.5)):
+            for j in range(self.topLeft.y + self.droneRadius, self.bottomRight.y, round(self.droneRadius * 1.5)):
+                self.places.append(Point(i, j))
 
-        for i in range(self.topLeft.x+self.droneRadius,self.bottomRight.x,self.droneRadius):
-            for j in range(self.topLeft.y+self.droneRadius,self.bottomRight.y,self.droneRadius):
-                self.places.append(Point(i,j))
-
-        for i in range(self.topLeft.x,self.bottomRight.x):
+        for i in range(self.topLeft.x, self.bottomRight.x):
             for j in range(self.topLeft.y, self.bottomRight.y):
-                self.crops[(i, j)]=0
+                self.crops[(i, j)] = 0
         self.allCrops = len(self.crops)
 
     def locationPoints(self):
@@ -79,12 +78,11 @@ class Field:
     def assingPlace(self, drone):
         if drone not in self.protectingDrones:
             if drone not in self.memory:
-                listOfEmptyPlaces = [place for place in self.places if
-                                 place not in [self.protectingDrones[d] for d in self.protectingDrones]]
-
+                listOfEmptyPlaces = [place for place in self.places if place not in [self.memory[d] for d in self.memory]]
                 if len(listOfEmptyPlaces) <= 0:
-                    return random.choice(self.places)
-                self.protectingDrones[drone] = min(listOfEmptyPlaces, key = lambda p: p.distance(drone.location))
+                    self.protectingDrones[drone] = random.choice(self.places)
+                else:
+                    self.protectingDrones[drone] = min(listOfEmptyPlaces, key=lambda p: p.distance(drone.location))
                 self.memory[drone] = self.protectingDrones[drone]
             else:
                 self.protectingDrones[drone] = self.memory[drone]
@@ -94,6 +92,8 @@ class Field:
     def unassign(self, drone):
         if drone in self.protectingDrones:
             del self.protectingDrones[drone]
+            if drone.state == 5:  # terminated
+                del self.memory[drone]
 
     def randomLocation(self):
         return Point.random(self.topLeft.x, self.topLeft.y, self.bottomRight.x, self.bottomRight.y)
@@ -114,17 +114,17 @@ class Field:
     def __str__(self):
         return f"{self.id},{self.topLeft},{self.bottomRight}"
 
-    def locationDamaged(self,location):
-        p = (location.x,location.y)
+    def locationDamaged(self, location):
+        p = (location.x, location.y)
         if p in self.crops:
-            self.crops[p] = self.crops[p]+1
-            if self.crops[p] == 3:
+            self.crops[p] = self.crops[p] + 1
+            if self.crops[p] == 2:
                 del self.crops[p]
-                self.damaged.append(Point(location.x,location.y))
+                self.damaged.append(Point(location.x, location.y))
                 self.damage = self.damage + 1
 
     def randomUndamagedCorp(self):
         if len(self.crops) == 0:
             return None
         safe = random.choice([p for p in self.crops])
-        return Point(safe[0],safe[1])
+        return Point(safe[0], safe[1])

@@ -468,5 +468,7 @@ class NeuralNetworkEstimator(Estimator):
             filename = "model.h5"
         self._model.save(f"{self._outputFolder}/{filename}")
 
-    def loadModel(self):
-        self._model = tf.keras.models.load_model(f"{self._outputFolder}/model.h5")
+    def loadModel(self, modelPath=None):
+        if modelPath is None:
+            modelPath = f"{self._outputFolder}/model.h5"
+        self._model = tf.keras.models.load_model(modelPath)

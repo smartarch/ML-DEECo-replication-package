@@ -46,7 +46,7 @@ class Drone(Agent):
         self.targetField = None
         self.targetCharger: Optional[Charger] = None
         self.closestCharger: Optional[Charger] = None
-        self.alert = 0.2
+        self.alert = 0.15
 
         Agent.__init__(self, location, self.droneSpeed)
 
