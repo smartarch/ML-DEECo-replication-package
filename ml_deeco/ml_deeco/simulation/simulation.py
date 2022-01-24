@@ -1,8 +1,10 @@
 from datetime import datetime
-from typing import Optional, Callable, List, Tuple
+from typing import Optional, Callable, List, Tuple, TYPE_CHECKING
 
-from ml_deeco.simulation import Ensemble, Component
 from ml_deeco.utils import verbosePrint
+
+if TYPE_CHECKING:
+    from ml_deeco.simulation import Ensemble, Component
 
 
 class SimulationGlobals:
@@ -33,14 +35,14 @@ def materialize_ensembles(components, ensembles):
 
     Parameters
     ----------
-    components : List[Component]
+    components : List['Component']
         All components in the system.
-    ensembles : List[Ensemble]
+    ensembles : List['Ensemble']
         All potential ensembles in the system.
 
     Returns
     -------
-    List[Ensemble]
+    List['Ensemble']
         The materialized ensembles.
     """
     materializedEnsembles = []
@@ -62,7 +64,7 @@ def actuate_components(components):
 
     Parameters
     ----------
-    components : List[Component]
+    components : List['Component']
         All components in the system.
     """
     for component in components:
@@ -73,10 +75,10 @@ def actuate_components(components):
 
 
 def run_simulation(
-    components: List[Component],
-    ensembles: List[Ensemble],
+    components: List['Component'],
+    ensembles: List['Ensemble'],
     steps: int,
-    stepCallback: Optional[Callable[[List[Component], List[Ensemble], int], None]] = None
+    stepCallback: Optional[Callable[[List['Component'], List['Ensemble'], int], None]] = None
 ):
     """
     Runs the simulation with `components` and `ensembles` for `steps` steps.
@@ -112,11 +114,11 @@ def run_experiment(
     iterations: int,
     simulations: int,
     steps: int,
-    prepareSimulation: Callable[[int, int], Tuple[List[Component], List[Ensemble]]],
+    prepareSimulation: Callable[[int, int], Tuple[List['Component'], List['Ensemble']]],
     prepareIteration: Optional[Callable[[int], None]] = None,
     iterationCallback: Optional[Callable[[int], None]] = None,
-    simulationCallback: Optional[Callable[[List[Component], List[Ensemble], int, int], None]] = None,
-    stepCallback: Optional[Callable[[List[Component], List[Ensemble], int], None]] = None
+    simulationCallback: Optional[Callable[[List['Component'], List['Ensemble'], int, int], None]] = None,
+    stepCallback: Optional[Callable[[List['Component'], List['Ensemble'], int], None]] = None
 ):
     """
     Runs `iterations` iteration of the experiment. Each iteration consist of running the simulation `simulations` times (each simulation is run for `steps` steps) and then performing training of the Estimator (ML model).
