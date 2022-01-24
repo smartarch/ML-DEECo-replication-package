@@ -42,6 +42,11 @@ class Chart:
         if 'width' in chart:
            self.width = chart['width']
 
+        if 'yLen' in chart:
+           self.yLen = chart['yLen']
+        else:
+            self.yLen = len(self.y)
+
         self.yLabel = chart['yLabel']
         self.xLabel = chart['xLabel']
         self.fig, matrixAxs = plt.subplots(subrows,subcols, figsize=figsize,dpi=dpi)
@@ -63,10 +68,9 @@ class BarChart(Chart):
 
     def __init__(self,chart):
         Chart.__init__(self,chart)
-        self.xMap = self.findXMap()
 
     def plot (self):
-        barWidth = self.width / len(self.y)
+        barWidth = self.width / self.yLen
         for subplot in range(self.subplots):
             dataFrame = pd.read_csv(self.inputs[subplot])
             xLabels = dataFrame[self.x]
@@ -75,7 +79,8 @@ class BarChart(Chart):
             start = -(self.width/2)-barWidth/2
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                start = start + barWidth
+                if i%(len(self.y)/self.yLen)==0:
+                    start = start + barWidth 
                 rect = self.axes[subplot].bar(x+start, yArray, color=self.colors[i], label=y,width=barWidth)
                 self.axes[subplot].bar_label(rect, fmt="%.2f")
                 if maxArray < max(yArray):
