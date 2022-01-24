@@ -1,6 +1,6 @@
 import operator
 from collections import defaultdict
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Union, Callable, Tuple, List
 
 from ml_deeco.estimators.estimate import TimeEstimate, ListWithEstimate, Estimate
 
@@ -8,10 +8,22 @@ if TYPE_CHECKING:
     from ml_deeco.estimators import Estimator
 
 
-class someOf():
+class someOf:
+    """
+    Declaration of a dynamic ensemble role.
+    """
+
+    # used for generating IDs
     counter = 0
 
     def __init__(self, compClass):
+        """
+        Parameters
+        ----------
+        compClass : type
+            Only components of this type can become members of this role.
+        """
+        # the id is used for sorting - the roles are evaluated in the same order they are defined
         self.id = someOf.counter
         someOf.counter += 1
 
@@ -24,25 +36,59 @@ class someOf():
         self.selections: Dict[Ensemble, Any] = defaultdict(lambda: None)
 
     def __get__(self, instance, owner):
+        """Returns the members for the role."""
         if instance is None:
             return self
         return self.get(instance, owner)
 
     def get(self, instance, owner):
+        """Returns the members for the role."""
         return self.selections[instance]
 
-    def cardinality(self, cardinalityFn):
+    def cardinality(self, cardinalityFn: Callable[['Ensemble'], Union[int, Tuple[int, int]]]):
+        """
+        Define the cardinality function for the role. Use this as a decorator.
+
+        Parameters
+        ----------
+        cardinalityFn
+            The function which returns the cardinality of the role. The returned value should be an `int` (maximum allowed number of components) or a tuple of two `int`s (minimum, maximum). Both minimum and maximum are inclusive.
+        """
         self.cardinalityFn = cardinalityFn
         return self
 
-    def select(self, selectFn):
+    def select(self, selectFn: Callable[['Ensemble', 'Component', List['Ensemble']], bool]):
+        """
+        Define the select predicate for the role. Use this as a decorator.
+
+        Parameters
+        ----------
+        selectFn
+            The select predicate of the role. The parameters of the function are:
+                - the ensemble instance (self),
+                - the component instance (only components of type `compClass` specified in the `__init__` are considered),
+                - the list of already materialized ensembles.
+            If the predicate returns `True`, the component can be selected for the role.
+        """
         self.selectFn = selectFn
         return self
 
-    def utility(self, utilityFn):
-        """Bigger number -> earlier selection"""
+    def utility(self, utilityFn: Callable[['Ensemble', 'Component'], float]):
+        """
+        Define the utility function for the role. Use this as a decorator.
+
+        Parameters
+        ----------
+        utilityFn
+            The utility function of the components for role. The parameters of the function are:
+                - the ensemble instance (self),
+                - the component instance (only components which passed the `select` are considered).
+            During materialization, the components are ordered by the descending utility (components with the biggest utility are selected).
+        """
         self.utilityFn = utilityFn
         return self
+
+    # region Helper functions for the role members selection
 
     def reset(self, instance):
         self.selections[instance] = None
@@ -68,18 +114,40 @@ class someOf():
         filteredComponents = self.filterBySelectFunction(instance, filteredComponents, otherEnsembles)
         return self.assignUtility(instance, filteredComponents)
 
+    # endregion
+
     def execute(self, instance, allComponents, otherEnsembles):
+        """
+        Performs the role members selection.
+
+        Parameters
+        ----------
+        instance : Ensemble
+            The ensemble instance.
+        allComponents : List[Component]
+            All components in the system.
+        otherEnsembles : List[Ensemble]
+            Already materialized ensembles.
+
+        Returns
+        -------
+        bool
+            True if role members were selected.
+        """
+
         assert(self.cardinalityFn is not None)
         assert(self.selectFn is not None)
 
         self.selections[instance] = []
 
+        # get the cardinality
         cardinality = self.cardinalityFn(instance)
         if isinstance(cardinality, tuple):
             cardinalityMin, cardinalityMax = cardinality
         else:
             cardinalityMin, cardinalityMax = cardinality, cardinality
 
+        # perform the selection
         sel = self.selectComponents(instance, allComponents, otherEnsembles)
         for idx in range(cardinalityMax):
             if len(sel) > 0:
@@ -93,9 +161,11 @@ class someOf():
         return True
 
     def withEstimate(self):
+        """Assign an Estimate to the role."""
         return someOfWithEstimate(self.compClass, Estimate())
 
     def withTimeEstimate(self, **dataCollectorKwargs):
+        """Assign a TimeEstimate to the role."""
         return someOfWithEstimate(self.compClass, TimeEstimate(**dataCollectorKwargs))
 
 
@@ -151,16 +221,56 @@ class oneOf(someOf):
         sel = super().get(instance, owner)
         return sel[0]
 
+    def withEstimate(self):
+        """Assign an Estimate to the role."""
+        return oneOfWithEstimate(self.compClass, Estimate())
 
-# TODO(MT): oneOf with Estimates
+    def withTimeEstimate(self, **dataCollectorKwargs):
+        """Assign a TimeEstimate to the role."""
+        return oneOfWithEstimate(self.compClass, TimeEstimate(**dataCollectorKwargs))
+
+
+class oneOfWithEstimate(someOfWithEstimate):
+    def __init__(self, compClass, estimate: 'Estimate'):
+        super().__init__(compClass, estimate)
+        self.cardinalityFn = lambda inst: 1
+
+    def get(self, instance, owner):
+        sel = super().get(instance, owner)
+        selected = sel[0]
+        if hasattr(selected, "estimate"):
+            raise TypeError(f"The component type '{self.compClass}' cannot be used with 'oneOfWithEstimate' as it already has another attribute named 'estimate'. Please rename the attribute 'estimate' in '{self.compClass}'.")
+
+        def estimate(*args):
+            return self.estimate.estimate(instance, *args)
+
+        selected.estimate = estimate
+        return selected
 
 
 class Ensemble:
 
     def materialize(self, components, otherEnsembles):
+        """
+        Performs the ensemble materialization.
 
-        # sorts a list of ensembles that are type of someOf according to id, 
+        Parameters
+        ----------
+        components : List[Component]
+            All components in the system.
+        otherEnsembles : List[Ensemble]
+            Already materialized ensembles.
+
+        Returns
+        -------
+        bool
+            True if the ensemble was materialized.
+        """
+
+        # sort the roles of the ensemble according to id
         compFields = sorted([fld for (fldName, fld) in type(self).__dict__.items() if not fldName.startswith('__') and isinstance(fld, someOf)], key=lambda fld: fld.id)
+
+        # select members for the roles
         allOk = True
         for fld in compFields:
             if not fld.execute(self, components, otherEnsembles):
@@ -174,16 +284,29 @@ class Ensemble:
         return allOk
     
     def actuate(self):
+        """The function performed when the ensemble is materialized. To be implemented by the user."""
         pass
 
     def priority(self) -> float:
-        """Bigger number -> earlier materialization"""
+        """Priority of the ensemble. Ensembles with higher priority get materialized earlier."""
         return 1
 
     def __lt__(self, other):
         return self.priority() > other.priority()
 
     def collectEstimatesData(self, components):
-        compWithEstimateFields = [fld for (fldName, fld) in type(self).__dict__.items() if not fldName.startswith('__') and isinstance(fld, someOfWithEstimate)]
-        for field in compWithEstimateFields:
-            field.collectEstimateData(self, components)
+        """
+        Collects data for Estimates assigned to ensembles and ensemble roles. This is called from the simulation after a step is performed.
+        """
+        # ensemble roles
+        rolesWithEstimate = [fld for (fldName, fld) in type(self).__dict__.items()
+                             if not fldName.startswith('__') and isinstance(fld, someOfWithEstimate)]
+        for role in rolesWithEstimate:
+            role.collectEstimateData(self, components)
+
+        # ensemble
+        estimates = [fld for (fldName, fld) in type(self).__dict__.items()
+                     if not fldName.startswith('__') and isinstance(fld, Estimate)]
+        for estimate in estimates:
+            estimate.collectInputs(self)
+            estimate.collectTargets(self)
