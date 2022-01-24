@@ -65,29 +65,18 @@ class BarChart(Chart):
         Chart.__init__(self,chart)
         self.xMap = self.findXMap()
 
-    def findXMap (self):
-        if len(self.y)==1:
-            return [0]
-        elif len(self.y)==2:
-            return [ -1,0  ]
-        elif len(self.y)==4:
-            return [
-                -2, -1,  0,  1    ]
-
-        elif len(self.y)==6:
-            return [-3,-2,-1,0,1,2]
-
-
     def plot (self):
-        self.width = self.width / len(self.y)
+        barWidth = self.width / len(self.y)
         for subplot in range(self.subplots):
             dataFrame = pd.read_csv(self.inputs[subplot])
             xLabels = dataFrame[self.x]
             x = np.arange(0,len(xLabels))
             maxArray = 0
+            start = -(self.width/2)-barWidth/2
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                rect = self.axes[subplot].bar(x+(self.width*self.xMap[i])+(self.width/2), yArray, color=self.colors[i], label=y,width=self.width)
+                start = start + barWidth
+                rect = self.axes[subplot].bar(x+start, yArray, color=self.colors[i], label=y,width=barWidth)
                 self.axes[subplot].bar_label(rect, fmt="%.2f")
                 if maxArray < max(yArray):
                     maxArray = max(yArray)
@@ -102,7 +91,7 @@ class BarChart(Chart):
         if not os.path.exists(self.folder):
             os.mkdir(self.folder)
         self.fig.suptitle(self.title, fontsize=12)
-        #self.fig.tight_layout()
+        self.fig.tight_layout()
         plt.savefig(self.filename)
         #plt.show()
         plt.close(self.fig)
