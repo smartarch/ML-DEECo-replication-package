@@ -1,11 +1,12 @@
 import operator
 from collections import defaultdict
-from typing import Dict, Any, TYPE_CHECKING, Union, Callable, Tuple, List
+from typing import Dict, Any, TYPE_CHECKING, Union, Callable, Tuple, List, Type
 
 from ml_deeco.estimators.estimate import TimeEstimate, ListWithEstimate, Estimate
 
 if TYPE_CHECKING:
     from ml_deeco.estimators import Estimator
+    from ml_deeco.simulation import Component
 
 
 class someOf:
@@ -16,11 +17,11 @@ class someOf:
     # used for generating IDs
     counter = 0
 
-    def __init__(self, compClass):
+    def __init__(self, compClass: Type['Component']):
         """
         Parameters
         ----------
-        compClass : type
+        compClass
             Only components of this type can become members of this role.
         """
         # the id is used for sorting - the roles are evaluated in the same order they are defined

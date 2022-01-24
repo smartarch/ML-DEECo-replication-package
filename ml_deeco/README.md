@@ -123,3 +123,26 @@ class ChargingAssignment(Ensemble):
 ```
 
 The framework performs ensemble materialization (selection of the ensembles which should be active at this time) in every step of the simulation. The ensembles are materialized in a greedy fashion, ordered by their priority (descending). Only those ensembles for which all roles were assigned appropriate number of members (conforming to the cardinality) can be materialized. For all materialized ensembles, the `actuate` method is called.
+
+### Running the simulation
+
+The `ml_deeco.simulation` module offers two functions for running the simulation: `run_simulation` and `run_experiment`.
+
+#### `run_simulation`
+
+The `run_simulation(components, ensembles, steps)` function runs the simulation with `components` and `ensembles` for `steps` steps. An optional `stepCallback` can be supplied which is called after each simulation step. It can be used for example to log data from the simulation. The parameters are:
+- list of all components in the system,
+- list of materialized ensembles (in this time step),
+- current time step (int). 
+
+#### `run_experiment`
+
+The `run_experiment` is useful for running the simulation several times with training of the ML models in between. The `iterations` parameter specifies the number of iterations. In each iteration, the simulation is run `simulation` times. After that, the data from all the simulations in the current iteration are used to train the ML model (`Estimator`). The next iteration will use the updated model.
+
+The `prepareSimulation` function is used to obtain the components and ensembles for the simulation (it gets the current iteration and the current simulation as parameters). The simulation is then run using our `run_simulation` function for `steps` steps.
+
+The `prepareIteration` is an optional function to be run at the beginning of each iteration. It can be used for example to initialize logs for logging data during simulations. Apart from the `stepCallback`, we also allow specifying a `simulationCallback` (ran after each simulation) and `iterationCallback` (ran at the end of iteration after the ML training finished).
+
+#### Running the simulation manually
+
+For better control over the simulation, one can also run the simulation loop manually. The functions `materialize_ensembles` and `actuate_components` can be useful for that (they are used inside our `run_simulation`).
