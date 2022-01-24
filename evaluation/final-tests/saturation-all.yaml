@@ -1,0 +1,40 @@
+inputs: [
+    #'final-tests//damage-saturation-10.csv',
+    'final-tests//damage-saturation-12.csv',
+    'final-tests//damage-saturation-16.csv',
+    #'final-tests//damage-saturation-20.csv',
+]
+subtitles: [ 
+    #'(A) 10 Drones',
+    '(A) 12 Drones',
+    '(B) 16 Drones',
+    '20 Drones',
+]
+y: [
+    'Baseline - Damage',
+    'Nerual Network - Damage',
+    'Baseline - Terminated Drones',
+    'Neural Network - Terminated Drones'
+]
+yLabel: 'Rate'
+x: 'Saturation'
+xLabel: 'Providable Charging Rate'
+colors: [
+    'orange',
+    'orange',
+    'midnightblue',
+    'midnightblue',
+]
+lineStyles: [
+    'solid',
+    'dashed',
+    'solid',
+    'dashed',
+]
+legend :   [ True, True, True, True]
+type: 'line'
+subcols: 1
+subrows: 2
+filename: 'drone-saturation'
+size: [6,8]
+title: 'Satuarion Effects: Baseline vs Neural Network Estimator'

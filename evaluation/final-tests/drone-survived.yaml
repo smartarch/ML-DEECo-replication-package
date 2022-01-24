@@ -1,0 +1,29 @@
+inputs: [
+    'final-tests//drone-survived.csv'
+]
+subtitles: [
+    ''
+]
+y: [
+    'Neural Network',
+    #'Neural Network - Trained with latest siumlation data',
+    'Baseline',
+
+]
+yLen: 1
+yLabel: 'Survived Drones'
+x: 'Drones'
+xLabel: 'Starting Drones'
+colors: [
+    'tan',
+    'seagreen',
+    'midnightblue',
+]
+legend : [True]
+type: 'bar'
+width: 0.9
+subcols: 1
+subrows: 1
+filename: 'drones'
+size: [12,8]
+title: 'Comparing Survived Drones: Baseline vs Neural Network Estimators'

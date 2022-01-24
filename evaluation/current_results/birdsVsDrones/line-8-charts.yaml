@@ -1,0 +1,48 @@
+inputs: [
+    'birdsVsDrones//drones-2.csv',
+    'birdsVsDrones//drones-4.csv',
+    'birdsVsDrones//drones-6.csv',
+    'birdsVsDrones//drones-8.csv',
+    'birdsVsDrones//drones-12.csv',
+    'birdsVsDrones//drones-16.csv',
+    'birdsVsDrones//drones-24.csv',
+    'birdsVsDrones//drones-32.csv',
+]
+subtitles: [
+    '2 Drones, Charger Capacity: 2 X 1',
+    '4 Drones, Charger Capacity: 2 X 1',
+    '6 Drones, Charger Capacity: 2 X 1',
+    '8 Drones, Charger Capacity: 2 X 1',
+    '12 Drones, Charger Capacity: 2 X 2',
+    '16 Drones, Charger Capacity: 2 X 2',
+    '24 Drones, Charger Capacity: 2 X 3',
+    '32 Drones, Charger Capacity: 2 X 4',
+]
+
+y: [
+    'No Estimator: Alive Drone Rate',
+    'No Estimator: Damage Rate',
+    'Neural Network: Alive Drone Rate',
+    'Neural Network: Damage Rate'
+]
+yLabel: 'Rate'
+x: 'Birds'
+xLabel: 'Birds'
+colors: [
+    'blue',
+    'orange',
+    'blue',
+    'orange'
+]
+lineStyles: [
+    'solid',
+    'solid',
+    'dashed',
+    'dashed'
+]
+subrows: 4
+subcols: 2
+type: 'line'
+filename: 'birdsVsDrones'
+size: [15,10]
+title: 'Survived Drones vs Damage'

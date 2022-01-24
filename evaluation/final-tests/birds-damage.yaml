@@ -1,0 +1,34 @@
+inputs: [
+    'final-tests//damage-10-12.csv',
+]
+subtitles: [ ''
+]
+y: [
+    '8 Drones - Baseline',
+    '8 Drones - Nerual Network',
+    '10 Drones - Baseline',
+    '10 Drones - Nerual Network',
+    '12 Drones - Baseline',
+    '12 Drones - Nerual Network',
+]
+yLen: 3
+yLabel: 'Damaged Crops / Total Crops'
+x: 'Bird Group Size'
+xLabel: 'Birds'
+colors: [
+    'bisque',
+    'darkorange',
+    'lightsteelblue',
+    'midnightblue',
+    'lime',
+    'seagreen',
+]
+
+legend :   [ True]
+type: 'bar'
+width: 0.85
+subcols: 1
+subrows: 1
+filename: 'birds-damage'
+size: [12,8]
+title: 'Comparing Birds Attack Size: Baseline vs Neural Network Estimator'

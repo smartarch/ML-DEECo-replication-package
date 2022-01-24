@@ -1,0 +1,27 @@
+inputs: [
+    'inputs//nn-test//damage-rate//damage-rate-small.csv',
+    'inputs//nn-test//damage-rate//damage-rate-intense.csv',
+    'inputs//nn-test//damage-rate//damage-rate-medium.csv',
+    'inputs//nn-test//damage-rate//damage-rate-large.csv',
+]
+subtitles: [
+    'Small',
+    'Intense',
+    'Medium',
+    'Large',
+]
+y: [
+    'Damage Rate',
+]
+yLabel: 'Average Damage Rate'
+x: 'Method'
+xLabel: 'Method'
+colors: [
+    ['lightblue',orange]
+]
+legend : False
+type: 'bar'
+width: 0.5
+filename: 'damage-nn-rate'
+size: [6,6]
+title: 'Comparing Damage Rate: No Estimator vs Neural Network Estimator'

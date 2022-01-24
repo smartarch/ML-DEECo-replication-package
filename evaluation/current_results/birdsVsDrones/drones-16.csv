@@ -1,0 +1,11 @@
+Birds,No Estimator: Alive Drone Rate,No Estimator: Damage Rate,Neural Network: Alive Drone Rate,Neural Network: Damage Rate
+10,0.78,0,0.79,0
+20,0.82,0,0.82,0
+30,0.8,0.01,0.78,0.01
+40,0.79,0.01,0.8,0.01
+50,0.72,0.03,0.81,0.03
+60,0.8,0.04,0.8,0.04
+70,0.8,0.06,0.79,0.05
+80,0.82,0.07,0.78,0.08
+90,0.82,0.08,0.8,0.09
+100,0.81,0.1,0.81,0.12
