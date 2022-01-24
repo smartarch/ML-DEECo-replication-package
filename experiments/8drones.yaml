@@ -1,5 +1,5 @@
 drones: 8
-birds: 100
+birds: 50
 chargers: [
   [17,29],
   [22,21],
@@ -17,7 +17,7 @@ droneRadius: 5
 birdSpeed: 1 
 droneSpeed: 1
 chargingRate: 0.04
-totalAvailableChargingEnergy: 0.1
+totalAvailableChargingEnergy: 1
 droneMovingEnergyConsumption: 0.01
 droneProtectingEnergyConsumption: 0.005
 droneBatteryRandomize: 0
