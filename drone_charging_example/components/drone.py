@@ -4,7 +4,7 @@ from typing import Optional, TYPE_CHECKING
 from components.drone_state import DroneState
 from world import ENVIRONMENT, WORLD
 
-from ml_deeco.estimators import NumericFeature, CategoricalFeature, Estimate, TimeEstimate
+from ml_deeco.estimators import NumericFeature, CategoricalFeature, ValueEstimate, TimeEstimate
 from ml_deeco.simulation import Agent
 from ml_deeco.utils import verbosePrint
 
@@ -27,8 +27,8 @@ class Drone(Agent):
         Static Count for the Drones
     """
 
-    futureBatteryEstimate = Estimate().inTimeSteps(50).using(WORLD.droneBatteryEstimator)
-    futureStateEstimate = Estimate().inTimeSteps(50).using(WORLD.droneStateEstimator)
+    futureBatteryEstimate = ValueEstimate().inTimeSteps(50).using(WORLD.droneBatteryEstimator)
+    futureStateEstimate = ValueEstimate().inTimeSteps(50).using(WORLD.droneStateEstimator)
     timeToChargingStateEstimate = TimeEstimate().using(WORLD.timeToChargingEstimator)
     timeToLowBatteryEstimate = TimeEstimate().using(WORLD.timeToLowBatteryEstimator)
 
@@ -67,12 +67,10 @@ class Drone(Agent):
         return self.state
 
     @futureBatteryEstimate.target()
-    @timeToLowBatteryEstimate.target(NumericFeature(0, 1))
     def battery(self):
         return self.battery
 
     @futureStateEstimate.target(CategoricalFeature(DroneState))
-    @timeToChargingStateEstimate.target(CategoricalFeature(DroneState))
     def drone_state(self):
         return self.state
 
@@ -81,19 +79,19 @@ class Drone(Agent):
     @futureStateEstimate.inputsValid
     @futureStateEstimate.targetsValid
     @timeToChargingStateEstimate.inputsValid
-    @timeToChargingStateEstimate.targetsValid
+    @timeToChargingStateEstimate.conditionsValid
     @timeToLowBatteryEstimate.inputsValid
-    @timeToLowBatteryEstimate.targetsValid
+    @timeToLowBatteryEstimate.conditionsValid
     def not_terminated(self):
         return self.state != DroneState.TERMINATED
 
     @timeToLowBatteryEstimate.condition
-    def battery_low(self, battery):
-        return battery < self.alert
+    def battery_low(self):
+        return self.battery < self.alert
 
     @timeToChargingStateEstimate.condition
-    def is_charging_state(self, state):
-        return state in (DroneState.CHARGING, DroneState.MOVING_TO_CHARGER)
+    def is_charging_state(self):
+        return self.state in (DroneState.CHARGING, DroneState.MOVING_TO_CHARGER)
 
     # endregion
 
@@ -141,13 +139,19 @@ class Drone(Agent):
 
         return futureBattery < self.alert
 
-    def futureBatteryAlert(self):
+    def runExampleEstimates(self):
         if self.state == DroneState.TERMINATED:
             return
 
+        # futureBatteryEstimate
         futureBattery = self.futureBatteryEstimate()
         if futureBattery < self.alert:
             verbosePrint("Alert: predicted futureBattery is low", 4)
+
+        # we just call the estimates and ignore the result
+        self.futureStateEstimate()
+        self.timeToChargingStateEstimate()
+        self.timeToLowBatteryEstimate()
 
     def checkBattery(self):
         if self.battery <= 0:
@@ -161,7 +165,7 @@ class Drone(Agent):
         super().move(self.target)
 
     def actuate(self):
-        self.futureBatteryAlert()
+        self.runExampleEstimates()
 
         if self.state == DroneState.TERMINATED:
             return

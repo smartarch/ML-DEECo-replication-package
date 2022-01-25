@@ -149,29 +149,14 @@ class DroneChargingAssignment(Ensemble):
     # endregion
 
     @drones.estimate.inputsValid
-    @drones.estimate.targetsValid
+    @drones.estimate.conditionsValid
     def is_preassigned(self, drone):
         # return drone in self.drones
         return drone in self.charger.potentialDrones
 
-    @drones.estimate.target()
+    @drones.estimate.condition
     def is_accepted(self, drone):
         return drone in self.charger.acceptedDrones
-
-    # This is the same as the following condition
-    # @staticmethod
-    # @drones.estimate.condition
-    # def condition(targetValue):
-    #     return targetValue
-
-    @drones.estimate.condition
-    def condition(self, targetValue):
-        return targetValue
-
-    # This is the same as the previous condition
-    # @drones.estimate.condition
-    # def condition(self, drone, targetValue):
-    #     return targetValue
 
     def actuate(self):
 

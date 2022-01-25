@@ -3,7 +3,7 @@ from typing import Optional
 import tensorflow as tf
 
 from ml_deeco.simulation import Agent, Point
-from ml_deeco.estimators import Estimate, NeuralNetworkEstimator
+from ml_deeco.estimators import ValueEstimate, NeuralNetworkEstimator
 
 
 class DroneState(IntEnum):
@@ -31,7 +31,7 @@ class Drone(Agent):
         self.charger = self.location
         self.useEstimate = False
 
-    futureBatteryEstimate = Estimate().inTimeSteps(10).using(droneBatteryEstimator)
+    futureBatteryEstimate = ValueEstimate().inTimeSteps(10).using(droneBatteryEstimator)
 
     @futureBatteryEstimate.input()
     @futureBatteryEstimate.target()

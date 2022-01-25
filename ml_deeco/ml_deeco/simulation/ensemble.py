@@ -2,7 +2,7 @@ import operator
 from collections import defaultdict
 from typing import Dict, Any, TYPE_CHECKING, Union, Callable, Tuple, List, Type
 
-from ml_deeco.estimators.estimate import TimeEstimate, ListWithEstimate, Estimate
+from ml_deeco.estimators.estimate import TimeEstimate, ListWithEstimate, Estimate, ValueEstimate
 
 if TYPE_CHECKING:
     from ml_deeco.estimators import Estimator
@@ -161,12 +161,12 @@ class someOf:
 
         return True
 
-    def withEstimate(self):
-        """Assign an Estimate to the role."""
-        return someOfWithEstimate(self.compClass, Estimate())
+    def withValueEstimate(self):
+        """Assign a `ValueEstimate` to the role."""
+        return someOfWithEstimate(self.compClass, ValueEstimate())
 
     def withTimeEstimate(self, **dataCollectorKwargs):
-        """Assign a TimeEstimate to the role."""
+        """Assign a `TimeEstimate` to the role."""
         return someOfWithEstimate(self.compClass, TimeEstimate(**dataCollectorKwargs))
 
 
@@ -224,12 +224,12 @@ class oneOf(someOf):
         sel = super().get(instance, owner)
         return sel[0]
 
-    def withEstimate(self):
-        """Assign an Estimate to the role."""
-        return oneOfWithEstimate(self.compClass, Estimate())
+    def withValueEstimate(self):
+        """Assign a `ValueEstimate` to the role."""
+        return oneOfWithEstimate(self.compClass, ValueEstimate())
 
     def withTimeEstimate(self, **dataCollectorKwargs):
-        """Assign a TimeEstimate to the role."""
+        """Assign a `TimeEstimate` to the role."""
         return oneOfWithEstimate(self.compClass, TimeEstimate(**dataCollectorKwargs))
 
 

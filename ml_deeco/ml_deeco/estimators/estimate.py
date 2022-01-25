@@ -1,9 +1,10 @@
 """
 Estimates
 """
+import abc
 from collections import namedtuple, defaultdict
 from enum import Enum, auto
-from typing import Callable, List, TYPE_CHECKING, Optional
+from typing import Callable, List, TYPE_CHECKING, Optional, Dict
 
 import numpy as np
 
@@ -67,9 +68,9 @@ class DataCollector:
         self._records = {}
 
 
-class Estimate:
+class Estimate(abc.ABC):
     """
-    Implementation of the value estimate (both regression and classification). Predicts a future value based on current observations.
+    Base class for ValueEstimate and TimeEstimate.
     """
 
     def __init__(self, **dataCollectorKwargs):
@@ -80,15 +81,21 @@ class Estimate:
         self.targets: List[BoundFeature] = []
         self.inputsIdFunction = lambda *args: (*args,)
         self.targetsIdFunction = lambda *args: (*args,)
-        self.inputsFilterFunctions: List[Callable] = []
-        self.targetsFilterFunctions: List[Callable] = []
+        self.inputsGuards: List[Callable] = []
+        self.targetsGuards: List[Callable] = []
         self.dataCollector = DataCollector(**dataCollectorKwargs)
+        self.estimateCache: Dict[Dict] = dict()  # used only for estimates assigned to roles
 
     def using(self, estimator: 'Estimator'):
         """Assigns an estimator to the estimate."""
         self.estimator = estimator
         estimator.assignEstimate(self)
         return self
+
+    @abc.abstractmethod
+    def prepare(self):
+        """The prepare function is called after all the decorators have initialized the inputs, targets, etc. and can be used to modify them."""
+        pass
 
     def check(self):
         """Checks whether the estimate is initialized properly."""
@@ -112,20 +119,13 @@ class Estimate:
         return addInputFunction
 
     def extra(self, function):
-        """Defines an extra input feature – not given to the prediction model."""
+        """
+        Defines an extra input feature – not given to the prediction model.
+
+        We use this for example to save the time of the inputs in the time-to-condition estimate so that we can compute the time difference.
+        """
         self._addExtra(function.__name__, function)
         return function
-
-    def target(self, feature: Optional[Feature] = None):
-        """Defines a target value."""
-        if feature is None:
-            feature = Feature()
-
-        def addTargetFunction(function):
-            self._addTarget(function.__name__, feature, function)
-            return function
-
-        return addTargetFunction
 
     def inputsId(self, function):
         """Defines the function for matching the inputs with according targets. Unless there is a specific need for modifying the default behavior, do not use this decorator."""
@@ -139,12 +139,7 @@ class Estimate:
 
     def inputsValid(self, function):
         """Guard for detecting whether the inputs are valid and can be used for training. Use this as a decorator."""
-        self.inputsFilterFunctions.append(function)
-        return function
-
-    def targetsValid(self, function):
-        """Guard for detecting whether the targets are valid and can be used for training. Use this as a decorator."""
-        self.targetsFilterFunctions.append(function)
+        self.inputsGuards.append(function)
         return function
 
     def _addInput(self, name: str, feature: Feature, function: Callable):
@@ -156,28 +151,44 @@ class Estimate:
     def _addTarget(self, name: str, feature: Feature, function: Callable):
         self.targets.append(BoundFeature(name, feature, function))
 
-    def inTimeSteps(self, timeSteps):
-        """Automatically collect the data with fixed time difference between inputs and targets."""
-        self.targetsFilterFunctions.append(lambda *args: SIMULATION_GLOBALS.currentTimeStep >= timeSteps)
-        self.inputsIdFunction = lambda *args: (*args, SIMULATION_GLOBALS.currentTimeStep)
-        self.targetsIdFunction = lambda *args: (*args, SIMULATION_GLOBALS.currentTimeStep - timeSteps)
-        return self
-
     # estimation
 
-    # TODO(MT): remove the collect parameter
-    def estimate(self, *args, collect=False):
-        """Computes the estimate (based on the current values of the attributes)."""
-
+    def _estimate(self, *args):
+        """Helper function to compute the estimate."""
         x = self.generateRecord(*args)
-        if collect:
-            self.collectInputs(*args, x=x)
-
         prediction = self.estimator.predict(x)
-
         return self.generateOutputs(prediction)
 
+    def estimate(self, *args):
+        """
+        Computes the estimate (based on the current values of the attributes).
+
+        Returns
+        -------
+        prediction : Any
+            The predicted value (if there is only one target), or a dictionary `{ feature_name: predicted_value }` with all targets.
+        """
+        if self.estimateCache:  # the cache is non-empty
+            ensemble, comp = args
+            if comp in self.estimateCache[ensemble]:
+                return self.estimateCache[ensemble][comp]
+            else:
+                return self._estimate(*args)
+
+        return self._estimate(*args)
+
+    def cacheEstimates(self, ensemble, components):
+        """Computes the estimates for all components in a batch at the same time and caches the results. Use this only for estimates assigned to ensemble roles."""
+        records = np.array([self.generateRecord(ensemble, comp) for comp in components])
+        predictions = self.estimator.predictBatch(records)
+
+        self.estimateCache[ensemble] = {
+            comp: prediction[0]
+            for comp, prediction in zip(components, predictions)
+        }
+
     def generateRecord(self, *args):
+        """Generates the inputs record for the `Estimator.predict` function."""
         record = []
         for name, feature, function in self.inputs:
             value = function(*args)
@@ -186,6 +197,8 @@ class Estimate:
         return np.concatenate(record)
 
     def generateOutputs(self, prediction):
+        """Generates the outputs from the `Estimator.predict` prediction."""
+
         # if we have only one target, return just the value
         if len(self.targets) == 1:
             return self.targets[0][1].postprocess(prediction)
@@ -213,7 +226,8 @@ class Estimate:
     # data collection
 
     def collectInputs(self, *args, x=None, id=None):
-        for f in self.inputsFilterFunctions:
+        """Collects the inputs for training."""
+        for f in self.inputsGuards:
             if not f(*args):
                 return
 
@@ -229,6 +243,7 @@ class Estimate:
         self.dataCollector.collectRecordInputs(recordId, x, extra)
 
     def generateTargets(self, *args):
+        """Generates the targets record for the training of `Estimator`."""
         record = []
         for name, feature, function in self.targets:
             value = function(*args)
@@ -237,7 +252,8 @@ class Estimate:
         return np.concatenate(record)
 
     def collectTargets(self, *args, id=None):
-        for f in self.targetsFilterFunctions:
+        """Collects the targets for training."""
+        for f in self.targetsGuards:
             if not f(*args):
                 return
 
@@ -247,10 +263,44 @@ class Estimate:
         self.dataCollector.collectRecordTargets(recordId, y)
 
     def getData(self, clear=True):
+        """Gets (and optionally clears) all collected data."""
         x, y = self.dataCollector.x, self.dataCollector.y
         if clear:
             self.dataCollector.clear()
         return x, y
+
+
+class ValueEstimate(Estimate):
+    """
+    Implementation of the value estimate (both regression and classification). Predicts a future value based on current observations.
+    """
+
+    def prepare(self):
+        # nothing needed here
+        pass
+
+    def inTimeSteps(self, timeSteps):
+        """Automatically collect the data with fixed time difference between inputs and targets."""
+        self.targetsGuards.append(lambda *args: SIMULATION_GLOBALS.currentTimeStep >= timeSteps)
+        self.inputsIdFunction = lambda *args: (*args, SIMULATION_GLOBALS.currentTimeStep)
+        self.targetsIdFunction = lambda *args: (*args, SIMULATION_GLOBALS.currentTimeStep - timeSteps)
+        return self
+
+    def target(self, feature: Optional[Feature] = None):
+        """Defines a target value."""
+        if feature is None:
+            feature = Feature()
+
+        def addTargetFunction(function):
+            self._addTarget(function.__name__, feature, function)
+            return function
+
+        return addTargetFunction
+
+    def targetsValid(self, function):
+        """Guard for detecting whether the targets are valid and can be used for training. Use this as a decorator."""
+        self.targetsGuards.append(function)
+        return function
 
 
 class TimeEstimate(Estimate):
@@ -263,10 +313,11 @@ class TimeEstimate(Estimate):
         self.timeFunc = self.time(lambda *args: SIMULATION_GLOBALS.currentTimeStep)
 
         self.targets = [BoundFeature("time", TimeFeature(), None)]
-        self.userTargets = []
         self.conditionFunctions = []
 
-        self.estimateCache = defaultdict(dict)
+    def prepare(self):
+        # The conditions work the same way as targets guards (false == invalid data), but we want to perform them after all the guards passed.
+        self.targetsGuards += self.conditionFunctions
 
     def time(self, function):
         """Defines how to measure time for the time-to-condition estimate. The default uses the current time step of the simulation, so if the simulation is run using our `run_simulation`, there is no need to overriding the default behavior using this function."""
@@ -274,25 +325,15 @@ class TimeEstimate(Estimate):
         self.extras = [BoundFeature("time", TimeFeature(), self.timeFunc)]
         return function
 
-    def _addTarget(self, name: str, feature: Feature, function: Callable):
-        self.userTargets.append(BoundFeature(name, feature, function))
-
     def condition(self, function):
         """Defines the condition for the time-to-condition estimate. If multiple conditions are defined, they are considered in an "and" manner."""
         self.conditionFunctions.append(function)
         return function
 
-    def collectTargets(self, *args, id=None):
-        # TODO(MT): return back to using a condition without the targets and remove this
-        userTargets = [function(*args) for name, feature, function in self.userTargets]
-        for f in self.conditionFunctions:
-            argCount = f.__code__.co_argcount
-            missingArgs = argCount - len(userTargets)
-            # args[0] is the component/ensemble instance (`self` of the condition method)
-            # this way, the condition can be either static, or bound and both will work
-            if not f(*args[:missingArgs], *userTargets):
-                return
-        super().collectTargets(*args, id=id)
+    def conditionsValid(self, function):
+        """Guard for detecting whether the conditions are valid and can be used for training. Use this as a decorator."""
+        self.targetsGuards.append(function)
+        return function
 
     def generateTargets(self, *args):
         currentTimeStep = self.timeFunc(*args)
@@ -303,24 +344,6 @@ class TimeEstimate(Estimate):
 
         return timeDifference
 
-    def estimate(self, *args, collect=False):
-        instance, comp = args
-        if comp in self.estimateCache[instance]:
-            return self.estimateCache[instance][comp]
-        else:
-            print("WARNING: estimate not cached, computing it again")
-            return super().estimate(*args)
-
-    def cacheEstimates(self, instance, comps):
-        """Computes the estimates for all components in a batch at the same time and caches the results."""
-        records = np.array([self.generateRecord(instance, comp) for comp in comps])
-        predictions = self.estimator.predictBatch(records)
-
-        self.estimateCache[instance] = {
-            comp: prediction[0]
-            for comp, prediction in zip(comps, predictions)
-        }
-
 
 class ListWithEstimate(list):
-    estimate = None
+    estimate: Optional[Estimate] = None

@@ -4,7 +4,7 @@ from typing import List, TYPE_CHECKING
 from world import ENVIRONMENT, WORLD
 from components.drone_state import DroneState
 
-from ml_deeco.estimators import NumericFeature, CategoricalFeature, BinaryFeature, Estimate
+from ml_deeco.estimators import NumericFeature, CategoricalFeature, BinaryFeature, ValueEstimate
 from ml_deeco.simulation import Component, Point
 from ml_deeco.utils import verbosePrint
 
@@ -17,8 +17,8 @@ class Charger(Component):
     The drone charger component.
     """
 
-    chargerUtilizationEstimate = Estimate().inTimeSteps(20).using(WORLD.chargerUtilizationEstimator)
-    chargerFullEstimate = Estimate().inTimeSteps(20).using(WORLD.chargerFullEstimator)
+    chargerUtilizationEstimate = ValueEstimate().inTimeSteps(20).using(WORLD.chargerUtilizationEstimator)
+    chargerFullEstimate = ValueEstimate().inTimeSteps(20).using(WORLD.chargerFullEstimator)
 
     def __init__(self, location):
         Component.__init__(self, location)

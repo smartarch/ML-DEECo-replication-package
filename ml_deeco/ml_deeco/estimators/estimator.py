@@ -85,6 +85,9 @@ class Estimator(abc.ABC):
             # print("WARNING: No Estimates assigned, the Estimator is useless.", file=sys.stderr)
             return
 
+        for estimate in self._estimates:
+            estimate.prepare()
+
         estimate = self._estimates[0]
         self._inputs = estimate.inputs
         self._targets = estimate.targets
