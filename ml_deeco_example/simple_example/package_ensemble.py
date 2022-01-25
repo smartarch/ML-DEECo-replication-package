@@ -10,8 +10,8 @@ class PackageEnsemble(Ensemble):
     truck = oneOf(Truck)
 
     @truck.select
-    def is_available(self, drone, otherEnsembles):
-        return drone.state == TruckState.AVAILABLE
+    def is_available(self, truck, otherEnsembles):
+        return truck.state == TruckState.AVAILABLE
 
     def actuate(self):
         # the truck is available -> set its target to pick up the package
