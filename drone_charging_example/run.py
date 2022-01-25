@@ -26,7 +26,7 @@ from utils.visualizers import Visualizer
 from utils import plots
 from utils.average_log import AverageLog
 
-from ml_deeco.estimators import ConstantEstimator, NeuralNetworkEstimator, NoEstimator
+from ml_deeco.estimators import ConstantEstimator, NeuralNetworkEstimator
 from ml_deeco.simulation import run_experiment, SIMULATION_GLOBALS
 from ml_deeco.utils import setVerboseLevel, verbosePrint, Log
 
@@ -222,66 +222,7 @@ def createEstimators(args, folder, estWaitingFolder):
         if args.load != "":
             waitingTimeEstimator.loadModel(args.load)
 
-    if args.examples:
-        fit_params = {
-            "epochs": 20,
-        }
-        droneBatteryEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32], fit_params=fit_params,
-            **commonArgs,
-            outputFolder=f"{folder}\\drone_battery", name="Drone Battery"
-        )
-        chargerUtilizationEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32], fit_params=fit_params,
-            **commonArgs,
-            outputFolder=f"{folder}\\charger_utilization", name="Charger Capacity"
-        )
-        chargerFullEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32], fit_params=fit_params,
-            **commonArgs,
-            outputFolder=f"{folder}\\charger_full", name="Charger Full"
-        )
-        droneStateEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32], fit_params=fit_params,
-            **commonArgs,
-            outputFolder=f"{folder}\\drone_state", name="Drone State"
-        )
-        timeToChargingEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32], fit_params=fit_params,
-            **commonArgs,
-            outputFolder=f"{folder}\\drone_time_to_charging", name="Time To Charging"
-        )
-        timeToLowBatteryEstimator = NeuralNetworkEstimator(
-            hidden_layers=[32, 32], fit_params=fit_params,
-            **commonArgs,
-            outputFolder=f"{folder}\\drone_time_to_low_battery", name="Time To Low Battery"
-        )
-    else:
-        droneBatteryEstimator = NoEstimator(
-            **commonArgs, name="Drone Battery"
-        )
-        chargerUtilizationEstimator = NoEstimator(
-            **commonArgs, name="Charger Capacity"
-        )
-        chargerFullEstimator = NoEstimator(
-            **commonArgs, name="Charger Full"
-        )
-        droneStateEstimator = NoEstimator(
-            **commonArgs, name="Drone State"
-        )
-        timeToChargingEstimator = NoEstimator(
-            **commonArgs, name="Time To Charging"
-        )
-        timeToLowBatteryEstimator = NoEstimator(
-            **commonArgs, name="Time To Low Battery"
-        )
     WORLD.waitingTimeEstimator = waitingTimeEstimator
-    WORLD.droneBatteryEstimator = droneBatteryEstimator
-    WORLD.chargerUtilizationEstimator = chargerUtilizationEstimator
-    WORLD.chargerFullEstimator = chargerFullEstimator
-    WORLD.droneStateEstimator = droneStateEstimator
-    WORLD.timeToChargingEstimator = timeToChargingEstimator
-    WORLD.timeToLowBatteryEstimator = timeToLowBatteryEstimator
     return waitingTimeEstimator
 
 
@@ -324,7 +265,6 @@ def main():
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
     parser.add_argument('-b', '--baseline', type=int, help='Constant for baseline.', required=False, default=0)
     parser.add_argument('-l', '--load', type=str, help='Load the model from a file.', required=False, default="")
-    parser.add_argument('-e', '--examples', action='store_true', default=False, help='Additional examples.')
     parser.add_argument('--threads', type=int, help='Number of CPU threads TF can use.', required=False, default=4)
     args = parser.parse_args()
 

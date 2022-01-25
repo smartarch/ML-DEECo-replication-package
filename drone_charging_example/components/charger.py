@@ -4,9 +4,7 @@ from typing import List, TYPE_CHECKING
 from world import ENVIRONMENT, WORLD
 from components.drone_state import DroneState
 
-from ml_deeco.estimators import NumericFeature, CategoricalFeature, BinaryFeature, ValueEstimate
 from ml_deeco.simulation import Component, Point
-from ml_deeco.utils import verbosePrint
 
 if TYPE_CHECKING:
     from components.drone import Drone
@@ -16,9 +14,6 @@ class Charger(Component):
     """
     The drone charger component.
     """
-
-    chargerUtilizationEstimate = ValueEstimate().inTimeSteps(20).using(WORLD.chargerUtilizationEstimator)
-    chargerFullEstimate = ValueEstimate().inTimeSteps(20).using(WORLD.chargerFullEstimator)
 
     def __init__(self, location):
         Component.__init__(self, location)
@@ -33,35 +28,6 @@ class Charger(Component):
         self.waitingDrones: List[Drone] = []    # drones in need of being charged, waiting for acceptance
         self.acceptedDrones: List[Drone] = []   # drones accepted for charging, they move to the charger
         self.chargingDrones: List[Drone] = []   # drones currently being charged
-
-    # region Estimates
-
-    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
-    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
-    def potential_drones(self):
-        return len(self.potentialDrones)
-
-    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
-    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.droneCount))
-    def waiting_drones(self):
-        return len(self.waitingDrones)
-
-    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
-    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
-    def accepted_drones(self):
-        return len(self.acceptedDrones)
-
-    @chargerUtilizationEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
-    @chargerUtilizationEstimate.target(CategoricalFeature(list(range(ENVIRONMENT.chargerCapacity + 1))))
-    @chargerFullEstimate.input(NumericFeature(0, ENVIRONMENT.chargerCapacity))
-    def charging_drones(self):
-        return len(self.chargingDrones)
-
-    @chargerFullEstimate.target(BinaryFeature())
-    def charger_full(self):
-        return len(self.chargingDrones) == self.chargerCapacity
-
-    # endregion
 
     def startCharging(self, drone):
         """Drone is in the correct location and starts charging"""
@@ -90,15 +56,7 @@ class Charger(Component):
         else:
             return self.randomNearLocation()
 
-    def printEstimate(self):
-        utilizationEstimate = self.chargerUtilizationEstimate()
-        verbosePrint(utilizationEstimate, 4)
-        isFullEstimate = self.chargerFullEstimate()
-        verbosePrint(isFullEstimate, 4)
-
     def actuate(self):
-        self.printEstimate()
-
         # charge the drones
         for drone in self.chargingDrones:
             # charging rate drops slightly with increased drones in charging
