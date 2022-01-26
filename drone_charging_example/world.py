@@ -62,12 +62,6 @@ class World:
     The simulated world.
     """
     waitingTimeEstimator: 'Estimator'
-    droneBatteryEstimator: 'Estimator'
-    chargerUtilizationEstimator: 'Estimator'
-    chargerFullEstimator: 'Estimator'
-    droneStateEstimator: 'Estimator'
-    timeToChargingEstimator: 'Estimator'
-    timeToLowBatteryEstimator: 'Estimator'
 
     def __init__(self):
         if 'WORLD' in locals():

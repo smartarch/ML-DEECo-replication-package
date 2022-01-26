@@ -18,7 +18,7 @@ class Feature:
         return np.array([value], dtype=np.float32)
 
     def postprocess(self, value):
-        return value[0]
+        return value[0].tolist()  # unwrap from numpy
 
 
 class CategoricalFeature(Feature):
@@ -71,7 +71,7 @@ class BinaryFeature(Feature):
 class NumericFeature(Feature):
 
     def __init__(self, min, max):
-        # assert min < max, "NumericFeature: The minimum must be strictly smaller than the maximum."  # TODO: this raises exception with 0 drones, otherwise, it seems useful
+        assert min < max, "NumericFeature: The minimum must be strictly smaller than the maximum."
         self.min = min
         self.max = max
         self.diff = max - min
@@ -81,7 +81,7 @@ class NumericFeature(Feature):
         return np.array([normalized])
 
     def postprocess(self, value):
-        return value[0] * self.diff + self.min
+        return float(value[0] * self.diff + self.min)
 
 
 class TimeFeature(Feature):

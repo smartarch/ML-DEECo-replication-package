@@ -33,6 +33,7 @@ The `Agent` offers the `move` method which will move the component in a directio
 ```py
 from ml_deeco.simulation import Component, Agent
 
+
 # Example of a stationary component -- a charging station
 class Charger(Component):
 
@@ -44,14 +45,15 @@ class Charger(Component):
     def startCharging(self, drone):
         if drone.location == self.location:
             self.charging_drones.append(drone)
-        
+
     def actuate(self):
         # we charge the drones
         for drone in self.charging_drones:
             drone.battery += 0.01
             if drone.battery == 1:
                 # fully charged
-                drone.charger = None
+                drone.station = None
+
 
 # Example of an agent -- moving component
 class Drone(Agent):
@@ -86,24 +88,24 @@ The member selection works by first finding all components of the correct type t
 ```py
 from ml_deeco.simulation import Ensemble, someOf
 
-class ChargingAssignment(Ensemble):
 
+class ChargingAssignment(Ensemble):
     # static role
     charger: Charger
 
     # dynamic role
     drones: List[Drone] = someOf(Drone)
-    
+
     # we select those drones which need charging
     @drones.select
     def need_charging(self, drone, otherEnsembles):
         return drone.needs_charging
-    
+
     # order them by the missing battery (so the drones with less battery are selected first)
     @drones.utility
     def missing_battery(self, drone):
         return 1 - drone.battery
-    
+
     # and limit the cardinality to the number of free slots on the charger
     @drones.cardinality
     def free_slots(self):
@@ -115,7 +117,7 @@ class ChargingAssignment(Ensemble):
     def actuate(self):
         # assign the charger to each drone -- it will start flying towards it to charge
         for drone in self.drones:
-            drone.charger = self.charger
+            drone.station = self.charger
 ```
 
 The framework performs ensemble materialization (selection of the ensembles which should be active at this time) in every step of the simulation. The ensembles are materialized in a greedy fashion, ordered by their priority (descending). Only those ensembles for which all roles were assigned appropriate number of members (conforming to the cardinality) can be materialized. For all materialized ensembles, the `actuate` method is called.
@@ -164,20 +166,20 @@ futureBatteryEstimator = NeuralNetworkEstimator(
 
 #### To a component
 
-The estimate is created by initializing the `Estimate` class (future value estimate -- both regression and classification) or `TimeEstimate` (time-to-condition estimate) and assigned as class variables of the component (in fact, they are implemented as properties).
+The estimate is created by initializing the `ValueEstimate` class (future value estimate -- both regression and classification) or `TimeEstimate` (time-to-condition estimate) and assigned as class variables of the component (in fact, they are implemented as properties).
 
-In case of future value estimate, the number of time steps we want to predict into the future is set using the `inTimeSteps` method.
+In case of value estimate, the number of time steps we want to predict into the future is set using the `inTimeSteps` method.
 
 For both `Estimate` and `TimeEstimate`, the `Estimator` (described in the previous section) must be assigned. That is done by the `using` method.
 
 Multiple estimates can be assigned to a component.
 
 ```py
-from ml_deeco.estimators import Estimate
+from ml_deeco.estimators import ValueEstimate
 
 class Drone(Agent):
 
-    futureBatteryEstimate = Estimate().inTimeSteps(50)\
+    futureBatteryEstimate = ValueEstimate().inTimeSteps(50)\
         .using(futureBatteryEstimator)  # defined earlier
     
     # more code of the component
@@ -223,13 +225,13 @@ The inputs of the estimate are specified using the `input()` decorator, optional
 Example of inputs for an estimate in a component (continued from earlier):
 
 ```py
-from ml_deeco.estimators import Estimate, NumericFeature, CategoricalFeature
+from ml_deeco.estimators import ValueEstimate, NumericFeature, CategoricalFeature
 from ml_deeco.simulation import Agent
 
 class Drone(Agent):
 
     # create the estimate (as described earlier)
-    futureBatteryEstimate = Estimate().inTimeSteps(50)\
+    futureBatteryEstimate = ValueEstimate().inTimeSteps(50)\
         .using(futureBatteryEstimator)
     
     def __init__(self, location):
@@ -262,7 +264,7 @@ class DroneChargingAssignment(Ensemble):
         return drone.battery
 ```
 
-#### Target for `Estimate`
+#### Target for `ValueEstimate`
 
 The target is specified similarly to the inputs using `target()` decorator. A `Feature` can again be given as a parameter -- this is how classification and regression tasks are distinguished. The feature is then used to set the appropriate number of neurons and the activation function of the last layer of the neural network and the loss function used for training.
 
@@ -294,7 +296,7 @@ class DroneChargingAssignment(Ensemble):
         return drone in self.charger.acceptedDrones
 ```
 
-#### Validity of inputs
+#### Validity of inputs -- guards
 
 Guard functions can be specified using `inputsValid`, `targetsValid` and `conditionValid` decorators to assess the validity of inputs and targets. The data are collected for training only if the guard conditions are satisfied. This can be used for example to prevent collecting data from components which are no longer active.
 

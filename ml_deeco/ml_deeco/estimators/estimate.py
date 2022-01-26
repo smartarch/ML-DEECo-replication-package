@@ -50,7 +50,8 @@ class DataCollector:
 
     def collectRecordTargets(self, recordId, y):
         if recordId not in self._records:
-            raise KeyError(f"RecordId '{recordId}' not found. The record inputs must be collected first using the 'collectRecordInputs' method.")
+            # the record with corresponding ID doesn't exist, the data probably weren't valid at the time
+            return
 
         records = self._records[recordId]
         del self._records[recordId]
@@ -183,7 +184,7 @@ class Estimate(abc.ABC):
         predictions = self.estimator.predictBatch(records)
 
         self.estimateCache[ensemble] = {
-            comp: prediction[0]
+            comp: self.generateOutputs(prediction)
             for comp, prediction in zip(components, predictions)
         }
 

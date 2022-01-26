@@ -224,6 +224,9 @@ class oneOf(someOf):
         sel = super().get(instance, owner)
         return sel[0]
 
+    def cardinality(self, cardinalityFn):
+        raise TypeError("To specify cardinality, use 'someOf' instead of 'oneOf'.")
+
     def withValueEstimate(self):
         """Assign a `ValueEstimate` to the role."""
         return oneOfWithEstimate(self.compClass, ValueEstimate())
@@ -235,20 +238,23 @@ class oneOf(someOf):
 
 class oneOfWithEstimate(someOfWithEstimate):
     def __init__(self, compClass, estimate: 'Estimate'):
+        if hasattr(compClass, "estimate"):
+            raise TypeError(f"The component type '{self.compClass}' cannot be used with 'oneOfWithEstimate' as it already has another attribute named 'estimate'. Please rename the attribute 'estimate' in '{self.compClass}'.")
         super().__init__(compClass, estimate)
         self.cardinalityFn = lambda inst: 1
 
     def get(self, instance, owner):
         sel = super().get(instance, owner)
         selected = sel[0]
-        if hasattr(selected, "estimate"):
-            raise TypeError(f"The component type '{self.compClass}' cannot be used with 'oneOfWithEstimate' as it already has another attribute named 'estimate'. Please rename the attribute 'estimate' in '{self.compClass}'.")
 
         def estimate(*args):
             return self.estimate.estimate(instance, *args)
 
         selected.estimate = estimate
         return selected
+
+    def cardinality(self, cardinalityFn):
+        raise TypeError("To specify cardinality, use 'someOf' instead of 'oneOf'.")
 
 
 class Ensemble:
