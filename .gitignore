@@ -4,8 +4,6 @@ env/
 /results/
 drone_charging_example/evaluation/
 .vscode/
-*.gif
-*.h5
 *.cmd
 
 # Byte-compiled / optimized / DLL files
