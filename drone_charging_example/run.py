@@ -8,7 +8,6 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
-
 import os
 import argparse
 from datetime import datetime
@@ -73,7 +72,6 @@ def run(args):
             waiting = set(charger.waitingDrones)
             potential = set(charger.potentialDrones)
             WORLD.chargerLogs[chargerIndex].register([
-                # sum([drone.battery for drone in charger.potentialDrones])/potentialDrones,
                 len(charger.chargingDrones),
                 len(accepted),
                 len(waiting - accepted),
@@ -168,8 +166,6 @@ def createLogs():
         'Charger Capacity',
         'Train',
         'Run',
-        'Charge Alert',
-        'Battery Random Reduction'
     ])
     averageLog = AverageLog([
         'Active Drones',
@@ -179,8 +175,6 @@ def createLogs():
         'Charger Capacity',
         'Train',
         'Average Run',
-        'Charge Alert',
-        'Battery Random Reduction'
     ])
     return averageLog, totalLog
 
@@ -297,22 +291,20 @@ def collectStatistics(train, iteration):
         ENVIRONMENT.chargerCapacity,
         train + 1,
         iteration + 1,
-        0.2,
-        ENVIRONMENT.droneBatteryRandomize,
     ]
 
 
 def main():
     parser = argparse.ArgumentParser(description='Process YAML source file (S) and run the simulation (N) Times with Model M.')
     parser.add_argument('input', type=str, help='YAML address to be run.')
-    parser.add_argument('-x', '--birds', type=int, help='A number of birds. Set to -1 to load it from yaml file.', required=False, default=-1)
-    parser.add_argument('-n', '--number', type=int, help='the number of simulation runs per training.', required=False, default="0")
-    parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
+    parser.add_argument('-x', '--birds', type=int, help='number of birds, if no set, it loads from yaml file.', required=False, default=-1)
+    parser.add_argument('-n', '--number', type=int, help='the number of simulation runs per training.', required=False, default="1")
     parser.add_argument('-t', '--train', type=int, help='the number of trainings to be performed.', required=False, default="1")
+    parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
     parser.add_argument('-v', '--verbose', type=int, help='the verboseness between 0 and 4.', required=False, default="0")
     parser.add_argument('-a', '--animation', action='store_true', default=False,
                         help='toggles saving the final results as a GIF animation.')
-    parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving the final results as a PNG chart.')
+    parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving and showing the charts.')
     parser.add_argument('-w', '--waiting_estimation', type=str,
                         choices=["baseline", "neural_network"],
                         help='The estimation model to be used for predicting charger waiting time.', required=False,
