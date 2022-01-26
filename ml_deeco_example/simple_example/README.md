@@ -48,4 +48,4 @@ The simulation is run from the [`run.py`](run.py) file. We use the `run_experime
 
 If we compare the logs from the two runs, we can see that in the first iteration, when the ML model was not used, the truck ran out of fuel and was terminated. In the second iteration, with the ML model, the system predicted that the truck will run out of fuel and decided to order it to go back to the station.
 
-Please note that these results depend on the random initialization of the ML model. If a different random seed is chosen, the model might not train well, because we don't collect enough training data. This can be solved by increasing the number of simulations (to, e.g., 5 or 10) in each iteration.
+Please note that these results depend on the random initialization of the ML model. If a different random seed is chosen, the model might not train well. This is caused by using too few data for training, and can be solved by increasing the number of simulations (to, e.g., 5 or 10) in each iteration.

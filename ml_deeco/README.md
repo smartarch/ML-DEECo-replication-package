@@ -296,7 +296,7 @@ class DroneChargingAssignment(Ensemble):
         return drone in self.charger.acceptedDrones
 ```
 
-#### Validity of inputs
+#### Validity of inputs -- guards
 
 Guard functions can be specified using `inputsValid`, `targetsValid` and `conditionValid` decorators to assess the validity of inputs and targets. The data are collected for training only if the guard conditions are satisfied. This can be used for example to prevent collecting data from components which are no longer active.
 
