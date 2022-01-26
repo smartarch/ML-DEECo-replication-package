@@ -8,48 +8,67 @@ matplotlib.rc('font', **font)
 
 
 def createLogPlot(log, averageLog, filename, title, size):
+    subtitles = [
+        'Survived Drones',
+        'Damage Rate'
+    ]
     colors = [
-        'blue',
         'orange',
-        'green',
-        'red'
+        'blue',
     ]
-    fig, axs = plt.subplots(2, 2, figsize=(16, 9))
-    x = np.arange(1, len(log.records) + 1)
-    t = np.arange(1, len(averageLog.records) + 1)
-    xtickLabels = (np.arange(0, size[0] * size[1]) % size[0] + 1).tolist()
-    labels = log.header
-    array = np.array(log.records)
-    width = 0.35
+    allX =  np.arange(1, (size[0]*size[1])+1)
+    allXLabels =[record[-1] for record in log.records] 
 
-    axes = [
-        axs[0, 0],
-        axs[0, 1],
-        axs[1, 0]
-    ]
+    avXLabels = ['Baseline']
+    for av in allX[1:]:
+        if (av-1)%size[0] == 0:
+            avXLabels.append(f'Train {round((av-1)/5)}')
+        else:
+            avXLabels.append('')
+    mainY =[]
+    mainY.append([record[0] for record in log.records])
+    mainY.append([record[3] for record in log.records])
+    
+    averageY = []
+    averageSurvived = []
+    averageDamage = []
+    for record in averageLog.records:
+        for t in range(size[0]):
+            averageSurvived.append(record[0])
+            averageDamage.append(record[3])
+    averageY.append(averageSurvived)
+    averageY.append(averageDamage)
 
-    statisticsArray = np.array(averageLog.records)
+
+    fig, axs = plt.subplots(2, 1, figsize=(size[1]+4, size[1]+4))
 
     for i in range(2):
-        axes[i].set_xlabel(f"{size[0]} Runs per train")
-        axes[i].set_ylabel(labels[i])
-        axes[i].bar(x, array[:, i], width=width, color=colors[i])
-        axes[i].set_xticks(x, labels=xtickLabels)
+        twin = axs[i].twiny() 
+        if size[1]>1:
+            yLines = np.linspace(size[0]+0.5,((size[1]-1)*size[0])+0.5,size[1]-1)
+            axs[i].plot(allX, mainY[i], color=colors[0], label="ML Based" , linestyle="solid")
+            twin.plot(allX, averageY[i], color=colors[0], label="ML Based - Average" , linestyle="dashed")
+            axs[i].vlines(x=yLines, colors='black', ymin=0, ymax=max(averageY[i]), linestyle='dotted')
 
-        for j in range(1, size[1]):
-            axes[i].axvline(x=j * size[0] + 0.5, color=colors[3])
-        axs[1, 1].plot(t, statisticsArray[:, i + 2], color=colors[i], label=labels[i])
+        axs[i].plot(allX[:size[0]+1], mainY[i][:size[0]+1], color=colors[1], label="Baseline", linestyle="solid")
+        twin.plot(allX[:size[0]+1], averageY[i][:size[0]+1], color=colors[1], label="Baseline - Average", linestyle="dashed")
 
-    axs[1, 1].set_xlabel(f"{size[0]} Trains")
-    axs[1, 1].set_ylabel("Rate")
-    axs[1, 1].set_xticks(t)
+        axs[i].set_xticks(allX, labels=allXLabels)
+        axs[i].set_xlabel("Runs")
+        twin.set_xticks(allX, labels=avXLabels)
+        twin.set_xlabel("Trains")
 
-    axs[1, 1].legend()
-    fig.suptitle(title, fontsize=16)
+        axs[i].set_ylabel(subtitles[i])
+        axs[i].legend(loc='lower right')
+        twin.legend(loc='lower left')
+    
+    fig.suptitle(title, fontsize=12)
     fig.tight_layout()
     plt.savefig(filename)
     plt.show()
     plt.close(fig)
+    
+
 
 
 def createChargerPlot(logs, filename, title):

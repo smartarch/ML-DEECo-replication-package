@@ -1,7 +1,7 @@
 # GIT ignore configruation
 # The environment and result folder are ignored
 env/
-results/
+/results/
 drone_charging_example/evaluation/
 .vscode/
 *.gif
