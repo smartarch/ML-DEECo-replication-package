@@ -116,7 +116,7 @@ class LineChart(Chart):
             
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                self.axes[subplot].plot(x, yArray, color=self.colors[i],linestyle=self.lineStyles[i], label=y)
+                self.axes[subplot].plot(x, yArray,linestyle=self.lineStyles[i], label=y,cmap = 'RdPu')
             
             if self.legend[subplot]:
                 self.axes[subplot].legend()
@@ -145,7 +145,7 @@ class LineRateChart(Chart):
             
             for i,y in enumerate(self.y):
                 yArray = np.array(dataFrame[y])
-                self.axes[subplot].plot(x, yArray/max(yArray), color=self.colors[i], label=y)
+                self.axes[subplot].plot(x, yArray/max(yArray), label=y)
             
             self.axes[subplot].legend()
             self.axes[subplot].set_ylabel(self.subtitles[subplot])
