@@ -48,7 +48,7 @@ def createLogPlot(log, averageLog, filename, title, size):
             yLines = np.linspace(size[0]+0.5,((size[1]-1)*size[0])+0.5,size[1]-1)
             axs[i].plot(allX, mainY[i], color=colors[0], label="ML Based" , linestyle="solid")
             twin.plot(allX, averageY[i], color=colors[0], label="ML Based - Average" , linestyle="dashed")
-            axs[i].vlines(x=yLines, colors='black', ymin=0, ymax=max(averageY[i]), linestyle='dotted')
+            axs[i].vlines(x=yLines, colors='black', ymin=0, ymax=max(mainY[i]), linestyle='dotted')
 
         axs[i].plot(allX[:size[0]+1], mainY[i][:size[0]+1], color=colors[1], label="Baseline", linestyle="solid")
         twin.plot(allX[:size[0]+1], averageY[i][:size[0]+1], color=colors[1], label="Baseline - Average", linestyle="dashed")
