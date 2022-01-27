@@ -1,0 +1,1 @@
+current_time_step,drone_id,battery,estimated_waiting,energy_to_fly_to_charger,time_to_done_charging,charger,potential_drones_length,waiting_drones_length,accepted_queues_length,charging_drones_length
