@@ -4,6 +4,16 @@ ML-DEECo is a machine-learning-enabled component model for adaptive component ar
 
 The framework uses neural networks trained in a supervised manner. A simulation of the system is run to collect data used for training the neural network. The simulation can then be run again with the trained model to see the impact of the learned model on the system.
 
+## Contents
+
+* [Installation](#installation)
+* [Usage](#usage)
+  * [Specifying components](#specifying-components)
+  * [Specifying ensembles](#specifying-ensembles)
+  * [Adding machine-learning-based estimates](#adding-machine-learning-based-estimates)
+  * [Running the simulation](#running-the-simulation)
+* [Notes to implementation](#notes-to-implementation)
+
 ## Installation
 
 Use `pip`:
@@ -22,7 +32,7 @@ pip install --editable .
 
 The ML-DEECo framework provides abstractions for creating components and ensembles and assigning machine learning estimates to them. A simulation can then be run with the components and ensembles to observe behavior of the system and collect data for training the estimates. The trained estimate can then be used in the next run of the simulation. 
 
-## Specifying components
+### Specifying components
 
 The `ml_deeco.simulation` module offers base classes for `Component` and `Agent` (components with movement, the `Agent` class is derived from `Component`).
 
@@ -73,7 +83,7 @@ class Drone(Agent):
 
 ```
 
-## Specifying ensembles
+### Specifying ensembles
 
 Ensembles are meant for coordination of the components. The base class for ensembles is `ml_deeco.simulation.Ensemble`. Each ensemble has a priority specified by overriding the `priority` method. Furthermore, ensemble can contain components in static and dynamic roles. Static roles are represented simply as variables of the ensemble. 
 
@@ -122,7 +132,7 @@ class ChargingAssignment(Ensemble):
 
 The framework performs ensemble materialization (selection of the ensembles which should be active at this time) in every step of the simulation. The ensembles are materialized in a greedy fashion, ordered by their priority (descending). Only those ensembles for which all roles were assigned appropriate number of members (conforming to the cardinality) can be materialized. For all materialized ensembles, the `actuate` method is called.
 
-## Adding machine-learning-based estimates
+### Adding machine-learning-based estimates
 
 There are two types of tasks our framework focuses on -- value estimate and time-to-condition estimate. 
 
@@ -140,7 +150,7 @@ The definition of each estimate is split to three parts:
 
 All of these steps are realized using the `ml_deeco.estimators` module.
 
-### Estimator
+#### Estimator
 
 Estimator represents the underlying machine learning model for computing the estimates. The framework features `ConstantEstimator` and `NeuralNetworkEstimator`.
 
@@ -162,9 +172,9 @@ futureBatteryEstimator = NeuralNetworkEstimator(
 )
 ```
 
-### Adding the estimate
+#### Adding the estimate
 
-#### To a component
+##### To a component
 
 The estimate is created by initializing the `ValueEstimate` class (future value estimate -- both regression and classification) or `TimeEstimate` (time-to-condition estimate) and assigned as class variables of the component (in fact, they are implemented as properties).
 
@@ -185,11 +195,11 @@ class Drone(Agent):
     # more code of the component
 ```
 
-#### To an ensemble
+##### To an ensemble
 
 The estimates can be added to ensembles in a same way as to components -- as class variables (properties).
 
-#### To an ensemble role (ensemble-component pair)
+##### To an ensemble role (ensemble-component pair)
 
 To assign an estimate to a role, use the `withEstimate` (value estimate) or `withTimeEstimate` (time-to-condition estimate) methods of `someOf` (or `oneOf`). Only one estimate can be assigned to a role.
 
@@ -212,13 +222,13 @@ class DroneChargingAssignment(Ensemble):
     # more code of the ensemble
 ```
 
-### Configuring inputs, target and guards
+#### Configuring inputs, target and guards
 
 The definition of inputs, target and guards is realized as decorators and getter functions. For estimates assigned to components and ensembles, the decorator has a syntax `@<estimateName>.<configuration>`. For estimates assigned to roles, the syntax is `@<roleName>.estimate.<configuration>`.
 
 The decorators are applied to methods of the component or ensemble. For estimates assigned to components and ensembles, these methods should only have the `self` parameter. For estimates assigned to roles, these methods are expected to have the `self` parameter and a second parameter representing a component (the potential role member).
 
-#### Inputs
+##### Inputs
 
 The inputs of the estimate are specified using the `input()` decorator, optionally with a feature type as a parameter. We offer a `FloatFeature(min, max)`, which performs normalization of the inputs, a `CategoricalFeature(enum|list)` for one-hot encoding categorical values, and a `BinaryFeature()` to represent boolean attributes.
 
@@ -264,9 +274,9 @@ class DroneChargingAssignment(Ensemble):
         return drone.battery
 ```
 
-#### Target for `ValueEstimate`
+##### Target for `ValueEstimate`
 
-The target is specified similarly to the inputs using `target()` decorator. A `Feature` can again be given as a parameter -- this is how classification and regression tasks are distinguished. The feature is then used to set the appropriate number of neurons and the activation function of the last layer of the neural network and the loss function used for training.
+The target is specified similarly to the inputs using `target()` decorator. A `Feature` can again be given as a parameter -- this is how classification and regression tasks are distinguished. The feature is then used to set the appropriate number of neurons and the activation function of the last layer of the neural network and the loss function used for training (more details in [Notes to implementation](#notes-to-implementation)).
 
 ```py
 class Drone(Agent):
@@ -280,7 +290,7 @@ class Drone(Agent):
         return self.battery
 ```
 
-#### Condition for `TimeEstimate`
+##### Condition for `TimeEstimate`
 
 For the time-to-condition estimate, a condition must be specified instead of the target value. The syntax is again similar -- using the `condition` decorator. If multiple conditions are provided, they are considered in an "and" manner. 
 
@@ -296,7 +306,7 @@ class DroneChargingAssignment(Ensemble):
         return drone in self.charger.acceptedDrones
 ```
 
-#### Validity of inputs -- guards
+##### Validity of inputs -- guards
 
 Guard functions can be specified using `inputsValid`, `targetsValid` and `conditionValid` decorators to assess the validity of inputs and targets. The data are collected for training only if the guard conditions are satisfied. This can be used for example to prevent collecting data from components which are no longer active.
 
@@ -312,7 +322,7 @@ class Drone(Agent):
         return self.state != DroneState.TERMINATED
 ```
 
-### Obtaining the estimated value
+#### Obtaining the estimated value
 
 The `Estimate` object is callable, so the value of the estimate based on the current inputs can be obtained by calling the estimate as a function. For estimate assigned to a role, a component instance is expected as an argument of the call.
 
@@ -346,11 +356,11 @@ class DroneChargingAssignment(Ensemble):
         return drone.needsCharging(waitingTime)
 ```
 
-## Running the simulation
+### Running the simulation
 
 The `ml_deeco.simulation` module offers two functions for running the simulation: `run_simulation` and `run_experiment`.
 
-### `run_simulation`
+#### `run_simulation`
 
 The `run_simulation(components, ensembles, steps)` function runs the simulation with `components` and `ensembles` for `steps` steps. An optional `stepCallback` can be supplied which is called after each simulation step. It can be used for example to log data from the simulation. The parameters are:
 - list of all components in the system,
@@ -359,7 +369,7 @@ The `run_simulation(components, ensembles, steps)` function runs the simulation 
 
 Before running the simulation, the `Estimator`s have to be initialized. The easiest way to do that is by calling the `SIMULATION_GLOBALS.initEstimators()`.
 
-### `run_experiment`
+#### `run_experiment`
 
 The `run_experiment` is useful for running the simulation several times with training of the ML models in between. The `iterations` parameter specifies the number of iterations. In each iteration, the simulation is run `simulation` times. After that, the data from all the simulations in the current iteration are used to train the ML model (`Estimator`). The next iteration will use the updated model.
 
@@ -369,6 +379,24 @@ The `prepareIteration` is an optional function to be run at the beginning of eac
 
 The initialization of the `Estimator`s is done automatically in the `run_experiment` function.
 
-### Running the simulation manually
+#### Running the simulation manually
 
 For better control over the simulation, one can also run the simulation loop manually. The functions `materialize_ensembles` and `actuate_components` can be useful for that (they are used inside our `run_simulation`).
+
+## Notes to implementation
+
+### Construction of NN models
+
+We use the target feature to automatically infer the activation function for the last layer of the neural network and the loss function for training.
+
+| Feature                                 | Last layer activation                | Loss                      |
+|-----------------------------------------|--------------------------------------|---------------------------|
+| `Feature` (default)                     | identity                             | Mean squared error        |
+| `NumericFeature`                        | sigmoid (+ scaling to proper range)  | Mean squared error        |
+| `CategoricalFeature`                    | softmax (1 neuron for each category) | Categorical cross-entropy |
+| `BinaryFeature`                         | sigmoid (only 1 neuron)              | Binary cross-entropy      |
+| `TimeFeature` (used by `TimeEstimate`)  | exponential                          | Poisson                   |
+
+### Caching of estimates
+
+For role-assigned estimates, we compute the estimated values for all potential member components at the same time and cache them. It saves time as the neural network is capable of processing all the potential members in one batch. This implies that the inputs of the model can't use the information about the already selected members for this role.
