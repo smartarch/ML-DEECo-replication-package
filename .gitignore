@@ -2,9 +2,10 @@
 # The environment and result folder are ignored
 env/
 /results/
-drone_charging_example/evaluation/
+drone_charging_example/results/evaluation/
 .vscode/
 *.cmd
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
