@@ -2,7 +2,7 @@ import math
 import random
 
 from world import ENVIRONMENT
-
+from components.drone_state import DroneState
 from ml_deeco.simulation import Point
 
 
@@ -18,11 +18,24 @@ class Field:
                     |__________|.(x2,y2)
 
         Static Count for the Fields
+        Each field instance contains:
+        * `memory`: map of drones that are or have been protecting -> a selected place.
+        * `protectingDrones`: a map of currently protecting drones -> a selected place.
+        * `crops`: a map of crop location -> an integer indicating the damages done. When a crop is attacked `K (Damage Depth)` times, (`Damage Depth=2` in our example) it is marked as damaged.
+        * `damaged`: a list of already damaged crop.
+        * `locationPoints()`: returns all the points of the map, for visualization.
+        * `isPointOnField(point)`: returns `True` if the `point` is on the field.
+        * `closestDistanceToDrone(drone)`: returns the closest point to the `drone`.
+        * `assignPlace(drone)`: if the `drone` is new to the `field`, it will be assigned to the closest `place`. If the `drone` is inside the `memory`, it means it has been previously been protecting `place x`, then it should return to it. If there is no empty `place` it will set drone to a random `place` in the `field`. 
+        * `unassign(drone)`: remove the drone form the assigned list, but not from `memory`. Unless the drone is `terminated`, in that case it will be removed from `memory` too.
+        * `randomLocation()`: returns a random location for `birds`.
+        * `locationDamaged(location)`: mark the `location` as damaged.
+        * `randomUndamagedCrop()`: returns a random intact crop.
     """
 
     # Field counter
     Count = 0
-
+    DAMAGE_DEPTH = 2
     topLeft: Point
     bottomRight: Point
 
@@ -75,7 +88,7 @@ class Field:
 
         return min(distances)
 
-    def assingPlace(self, drone):
+    def assignPlace(self, drone):
         if drone not in self.protectingDrones:
             if drone not in self.memory:
                 listOfEmptyPlaces = [place for place in self.places if place not in [self.memory[d] for d in self.memory]]
@@ -92,7 +105,7 @@ class Field:
     def unassign(self, drone):
         if drone in self.protectingDrones:
             del self.protectingDrones[drone]
-            if drone.state == 5:  # terminated
+            if drone.state == DroneState.TERMINATED:
                 del self.memory[drone]
 
     def randomLocation(self):
@@ -102,14 +115,14 @@ class Field:
     #     minDistance = self.closestZoneToDrone(drone)
     #     return minDistance
 
-    def randomPlaces(self, protectors):
-        places = []
-        # lenZones = len(self.zones)
-        # interval = 1 if protectors > lenZones else int(lenZones/protectors)
-        for i in range(protectors):
-            randomZone = random.choice(self.places)
-            places.append(Point(randomZone.x, randomZone.y))
-        return places
+    # def randomPlaces(self, protectors):
+    #     places = []
+    #     # lenZones = len(self.zones)
+    #     # interval = 1 if protectors > lenZones else int(lenZones/protectors)
+    #     for i in range(protectors):
+    #         randomZone = random.choice(self.places)
+    #         places.append(Point(randomZone.x, randomZone.y))
+    #     return places
 
     def __str__(self):
         return f"{self.id},{self.topLeft},{self.bottomRight}"
@@ -118,12 +131,12 @@ class Field:
         p = (location.x, location.y)
         if p in self.crops:
             self.crops[p] = self.crops[p] + 1
-            if self.crops[p] == 2:
+            if self.crops[p] == Field.DAMAGE_DEPTH:
                 del self.crops[p]
                 self.damaged.append(Point(location.x, location.y))
                 self.damage = self.damage + 1
 
-    def randomUndamagedCorp(self):
+    def randomUndamagedCrop(self):
         if len(self.crops) == 0:
             return None
         safe = random.choice([p for p in self.crops])
