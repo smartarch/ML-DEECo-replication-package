@@ -5,7 +5,6 @@ In this broad example, we provide a simulation that runs a system which protects
 - [Usage](#usage)
 - [YAML Experiments](#yaml-experiments)
 - [Collecting Results](#results)
-- [Limitations](#limitations)
 
 
 ## Installation
@@ -137,3 +136,24 @@ usage: run.py [-h] [-x BIRDS] [-n NUMBER] [-t TRAIN] [-o OUTPUT] [-v VERBOSE]
 
   ## YAML Experiments
   The experiment world configuration is fed by an YAML input file. To keep the variable domain in a manageable rate, most of tests were performed on the basis of similar world configurations, but changing number of drones, birds, charger and the capacity of charging rate. To view all configurations, refer to the following table.
+| Configuration | Description | Example |
+| ------------: |:------------| :------- |
+| drones | The number of drones. | `10` |
+| birds | The number of birds. | `85` |
+| chargers | List of chargers points on the map. | `[[17,29],[28,13]]` |
+| fields | List of field rectangles (top-left and bottom-right) on the map. | `[[3,4,21,18],[35,7,48,36]]` |
+| maxSteps | Time steps that the simulation will be running. | `500` |
+| mapWidth | The width of the map. | `50` |
+| mapHeight | The height of the map. | `50` |
+| droneRadius | The protecting radius (points) of the drones. | `5` |
+| droneSpeed | The speed of drones | `1` |
+| birdSpeed | The speed of birds. | `1` |
+| chargingRate | The rate of charging battery by a charger per time step.| `0.04` |
+| totalAvailableChargingEnergy | The total available charging rate for all chargers (set 1 for full). | `0.08` |
+| droneMovingEnergyConsumption | The energy drones spend by moving. | `0.01` |
+| droneProtectingEnergyConsumption | The energy drones spend by standing. | `0.005` |
+| droneBatteryRandomize | If set > 0, the drones will start with different battery at beginning. | `0` |
+| droneStartPositionVariance | if set > 0, the drones will start from random places in the map. | `0` |
+
+
+## Collecting Results
