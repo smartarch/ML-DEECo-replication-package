@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 #  3. AcceptedDronesAssignment
 
 
-class DroneChargingPreassignment(Ensemble):
+class DroneChargingPreAssignment(Ensemble):
 
     charger: 'Charger'
 
@@ -230,7 +230,7 @@ def getEnsembles():
     global ensembles
 
     ensembles = \
-        [DroneChargingPreassignment(charger) for charger in WORLD.chargers] + \
+        [DroneChargingPreAssignment(charger) for charger in WORLD.chargers] + \
         [DroneChargingAssignment(charger) for charger in WORLD.chargers] + \
         [AcceptedDronesAssignment(charger) for charger in WORLD.chargers]
 
