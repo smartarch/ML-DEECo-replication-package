@@ -46,7 +46,7 @@ All the required packages and libraries are stored in [requirements.txt](require
 ```
 pip install -r requirements.txt
 ```
-#### Step 2: install ML-DEECo using `pip` (the `--editable` switch can be omitted if one does plan to change the code of ML-DEECo):
+#### Step 2: install ML-DEECo using `pip` (the `--editable` switch can be omitted if one does not plan to change the code of ML-DEECo):
 ```
 pip install --editable ../ml_deeco
 ```
@@ -65,7 +65,11 @@ The above command runs the simulation once and store the results in results fold
 py run.py experiments/12drones.yaml -n 5 -c
 ```
 
-Please note that the simulation will not train unless `t <NUMBER>` is set, and it must be set more than 1. To Observe the outcomes during runtime, one can use `-v <NUMBER>` where it sets the verboseness between 0-4. The following command will run 12drones.yaml 5 times per trainings. Therefore it will run and collect the results of total of 15 simulation runs, with verboseness level of 2. The first training runs will use no estimation at all.
+Please note that the simulation will not train unless `-t <NUMBER>` is set, and it must be set more than 1. 
+
+To Observe the outcomes during runtime, one can use `-v <NUMBER>` which sets the verboseness between 0-4. 
+
+The following command will run `12drones.yaml` for 4 iterations, where each iteration consists of running the simulation 5 times and then training the estimator. Therefore, it will run and collect the results of total of 20 simulation runs, with verboseness level of 2. The first 5 simulation runs will use no estimation at all.
 
 ```
 py run.py experiments/12drones.yaml -n 5 -t 4 -v 2 -c
@@ -74,15 +78,17 @@ py run.py experiments/12drones.yaml -n 5 -t 4 -v 2 -c
 The above command will relatively spend more time to finalize and store the results. Should the YAML file not chang, the graph will look like the following one:
 ![12-drone-t3-n5](results/output/12drones_neural_network.png)
 
-For a better training and accumulation of all data, use `-d `, which might probably take more time than previous command. Additionally one might try the experiment with different test split (using `--test_split <RATE>`), different hidden layers (using `--hidden_layers [<NUMBER>,<NUMBER>]`) or a random seed (using `-s <NUMBER>`). To specify a subfolder in results to store all the results use `-o <PATH>`; if the folder does not exist it will be created.
+As the behavior of the system is influenced by the estimates, the data collected in the second iteration will be different from the first iteration. To prevent feedback loops, the `-d ` switch can be used to accumulate training data from all previous iterations (without it, only the data from the current iteration are used for training). Note that this will increase the time needed to train the estimator, because more examples are used for training. 
+
+Additionally, one might try the experiment with different test split (using `--test_split <RATE>`), different hidden layers (using `--hidden_layers [<NUMBER>,<NUMBER>]`) or a random seed (using `-s <NUMBER>`). To specify a subfolder in results to store all the results use `-o <PATH>`; if the folder does not exist it will be created.
 
 ```
 py run.py experiments/12drones.yaml -n 5 -t 6 -d -o test_12_drones --hidden_layers 126 126 -c --test_split 0.4 --seed 423
 ```
-> The above command will run the experiments 30 Times (n X t), train every 5 times accumulating all data, saving 6 models in results/test_12_drones/neural_network folder. The model will have [126,126] hidden layers, splitting 40% data for validation and the random seed to initialize random objects is 4232. The below chart shows the results:
+> The above command will run the simulation 30 times (6 x 5) with training every 5 runs, accumulating all data, saving 6 models in results/test_12_drones/neural_network folder. The model will have two hidden layers with 126 neurons, splitting 40% data for validation and the random seed to initialize random objects is 4232. The below chart shows the results:
 ![12-drone-t63-n5](results/test_12_drones/12drones_neural_network.png)
 
-It could be observed that with tunning neural network parameters, the outcome varies and it could be improved. The models are stored in the results/test_12_drones/neural_network as `h5` files. They are portable models that could be used with the same simulation (using `-l <PATH-TO-MODEL>`), but perhaps with different size of folks (overriding the YAML configuration with `-x <NUMBER>`). Additionally, a visualizer is attached to the simulation and it can be toggled with `-a`.
+It could be observed that with tuning neural network parameters, the outcome varies, and it could be improved. The models are stored in the results/test_12_drones/neural_network as `h5` files. They are portable models that could be used with the same simulation (using `-l <PATH-TO-MODEL>`), but perhaps with different size of flocks of birds (overriding the YAML configuration with `-x <NUMBER>`). Additionally, a visualizer is attached to the simulation, and it can be toggled with `-a`.
 > :warning: using *`-a`* with multiple runs will produce GIF animations for all of them, and it might take excessive storage and time.
 
 ```
