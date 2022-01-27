@@ -108,7 +108,7 @@ class Drone(Agent):
                 if self.targetField is None:
                     self.state = DroneState.IDLE
                     return
-                self.target = self.targetField.assingPlace(self)
+                self.target = self.targetField.assignPlace(self)
                 self.state = DroneState.MOVING_TO_FIELD
 
         if self.state == DroneState.MOVING_TO_CHARGER:
