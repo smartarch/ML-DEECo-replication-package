@@ -47,7 +47,7 @@ class Bird(Agent):
 
     def moveToNewField(self):
         self.field = random.choice(WORLD.fields)
-        newTarget = self.field.randomUndamagedCorp()
+        newTarget = self.field.randomUndamagedCrop()
         if newTarget is None:
             self.field = None
             self.state = BirdState.IDLE
@@ -64,7 +64,7 @@ class Bird(Agent):
         if self.field == None:
             self.moveToNewField()
         else:
-            newTarget = self.field.randomUndamagedCorp()
+            newTarget = self.field.randomUndamagedCrop()
             if newTarget is None:
                 self.field = None
                 self.state = BirdState.IDLE
