@@ -41,8 +41,8 @@ class Field:
         self.damaged = []  # for vis
         self.damage = 0
 
-        for i in range(self.topLeft.x + self.droneRadius, self.bottomRight.x, round(self.droneRadius * 1.5)):
-            for j in range(self.topLeft.y + self.droneRadius, self.bottomRight.y, round(self.droneRadius * 1.5)):
+        for i in range(self.topLeft.x + self.droneRadius, self.bottomRight.x, round(self.droneRadius )):
+            for j in range(self.topLeft.y + self.droneRadius, self.bottomRight.y, round(self.droneRadius)):
                 self.places.append(Point(i, j))
 
         for i in range(self.topLeft.x, self.bottomRight.x):

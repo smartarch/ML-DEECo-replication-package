@@ -104,8 +104,6 @@ class Drone(Agent):
         if self.state < DroneState.MOVING_TO_CHARGER:  # IDLE, PROTECTING or MOVING TO FIELD
             if self.targetCharger is not None:
                 self.state = DroneState.MOVING_TO_CHARGER
-                if self.targetField is not None:
-                    self.targetField.unassign(self)
             else:
                 if self.targetField is None:
                     self.state = DroneState.IDLE
@@ -114,6 +112,8 @@ class Drone(Agent):
                 self.state = DroneState.MOVING_TO_FIELD
 
         if self.state == DroneState.MOVING_TO_CHARGER:
+            if self.targetField is not None:
+                self.targetField.unassign(self)
             self.target = self.targetCharger.provideLocation(self)
             if self.location != self.targetCharger.location:
                 self.move()
@@ -143,8 +143,8 @@ class Drone(Agent):
         endY = self.location.y + self.droneRadius
         startX = 0 if startX < 0 else startX
         startY = 0 if startY < 0 else startY
-        endX = ENVIRONMENT.mapWidth - 1 if endX >= ENVIRONMENT.mapWidth else endX
-        endY = ENVIRONMENT.mapHeight - 1 if endY >= ENVIRONMENT.mapHeight else endY
+        #endX = ENVIRONMENT.mapWidth - 1 if endX >= ENVIRONMENT.mapWidth else endX
+        #endY = ENVIRONMENT.mapHeight - 1 if endY >= ENVIRONMENT.mapHeight else endY
         return startX, startY, endX, endY
 
     def __repr__(self):
