@@ -2,7 +2,7 @@
 # The environment and result folder are ignored
 env/
 /results/
-drone_charging_example/results/evaluation/
+drone_charging_example/results/evaluation_local/
 .vscode/
 *.cmd
 
