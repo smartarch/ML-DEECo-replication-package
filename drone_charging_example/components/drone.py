@@ -9,47 +9,41 @@ if TYPE_CHECKING:
 
 class Drone(Agent):
     """
+    The drones protect the fields from birds by moving to the field and scaring the flocks of birds away.
+    In programming perspective, drone components have access to shared `WORLD` and they can find the position to protect.
+    In a real-life scenario, it is assumed that additional sensors will perform the detection of birds, and it can be read from them.
 
-        Derived from agent class.
-        The drones are mainly the agents that move to the fields and protect them from birds. 
-        In programming perspective, components have access to shared `WORLD` and they find the protecting positions.
-        In a real-life scenario, it is assumed that sensors will perform the detection tasks and it can be read from them.
-
-        Parameters
-        ----------
-        droneRadius: int
-            Protecting radius of drone. 
-        droneSpeed: float
-            The moving speed of the drone.
-        droneMovingEnergyConsumption: float
-            The energy consumption per time-step for drone moving.
-        droneProtectingEnergyConsumption: float
-            The energy consumption per time-step for protecting/standing drone.
-        battery: float
-            The battery percentage of the drone.
-        target: Point
-            The target location of the drone.
-        targetField: Field
-            The target field to protect.
-        targetCharger: Charger
-            The selected charger.
-        closestCharger: Charger
-            the closest charger which is picked by pre-assignment ensemble.
-        alert: float
-            If computed battery is below this value, it is assumed a critical battery level.
-
-        Properties:
-        -----------
-        state: DroneState
-            IDLE: a default state for drones.
-            PROTECTING: when the drones are protecting the fields.
-            MOVING_TO_CHARGING: when the drones are moving/queuing for a charger.
-            CHARGING: when the drones are being charged.
-            TERMINATED: when the drones' battery is 0, and they do not operate anymore.
+    Attributes
+    ----------
+    droneRadius: int
+        Protecting radius of drone.
+    droneSpeed: float
+        The moving speed of the drone.
+    droneMovingEnergyConsumption: float
+        The energy consumption per time-step for drone moving.
+    droneProtectingEnergyConsumption: float
+        The energy consumption per time-step for protecting/standing drone.
+    battery: float
+        The battery percentage of the drone.
+    target: Point
+        The target location of the drone.
+    targetField: Field
+        The target field to protect.
+    targetCharger: Charger
+        The selected charger.
+    closestCharger: Charger
+        the closest charger which is picked by pre-assignment ensemble.
+    alert: float
+        If computed battery is below this value, it is assumed a critical battery level.
+    state: DroneState
+        IDLE: a default state for drones.
+        PROTECTING: when the drones are protecting the fields.
+        MOVING_TO_CHARGER: when the drones are moving/queuing for a charger.
+        CHARGING: when the drones are being charged.
+        TERMINATED: when the drones' battery is 0, and they do not operate anymore.
     """
     def __init__(self, location):
         """
-
         Creates a drone object with the given location and ENVIRONMENT settings.
 
         Parameters
@@ -88,32 +82,29 @@ class Drone(Agent):
     @state.setter
     def state(self, value):
         """
-
         Sets the drone state.
 
         Parameters
         ----------
         value : DroneState
-    
         """
         self._state = value
 
     def timeToEnergy(self, time, consumptionRate=None):
         """
-
         Computes the amount of energy which is consumed in the given time.
 
         Parameters
         ----------
         time : int
-            The given time step.
+            The time (in time steps).
         consumptionRate : float, optional
-            In a case where a different consumption is considered.
+            The battery consumption per time step, defaults to `self.droneMovingEnergyConsumption`.
 
         Returns
         -------
         float
-            The amount of energy conusmed in given time.
+            The amount of energy consumed in given time.
         """
         if consumptionRate is None:
             consumptionRate = self.droneMovingEnergyConsumption
@@ -121,7 +112,6 @@ class Drone(Agent):
 
     def findClosestCharger(self):
         """
-
         Finds the closest charger comparing the drone distance and WORLD chargers.
 
         Returns
@@ -133,13 +123,12 @@ class Drone(Agent):
 
     def timeToFlyToCharger(self, charger=None):
         """
-
         Computes the time needed to get to the charger or the closest charger.
 
         Parameters
         ----------
         charger : Charger, optional
-            Specify the charger for measuring the distance.
+            Specify the charger for measuring the distance, defaults to `self.closestCharger`.
 
         Returns
         -------
@@ -169,8 +158,7 @@ class Drone(Agent):
 
     def computeBatteryAfterTime(self, time: int):
         """
-
-        Computes the battery after given time.
+        Computes the battery after given time (assuming the `self.droneMovingEnergyConsumption` energy consumption per time step).
 
         Parameters
         ----------
@@ -186,7 +174,6 @@ class Drone(Agent):
 
     def timeToDoneCharging(self):
         """
-
         Computes how long it will take to fly to the closest charger and get fully charged, assuming the charger is free.
 
         Returns
@@ -200,20 +187,20 @@ class Drone(Agent):
 
     def needsCharging(self, timeToStartCharging: int):
         """
+        Checks if the drone needs charging assuming it will take `timeToStartCharging` time steps to get to the charger and start charging.
 
-        Checks if the drone needs charging after assuming the drone will spend some time to get to the charger.
-        In ML-Based model, the waiting time is predicted and added to this.
+        In ML-Based model, the waiting time is predicted and is part of the `timeToStartCharging`.
         If computed battery is below threshold, the function returns true.
 
         Parameters
         ----------
         timeToStartCharging : int
-            the time the drone needs to get to the charger.
+            The time the drone needs to get to the charger (and possibly wait) and start charging.
 
         Returns
         -------
         bool
-            the drone is assumed needs charging or does not.
+            Whether the drone needs charging or does not.
         """
         if self.state == DroneState.TERMINATED:
             return False
@@ -224,9 +211,7 @@ class Drone(Agent):
 
     def checkBattery(self):
         """
-
         It checks the battery if is below or equal to 0, it is assumed the drone is dead and it will get removed from the given tasks.
-        
         """
         if self.battery <= 0:
             self.battery = 0
@@ -236,16 +221,14 @@ class Drone(Agent):
                 
     def move(self):
         """
-
         It moves the drone by calling the (super) Agent moving function, with addition of decreasing the battery in moving consumption rate.
-
         """
         self.battery = self.battery - self.droneMovingEnergyConsumption
         super().move(self.target)
 
     def actuate(self):
         """
-        it perform the actions of the drone in one time-step.
+        It performs the actions of the drone in one time-step.
         For each state it performs differently:
         TERMINATED:
             Returns, no actions.
@@ -261,7 +244,6 @@ class Drone(Agent):
             The drone starts being charged by the charger until the battery level gets to 1. When the battery is ful, the state will be changed to IDLE.  
         
         In each timestep it is checking the battery, to see if the drone is still alive.
-        
         """
         if self.state == DroneState.TERMINATED:
             return
@@ -298,13 +280,12 @@ class Drone(Agent):
 
     def isProtecting(self, point):
         """
-
-        checks if the given point is protected by the drone.
+        Checks if the given point is protected by the drone.
 
         Parameters
         ----------
         point : Point
-            a given point on the field.
+            A given point on the field.
 
         Returns
         -------
@@ -316,8 +297,8 @@ class Drone(Agent):
 
     def protectRadius(self):
         """
+        Gives the radius of the drone as form of rectangle to be presented in visualization.
 
-        gives the radius of the drone as form of rectangle to be presented in visualization. 
         Returns
         -------
         Point, Point, Point, Point
@@ -333,7 +314,6 @@ class Drone(Agent):
 
     def __repr__(self):
         """
-
         Returns
         -------
         string

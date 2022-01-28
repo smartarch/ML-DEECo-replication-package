@@ -9,14 +9,14 @@ from components.drone_state import DroneState
 from components.drone import Drone
 
 from ml_deeco.estimators import NumericFeature, CategoricalFeature
-from ml_deeco.simulation import SIMULATION_GLOBALS, Ensemble, someOf
+from ml_deeco.simulation import Ensemble, someOf
 from ml_deeco.utils import verbosePrint
 
 if TYPE_CHECKING:
     from components.charger import Charger
 
 
-# The order of the ensemble is:
+# The order of the ensembles is:
 #  1. DroneChargingPreassignment
 #  2. DroneChargingAssignment
 #  3. AcceptedDronesAssignment
@@ -159,9 +159,7 @@ class DroneChargingAssignment(Ensemble):
         return drone in self.charger.acceptedDrones
 
     def actuate(self):
-
         verbosePrint(f"DroneChargingAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
-
         self.charger.waitingDrones = self.drones
 
 
@@ -198,28 +196,7 @@ class AcceptedDronesAssignment(Ensemble):
         return -drone.timeToDoneCharging()
 
     def actuate(self):
-
         verbosePrint(f"AcceptedDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
-
-        # logging  TODO: do we still need this?
-        # for drone in self.drones:
-        #     if drone in self.charger.acceptedDrones:
-        #         continue
-        #     waitingDronesAssignment = next(filter(lambda e: isinstance(e, WaitingDronesAssignment) and e.charger == self.charger, ensembles))
-        #     WORLD.chargerLog.register([
-        #         WORLD.currentTimeStep,
-        #         drone.id,
-        #         drone.battery,
-        #         WaitingDronesAssignment.drones.estimate.estimate(waitingDronesAssignment, drone),
-        #         drone.energyToFlyToCharger(),
-        #         drone.timeToDoneCharging(),
-        #         self.charger.id,
-        #         len(self.charger.potentialDrones),
-        #         len(self.charger.waitingDrones),
-        #         len(self.charger.acceptedDrones),
-        #         len(self.charger.chargingDrones),
-        #     ])
-
         self.charger.acceptedDrones = self.drones
 
 
