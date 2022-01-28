@@ -161,4 +161,4 @@ class Bird(Agent):
         str
             Represnet the bird object in one line
         """
-        return f"{self.id}: state={self.state}, Total Ate={self.ate}"
+        return f"{self.id}: state={self.state}"
