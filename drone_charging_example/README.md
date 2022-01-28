@@ -74,7 +74,7 @@ The following command will run `12drones.yaml` for 4 iterations, where each iter
 py run.py experiments/12drones.yaml -n 5 -t 4 -v 2 -c
 ```
 
-The above command will relatively spend more time to finalize and store the results. Should the YAML file not chang, the graph will look like the following one:
+The above command will relatively spend more time to finalize and store the results. Should the YAML file not change, the graph will look like the following one:
 ![12-drone-t3-n5](results/output/12drones_neural_network.png)
 
 As the behavior of the system is influenced by the estimates, the data collected in the second iteration will be different from the first iteration. To prevent feedback loops, the `-d ` switch can be used to accumulate training data from all previous iterations (without it, only the data from the current iteration are used for training). Note that this will increase the time needed to train the estimator, because more examples are used for training. 
