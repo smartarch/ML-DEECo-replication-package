@@ -1,11 +1,10 @@
 # Drone Charging Example
-In this broad example, we provide a simulation that runs a system which protects field of corps against flocks of birds, using virtual drones. In this document, a complete guide to run the example is presented:
+In this broad example, we provide a simulation that runs a system which protects field of crops against flocks of birds, using virtual drones. In this document, a complete guide to run the example is presented:
 
 - [Installation](#installation)
 - [Usage](#usage)
 - [YAML Experiments](#yaml-experiments)
-- [Collecting Results](#results)
-
+- [Simulation Components](#simulation-components)
 
 ## Installation
 To run the example, some libraries must be installed. The installation requires `Python 3` and `pip`. If you have `pip` installed skip to - [Package Installation](#package-installation).
@@ -162,4 +161,108 @@ usage: run.py [-h] [-x BIRDS] [-n NUMBER] [-t TRAIN] [-o OUTPUT] [-v VERBOSE]
 | droneStartPositionVariance | if set > 0, the drones will start from random places in the map. | `0` |
 
 
-## Collecting Results
+## Simulation Components
+The simulation runs a number of stateful and stateless component that perform in each time step:
+### Overall
+* [Field](###field)
+* Component (stateful)
+    * Agent (stateful components that could move)
+        * [Drone](###Drone)
+        * [Bird](###Bird)
+    * [Charger](###Charger)
+* Enum
+    * [Drone State](####Drone-State)
+    * [Bird State](####Bird-State)
+* Ensembles (stateless)
+    * [Drone Charging](###Drone-Charging)
+    * [Field Protection](###Field-Protection)
+* Utils
+    * Plots
+    * Average Log
+    * Visualizer
+* Run
+* Environment
+* World
+
+### Field
+The field class instances present the agricultural fields on the map. Each field has a number of crops to be protected. The fields are divided into places depending to the radius of drones. To simplify the simulation, the fields are presented as rectangles,: `[x1, y1, x2, y2]`
+~~~text
+    (x1,y1) .__________
+            |          |
+            |__________|.(x2,y2). 
+~~~
+
+### Drone
+The drones are mainly the agents that move to the fields and protect them from birds. In programming perspective, components have access to shared `WORLD` and they find the protecting position. In a real-life scenario, it is assumed that sensors will perform the detection tasks and it can be read from them. The drones have the following states:
+
+#### Drone State
+* **IDLE**: a default initial state for drones.
+* **PROTECTING**: a state when the drones are protecting the fields.
+* **MOVING_TO_CHARGING**: a state when the drones are moving toward a charger.
+* **CHARGING**: a state when the drones are being charged.
+* **TERMINATED**: a state when the drone battery is below 0, and they do not operate anymore (unrecoverable).
+
+### Bird
+The birds are the threats to the crops of the fields. They find undamaged crops and eat them in one or multiple visits (2 in our case). They flee to random places of the map (which are not fields) if they see a drone around. The birds behavior is flavoured with random factors that would change results of the same running simulation, thus one ought to attempt multiple runs and average the results. The birds state goes as the following:
+
+#### Bird State
+* **IDLE**: a default state for birds, when they are away from fields.
+* **ATTACKING**: a state where a bird has targeted field and attacking it.
+* **FLEEING**: a state where a bird is running away from drones.
+
+### Charger
+chargers are the components that provide energy to the drones. The capacity of charger is calculated according to the number of drones and chargers available. The charging rate and saturation (available charging rate) is configured in YAML files. For current existing configuration (assuming energy provided is `0.04`), charging is set as:
+
+| Experiment | Chargers | Calculated Capacity | Maximum Charging Rate |
+| ---------: |:--------:| :-----------------: | :-------------------: |
+| 8 Drones | 3 | 1 | 0.12 |
+| 10 Drones | 3 | 1 | 0.12 |
+| 12 Drones | 3 | 1 | 0.12 |
+| 16 Drones | 2 | 2 | 0.16 |
+| 20 Drones | 3 | 2 | 0.24 |
+| 24 Drones | 3 | 2 | 0.24 |
+
+
+### Field Protection
+The field protection ensembles searches for the closest IDLE drones and assign them to the fields. The fields are sorted regarding the rate how many unprotected places they have; therefore, the priority goes as ` number of protecting drones / current places `. In each time step the ensembles are resorted, and re-materialized to find the idle drones to protect the fields. 
+
+
+### Drone Charging
+Each drone to get charged has to be part of 3 charging phases (ensembles). It will be first detected by the nearest charger, then it will be admitted to the waiting queue if it needs charging, and finally will start moving to the charger if it gets accepted by the charger. When the drone landed on a charger, it will get full battery and will change status to IDLE.
+
+The following graph shows the cycle of a drone and how ensembles (colored as light orange) change course of a drone. However, an ensemble does not directly change the state of a drone, it simply selects and connect it to other components such as chargers and fields. For example a drone could be in need of charging, but the charger is busy, the drone will keep the current state (perhaps protecting the field) till the accepting ensemble signals the charger is free now. For a better performance, the drones will start moving, when they know by the time they reach the charger, the charger will be free. 
+![drone-cycle](components/drone-cycle.svg)
+
+This behavior exists and performs in both: baseline and Machine Learning based model. The key difference between both approaches is the computation of the waiting time. In the baseline, the drones do not know how long they will probably wait even if they need charging right away. However, in ML-based, the waiting time is predicted and the drones add that waiting time to the time they need to fly to charger. Therefore, even with a sufficient battery, they will move toward the chargers sooner than usual and this helps them to survive. The charging ensembles are:
+
+**DroneChargingPreAssignment**
+
+Finds the closest charger to a drone in each time step, to make sure that at anytime the drone needs charging, it will find the closest one.
+
+**DroneChargingAssignment** 
+
+Check if the drone needs charging:
+* Baseline: `battery - energy to fly to charger < threshold `
+* ML-Based: `battery - (energy to fly to charger + waiting time) < threshold `
+
+If the above condition is `True` then the drone is added to the potential charger's waiting queue.
+In this ensemble the data that model learns from is collected into features of the neural network, and the target is the waiting time. The collected features are:
+
+* battery
+* drone_state
+* charger_distance
+* accepted_drones_count
+* charger_capacity
+* neighbor_drones_average_battery
+* neighbor_drones
+* potential_drones
+* accepted_drones_missing_battery
+* charging_drones_count
+* charging_drones_missing_battery
+* potential_drones_with_lower_battery
+* waiting_drones_count
+* waiting_drones_with_lower_battery
+
+**AcceptedDronesAssignment** 
+This ensemble checks the waiting list and assigns the drones to the charger as soon as the charger has capacity of accepting new drone. As soon as the accepting occurs, the drone will move toward the charger and gets full battery.
+
