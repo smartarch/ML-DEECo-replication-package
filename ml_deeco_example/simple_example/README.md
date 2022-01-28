@@ -8,7 +8,7 @@ The example models a package transportation use case. We assume to have a truck 
 
 The example can be run by executing the [`run.py`](run.py) file after `ml_deeco` has been installed (see [README file](../../ml_deeco/README.md)).
 
-It runs two simulations of the example -- one to collect the data for the ML model, and a second one to use the trained model during the simulation.
+It runs two simulations of the example &ndash; one to collect the data for the ML model, and a second one to use the trained model during the simulation.
 
 ## Implementation
 
@@ -16,7 +16,7 @@ It runs two simulations of the example -- one to collect the data for the ML mod
 
 The truck is modeled as a component (based on `ml_deeco.simulation.Agent` class as it is capable of movement) in [`truck.py`](truck.py). We assume the truck has a limited amount of fuel and the fuel consumption depends on whether the truck is loaded with package or not.
 
-We use a machine learning model to predict the fuel level of the truck in the future -- after 10 steps of the simulation. If the model predicts that the truck will run out of fuel in the 10 steps, the truck becomes unavailable and returns to the station to get there safely and not run out of fuel while transporting a package.
+We use a machine learning model to predict the fuel level of the truck in the future &ndash; after 10 steps of the simulation. If the model predicts that the truck will run out of fuel in the 10 steps, the truck becomes unavailable and returns to the station to get there safely and not run out of fuel while transporting a package.
 
 The estimate is assigned to the component with input and target specified by the decorators:
 ```py
@@ -38,7 +38,7 @@ def not_terminated(self):
 
 ### Definition of Package ensemble
 
-We use an ensemble to assign a job to the truck -- [`package_ensemble.py`](package_ensemble.py). If the truck is available, the ensemble orders it to go pick up a package. When the truck is loaded, it transports the package to the station and becomes available again. We assume there are enough packages in the storage, so the ensemble will assign another package once the truck is available again.
+We use an ensemble to assign a job to the truck &ndash; [`package_ensemble.py`](package_ensemble.py). If the truck is available, the ensemble orders it to go pick up a package. When the truck is loaded, it transports the package to the station and becomes available again. We assume there are enough packages in the storage, so the ensemble will assign another package once the truck is available again.
 
 ### Simulation
 

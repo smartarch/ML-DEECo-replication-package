@@ -1,18 +1,20 @@
 import random
 from typing import List, TYPE_CHECKING
+
 from world import ENVIRONMENT, WORLD
 from components.drone_state import DroneState
 from ml_deeco.simulation import Component, Point
+
 if TYPE_CHECKING:
     from components.drone import Drone
+
 
 class Charger(Component):
     """
     The charger class represents the charger stations providing energy for drones in the simulation.
     The charging rate and capacity is defined in the WORLD and ENVIRONMENT objects shared with all components.
-    
 
-    Parameters
+    Attributes
     ----------
     chargingRate : float
         The charging rate the charger is supposed to provide per time-step for landing drones.
@@ -29,25 +31,24 @@ class Charger(Component):
     """
 
     def __init__(self, location):
-        """ 
+        """
+        Initiate the charger instance with constant position on the map.
 
-        Initiate the charger instnance with constant position on the map.
         Parameters
         ----------
         location : Point
-            constant point of the charger. 
+            The location of the charger (constant).
         """
         Component.__init__(self, location)
         self.chargingRate = ENVIRONMENT.chargingRate
         self.acceptedCapacity = ENVIRONMENT.chargerCapacity
         self.potentialDrones: List[Drone] = []  # these belong to this charger and are not waiting or being charged
-        self.waitingDrones: List[Drone] = []    # drones in need of being charged, waiting for acceptance
-        self.acceptedDrones: List[Drone] = []   # drones accepted for charging, they move to the charger
-        self.chargingDrones: List[Drone] = []   # drones currently being charged
+        self.waitingDrones: List[Drone] = []  # drones in need of being charged, waiting for acceptance
+        self.acceptedDrones: List[Drone] = []  # drones accepted for charging, they move to the charger
+        self.chargingDrones: List[Drone] = []  # drones currently being charged
 
     def startCharging(self, drone):
         """
-
         Drone is in the correct location and starts charging.
 
         Parameters
@@ -61,7 +62,6 @@ class Charger(Component):
 
     def doneCharging(self, drone):
         """
-
         The drone battery gets full and it is done charging. Because of different rates, the battery might get > 1, therefore, this function makes the battery 1.
 
         Parameters
@@ -74,7 +74,6 @@ class Charger(Component):
 
     def timeToDoneCharging(self, alreadyAccepted=0):
         """
-
         It computes the time that the charger will be free.
 
         Parameters
@@ -96,7 +95,6 @@ class Charger(Component):
 
     def randomNearLocation(self):
         """
-
         finds random location near the charger.
 
         Returns
@@ -108,7 +106,6 @@ class Charger(Component):
 
     def provideLocation(self, drone):
         """
-
         Gives the location of the charger to the drone.
         If the drone is accepted it can fly to the charger, the standby time is only due to unexpected latency in charging.
 
@@ -129,7 +126,6 @@ class Charger(Component):
 
     def actuate(self):
         """
-
         Performs the charger actions in all queues:
         chargingDrones:
             Charge them with a saturation provided by ENVIRONMENT.totalAvailableChargingEnergy
@@ -138,16 +134,15 @@ class Charger(Component):
             When the drone is done charging, its battery gets 1 and removed from queues.
         acceptedDrones:
             The charger will search and fill up the accepted drones with the capacity considered.
-
-        
         """
         # charge the drones
         for drone in self.chargingDrones:
             # charging rate drops slightly with increased drones in charging
             totalChargingDrones = sum([len(charger.chargingDrones) for charger in WORLD.chargers])
-            currentCharingRate =  min(totalChargingDrones*ENVIRONMENT.chargingRate,ENVIRONMENT.totalAvailableChargingEnergy) / totalChargingDrones
-            ENVIRONMENT.currentChargingRate =  currentCharingRate
-            drone.battery = drone.battery +  currentCharingRate
+            currentCharingRate = min(totalChargingDrones * ENVIRONMENT.chargingRate,
+                                     ENVIRONMENT.totalAvailableChargingEnergy) / totalChargingDrones
+            ENVIRONMENT.currentChargingRate = currentCharingRate
+            drone.battery = drone.battery + currentCharingRate
             if drone.battery >= 1:
                 self.doneCharging(drone)
 
@@ -165,7 +160,6 @@ class Charger(Component):
 
     def __repr__(self):
         """
-
         Represent the charger in one line.
 
         Returns

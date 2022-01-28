@@ -93,7 +93,7 @@ The declaration of a dynamic role is done via the `someOf` (meaning a list of co
 * `utility` orders the components;
 * `cardinality` sets the maximum (or both minimum and maximum) allowed number of components to be picked.
 
-The member selection works by first finding all components of the correct type that pass the `select` predicate, then ordering them by the `utility` (higher utility is better) and using the `cardinality` to limit the number of selected members. The `cardinality` can also be used to limit the minimal number of member components -- if there are not enough components passing the selection, the ensemble cannot be active at the time.
+The member selection works by first finding all components of the correct type that pass the `select` predicate, then ordering them by the `utility` (higher utility is better) and using the `cardinality` to limit the number of selected members. The `cardinality` can also be used to limit the minimal number of member components &ndash; if there are not enough components passing the selection, the ensemble cannot be active at the time.
 
 ```py
 from ml_deeco.simulation import Ensemble, someOf
@@ -134,7 +134,7 @@ The framework performs ensemble materialization (selection of the ensembles whic
 
 ### Adding machine-learning-based estimates
 
-There are two types of tasks our framework focuses on -- value estimate and time-to-condition estimate. 
+There are two types of tasks our framework focuses on &ndash; value estimate and time-to-condition estimate. 
 
 In the value estimate, we use the currently available observations to predict some value that can be observed only at some future point (after a fixed amount of time steps). Based on the type of the estimated value, the supervised ML models are usually divided into regression and classification.
 
@@ -144,7 +144,7 @@ The tasks are described in more detail in the paper.
 
 The definition of each estimate is split to three parts:
 
-1. The definition of the `Estimator` -- machine learning model and storage for the collected data. 
+1. The definition of the `Estimator` &ndash; machine learning model and storage for the collected data. 
 2. The declaration of the `Estimate` field in the component or ensemble.
 3. The definition of inputs, target and guards. These are realized as decorators on component/ensemble fields and getter functions of the component. 
 
@@ -155,9 +155,9 @@ All of these steps are realized using the `ml_deeco.estimators` module.
 Estimator represents the underlying machine learning model for computing the estimates. The framework features `ConstantEstimator` and `NeuralNetworkEstimator`.
 
 Common parameters for the initializer of the `Estimator`s are:
-- `outputFolder` -- The collected training data and evaluation of the training is exported there. Set to `None` to disable export.
-- `name` -- String to identify the `Estimator` in the printed output of the framework (if `printLogs` is `True` and verbosity level was set by `ml_deeco.utils.setVerboseLevel`).
-- `accumulateData` -- If set to `True`, data from all previous iterations are used for training. If set to `False` (default), only the data from the last iteration are used for training.
+- `outputFolder` &ndash; The collected training data and evaluation of the training is exported there. Set to `None` to disable export.
+- `name` &ndash; String to identify the `Estimator` in the printed output of the framework (if `printLogs` is `True` and verbosity level was set by `ml_deeco.utils.setVerboseLevel`).
+- `accumulateData` &ndash; If set to `True`, data from all previous iterations are used for training. If set to `False` (default), only the data from the last iteration are used for training.
 
 The `ConstantEstimator` is initialized with a constant, which is then returned every time predictions are requested. It can serve as a baseline in experiments.
 
@@ -176,7 +176,7 @@ futureBatteryEstimator = NeuralNetworkEstimator(
 
 ##### To a component
 
-The estimate is created by initializing the `ValueEstimate` class (future value estimate -- both regression and classification) or `TimeEstimate` (time-to-condition estimate) and assigned as class variables of the component (in fact, they are implemented as properties).
+The estimate is created by initializing the `ValueEstimate` class (future value estimate &ndash; both regression and classification) or `TimeEstimate` (time-to-condition estimate) and assigned as class variables of the component (in fact, they are implemented as properties).
 
 In case of value estimate, the number of time steps we want to predict into the future is set using the `inTimeSteps` method.
 
@@ -197,7 +197,7 @@ class Drone(Agent):
 
 ##### To an ensemble
 
-The estimates can be added to ensembles in a same way as to components -- as class variables (properties).
+The estimates can be added to ensembles in a same way as to components &ndash; as class variables (properties).
 
 ##### To an ensemble role (ensemble-component pair)
 
@@ -276,7 +276,7 @@ class DroneChargingAssignment(Ensemble):
 
 ##### Target for `ValueEstimate`
 
-The target is specified similarly to the inputs using `target()` decorator. A `Feature` can again be given as a parameter -- this is how classification and regression tasks are distinguished. The feature is then used to set the appropriate number of neurons and the activation function of the last layer of the neural network and the loss function used for training (more details in [Notes to implementation](#notes-to-implementation)).
+The target is specified similarly to the inputs using `target()` decorator. A `Feature` can again be given as a parameter &ndash; this is how classification and regression tasks are distinguished. The feature is then used to set the appropriate number of neurons and the activation function of the last layer of the neural network and the loss function used for training (more details in [Notes to implementation](#notes-to-implementation)).
 
 ```py
 class Drone(Agent):
@@ -292,7 +292,7 @@ class Drone(Agent):
 
 ##### Condition for `TimeEstimate`
 
-For the time-to-condition estimate, a condition must be specified instead of the target value. The syntax is again similar -- using the `condition` decorator. If multiple conditions are provided, they are considered in an "and" manner. 
+For the time-to-condition estimate, a condition must be specified instead of the target value. The syntax is again similar &ndash; using the `condition` decorator. If multiple conditions are provided, they are considered in an "and" manner. 
 
 ```py
 class DroneChargingAssignment(Ensemble):
@@ -306,7 +306,7 @@ class DroneChargingAssignment(Ensemble):
         return drone in self.charger.acceptedDrones
 ```
 
-##### Validity of inputs -- guards
+##### Validity of inputs &ndash; guards
 
 Guard functions can be specified using `inputsValid`, `targetsValid` and `conditionValid` decorators to assess the validity of inputs and targets. The data are collected for training only if the guard conditions are satisfied. This can be used for example to prevent collecting data from components which are no longer active.
 

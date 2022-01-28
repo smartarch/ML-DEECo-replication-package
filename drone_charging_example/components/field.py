@@ -6,29 +6,29 @@ from ml_deeco.simulation import Point
 
 class Field:
     """
-        A Field that the simulation is running on.
+    A Field that the simulation is running on.
 
-        This defines an Area, which is technically a set of points.
-        The set of points consist of 4 doubles as [x1, y1, x2, y2]
+    This defines an Area, which is technically a set of points.
+    The set of points consist of 4 doubles as [x1, y1, x2, y2]
 
-            (x1,y1) .__________
-                    |          |
-                    |__________|.(x2,y2)
+        (x1,y1) .__________
+                |          |
+                |__________|.(x2,y2)
 
-        Static Count for the Fields
-        Each field instance contains:
-        * `memory`: map of drones that are or have been protecting -> a selected place.
-        * `protectingDrones`: a map of currently protecting drones -> a selected place.
-        * `crops`: a map of crop location -> an integer indicating the damages done. When a crop is attacked `K (Damage Depth)` times, (`Damage Depth=2` in our example) it is marked as damaged.
-        * `damaged`: a list of already damaged crop.
-        * `locationPoints()`: returns all the points of the map, for visualization.
-        * `isPointOnField(point)`: returns `True` if the `point` is on the field.
-        * `closestDistanceToDrone(drone)`: returns the closest point to the `drone`.
-        * `assignPlace(drone)`: if the `drone` is new to the `field`, it will be assigned to the closest `place`. If the `drone` is inside the `memory`, it means it has been previously been protecting `place x`, then it should return to it. If there is no empty `place` it will set drone to a random `place` in the `field`. 
-        * `unassign(drone)`: remove the drone form the assigned list, but not from `memory`. Unless the drone is `terminated`, in that case it will be removed from `memory` too.
-        * `randomLocation()`: returns a random location for `birds`.
-        * `locationDamaged(location)`: mark the `location` as damaged.
-        * `randomUndamagedCrop()`: returns a random intact crop.
+    Static Count for the Fields
+    Each field instance contains:
+    * `memory`: map of drones that are or have been protecting -> a selected place.
+    * `protectingDrones`: a map of currently protecting drones -> a selected place.
+    * `crops`: a map of crop location -> an integer indicating the damages done. When a crop is attacked `K (Damage Depth)` times, (`Damage Depth=2` in our example) it is marked as damaged.
+    * `damaged`: a list of already damaged crop.
+    * `locationPoints()`: returns all the points of the map, for visualization.
+    * `isPointOnField(point)`: returns `True` if the `point` is on the field.
+    * `closestDistanceToDrone(drone)`: returns the closest point to the `drone`.
+    * `assignPlace(drone)`: if the `drone` is new to the `field`, it will be assigned to the closest `place`. If the `drone` is inside the `memory`, it means it has been previously been protecting `place x`, then it should return to it. If there is no empty `place` it will set drone to a random `place` in the `field`.
+    * `unassign(drone)`: remove the drone form the assigned list, but not from `memory`. Unless the drone is `terminated`, in that case it will be removed from `memory` too.
+    * `randomLocation()`: returns a random location for `birds`.
+    * `locationDamaged(location)`: mark the `location` as damaged.
+    * `randomUndamagedCrop()`: returns a random intact crop.
     """
 
     # Field counter
