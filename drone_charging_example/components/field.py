@@ -1,10 +1,8 @@
 import math
 import random
-
 from world import ENVIRONMENT
 from components.drone_state import DroneState
 from ml_deeco.simulation import Point
-
 
 class Field:
     """
@@ -71,10 +69,7 @@ class Field:
 
         return points
 
-    # def randomPointOnField(self):
-    #     return [randint(self.topLeft.x, self.bottomRight.x-1),randint(self.topLeft.y, self.bottomRight.y-1)]
 
-    # a function to call and set all field points
     def isPointOnField(self, point):
         return self.topLeft.x <= point.x < self.bottomRight.x and \
                self.topLeft.y <= point.y < self.bottomRight.y
@@ -111,21 +106,6 @@ class Field:
     def randomLocation(self):
         return Point.random(self.topLeft.x, self.topLeft.y, self.bottomRight.x, self.bottomRight.y)
 
-    # def closestDistanceToDrone (self,drone):
-    #     minDistance = self.closestZoneToDrone(drone)
-    #     return minDistance
-
-    # def randomPlaces(self, protectors):
-    #     places = []
-    #     # lenZones = len(self.zones)
-    #     # interval = 1 if protectors > lenZones else int(lenZones/protectors)
-    #     for i in range(protectors):
-    #         randomZone = random.choice(self.places)
-    #         places.append(Point(randomZone.x, randomZone.y))
-    #     return places
-
-    def __str__(self):
-        return f"{self.id},{self.topLeft},{self.bottomRight}"
 
     def locationDamaged(self, location):
         p = (location.x, location.y)
@@ -141,3 +121,7 @@ class Field:
             return None
         safe = random.choice([p for p in self.crops])
         return Point(safe[0], safe[1])
+
+        
+    def __str__(self):
+        return f"{self.id},{self.topLeft},{self.bottomRight}"
