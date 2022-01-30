@@ -23,7 +23,7 @@ class Bird(Agent):
     They find undamaged crops and eat them in one or multiple visits. 
     If they see a drone around, they flee to random places of the map (which are not fields). The birds behavior is flavoured with random factors that would change results of the same running simulation, thus one ought to attempt multiple runs and average the results.
 
-    Parameters
+    Attributes
     ----------
     speed : float
         The speed of birds.
