@@ -1,0 +1,3 @@
+[submodule "ml_deeco"]
+	path = ml_deeco
+	url = git@github.com:smartarch/ML-DEECo.git
