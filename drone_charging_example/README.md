@@ -12,10 +12,6 @@ To run the example, some libraries must be installed. The installation requires 
 
 To install `pip` follow the following instructions:
 
-### Install pip on Debian/Ubuntu 
-```
-apt install python3-pip            
-```
 ### Install pip on Debian/Ubuntu
 ```
 apt install python3-pip
