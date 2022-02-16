@@ -16,19 +16,20 @@ def createLogPlot(log, averageLog, filename, title, size):
         'orange',
         'blue',
     ]
-    allX =  np.arange(1, (size[0]*size[1])+1)
-    allXLabels =[record[-1] for record in log.records] 
+    allX = np.arange(1, (size[0] * size[1]) + 1)
+    allXLabels = [record[-1] for record in log.records]
 
-    avXLabels = ['Baseline']
-    for av in allX[1:]:
-        if (av-1)%size[0] == 0:
-            avXLabels.append(f'Train {round((av-1)/5)}')
-        else:
-            avXLabels.append('')
-    mainY =[]
-    mainY.append([record[0] for record in log.records])
-    mainY.append([record[3] for record in log.records])
-    
+    avX = np.concatenate([
+        np.array([1]),
+        np.linspace(size[0] + 0.5, ((size[1] - 1) * size[0]) + 0.5, size[1] - 1)
+    ])
+    avXLabels = ['Baseline'] + [f"Train {i + 1}" for i in range(size[1] - 1)]
+
+    mainY = [
+        [record[0] for record in log.records],
+        [record[3] for record in log.records]
+    ]
+
     averageY = []
     averageSurvived = []
     averageDamage = []
@@ -39,36 +40,33 @@ def createLogPlot(log, averageLog, filename, title, size):
     averageY.append(averageSurvived)
     averageY.append(averageDamage)
 
-
-    fig, axs = plt.subplots(2, 1, figsize=(size[1]+4, size[1]+4))
+    fig, axs = plt.subplots(2, 1, figsize=(size[1] + 4, size[1] + 4))
 
     for i in range(2):
-        twin = axs[i].twiny() 
-        if size[1]>1:
-            yLines = np.linspace(size[0]+0.5,((size[1]-1)*size[0])+0.5,size[1]-1)
-            axs[i].plot(allX, mainY[i], color=colors[0], label="ML Based" , linestyle="solid")
-            twin.plot(allX, averageY[i], color=colors[0], label="ML Based - Average" , linestyle="dashed")
+        twin = axs[i].twiny()
+        if size[1] > 1:
+            yLines = np.linspace(size[0] + 0.5, ((size[1] - 1) * size[0]) + 0.5, size[1] - 1)
+            axs[i].plot(allX, mainY[i], color=colors[0], label="ML Based", linestyle="solid")
+            twin.plot(allX, averageY[i], color=colors[0], label="ML Based - Average", linestyle="dashed")
             axs[i].vlines(x=yLines, colors='black', ymin=0, ymax=max(mainY[i]), linestyle='dotted')
 
-        axs[i].plot(allX[:size[0]+1], mainY[i][:size[0]+1], color=colors[1], label="Baseline", linestyle="solid")
-        twin.plot(allX[:size[0]+1], averageY[i][:size[0]+1], color=colors[1], label="Baseline - Average", linestyle="dashed")
+        axs[i].plot(allX[:size[0] + 1], mainY[i][:size[0] + 1], color=colors[1], label="Baseline", linestyle="solid")
+        twin.plot(allX[:size[0] + 1], averageY[i][:size[0] + 1], color=colors[1], label="Baseline - Average", linestyle="dashed")
 
         axs[i].set_xticks(allX, labels=allXLabels)
         axs[i].set_xlabel("Runs")
-        twin.set_xticks(allX, labels=avXLabels)
+        twin.set_xticks(avX, labels=avXLabels)
         twin.set_xlabel("Trains")
 
         axs[i].set_ylabel(subtitles[i])
         axs[i].legend(loc='lower right')
         twin.legend(loc='lower left')
-    
+
     fig.suptitle(title, fontsize=12)
     fig.tight_layout()
     plt.savefig(filename)
     plt.show()
     plt.close(fig)
-    
-
 
 
 def createChargerPlot(logs, filename, title):
@@ -97,6 +95,6 @@ def createChargerPlot(logs, filename, title):
         axs[i].set_ylabel("Drones")
     fig.suptitle(title, fontsize=16)
     fig.tight_layout()
-    plt.savefig(filename + ".png",dpi=600)
+    plt.savefig(filename + ".png", dpi=600)
     # plt.show()
     plt.close(fig)
