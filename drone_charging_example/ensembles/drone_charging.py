@@ -12,188 +12,113 @@ from ml_deeco.utils import verbosePrint
 if TYPE_CHECKING:
     from components.charger import Charger
 
+
+# All the ensembles are instantiated per charger.
 # The order of the ensembles is:
-#  1. DroneChargingPreassignment
-#  2. DroneChargingAssignment
-#  3. AcceptedDronesAssignment
+#  1. DroneChargingPreassignment -- divide the drones among the chargers (each drone to its closest charger).
+#  2. DroneChargingAssignment -- groups the drones in need of charging.
+#  3. AcceptedDronesAssignment -- groups the drones accepted for charging.
+# The order of the instances of each ensemble type can be arbitrary as the instances are independent.
+
 
 class DroneChargingPreAssignment(Ensemble):
     """
+    Ensembles for assignment of drones to their closest charger.
 
-    The Pre-assignment tells the drones that where is the potential charger and vise-versa.
-    It has to come first; therefore, it has priority of 3.
-
-    Parameters
-    ----------
-    charger : Charger
-        The charger component.
-
-    Properties:
-    ---------
-    drones: List (someOf) Drones
+    There is an instance of the `DroneChargingPreAssignment` ensemble per charger (which is a static role).
+    The ensemble groups all drones for which this charger is the closest (using dynamic role `drones`).
+    The drones are saved to the `charger.potentialDrones` list.
     """
-    charger: 'Charger'
+    charger: 'Charger'  # static role
 
     def __init__(self, charger: 'Charger'):
         """
-
-        Initiate the pre-assignment charger ensemble.
-
         Parameters
         ----------
         charger : Charger
-            the targer charger.
+            The charger (static role member).
         """
+        super().__init__()
         self.charger = charger
 
     def priority(self):
-        """
-
-        Arbitrary as 3, to make sure the ensemble works before others.
-
-        Returns
-        -------
-        int
-            3
-        """
+        """Arbitrarily set to 3 to be the highest among charging-related ensembles."""
         return 3
 
+    # dynamic role
     drones: List[Drone] = someOf(Drone)
 
     @drones.cardinality
     def drones(self):
-        """
-
-        The length of drones list is defined.
-
-        Returns
-        -------
-        tuple
-            [0, all drones in the environment]
-        """
+        """Unlimited cardinality. Any number of drones can be selected for the role."""
         return 0, ENVIRONMENT.droneCount
 
     @drones.select
     def drones(self, drone, otherEnsembles):
-        """
-
-        Defines which drones are the potential ones to the charger. 
-
-        Parameters
-        ----------
-        drone : Drone
-            The query drone.
-        otherEnsembles : list
-            unused in this concept, followed the definition of ensemble.
-
-        Returns
-        -------
-        bool
-            If the drone is selected.
-        """
+        """Drone can be selected if not terminated, not charging and the charger is the closest one."""
         return drone.state not in (DroneState.TERMINATED, DroneState.MOVING_TO_CHARGER, DroneState.CHARGING) and \
             drone.findClosestCharger() == self.charger
 
     def actuate(self):
-        """
+        """Save the selected drones to the `potentialDrones` and update their ˙closestCharger˙."""
+        verbosePrint(f"DroneChargingPreassignment: assigned {len(self.drones)} to {self.charger.id}", 4)
 
-        For all selected drones, the potential charger is set.
-        For the charger, the list of potential drones is set.
-        """
         self.charger.potentialDrones = self.drones
         for drone in self.drones:
             drone.closestCharger = self.charger
-        verbosePrint(f"DroneChargingPreassignment: assigned {len(self.drones)} to {self.charger.id}", 4)
+
 
 class DroneChargingAssignment(Ensemble):
     """
+    Groups the drones which require charge.
 
-    The drone charging assignment checks if any potential drones requires charging.
-    In this ensemble, the data for ML-Based model is collected.
-    The priority of this ensemble is 2, ensuring that it will run before accepting.
-    The drones that are selected will be added to the waiting queue.
+    Again, there is an instance of the `DroneChargingAssignment` ensemble per charger (which is a static role).
+    The ensemble groups all drones which need charging (using dynamic role `drones`) among those pre-assigned to the charger.
+    The drones are saved to the `charger.waitingDrones` list.
 
-    Parameters
-    ----------
-    charger : Charger
-        The charger component.
-
-    Properties:
-    ---------
-    drones: List (someOf) Drones With Time Estimator
+    The ML model is used to estimate the waiting time for a charger slot in order to determine whether the drone needs charging now.
     """
-    charger: 'Charger'
+    charger: 'Charger'  # static role
 
     def __init__(self, charger: 'Charger'):
         """
-        
-        initiate the charging ensemble.
-
         Parameters
         ----------
         charger : Charger
-            The targetted charger.
+            The charger (static role member).
         """
+        super().__init__()
         self.charger = charger
 
     def priority(self):
-        """
-
-        Arbitrary set as 2, ensuring it will come after Pre-Assignment ensemble and before the accepting ensemble.
-
-        Returns
-        -------
-        int
-            2
-        """
+        """Arbitrarily set to 2 to be materialized second among the charging-related ensembles."""
         return 2
 
+    # dynamic role with estimate
     drones: List[Drone] = someOf(Drone).withTimeEstimate().using(WORLD.waitingTimeEstimator)
 
     @drones.cardinality
     def drones(self):
-        """
-
-        The length of drones.
-
-        Returns
-        -------
-        tuple
-            [0, all drones in the environment]
-        """
+        """Unlimited cardinality. Any number of drones can be selected for the role."""
         return 0, ENVIRONMENT.droneCount
 
     @drones.select
     def drones(self, drone, otherEnsembles):
         """
+        Assesses whether a drone needs charging.
 
-        Select the drone to be in the waiting queue, which:
-        1-  Not Terminated 
-        2-  Drone in potentail drones.
-        3-  Needs charging: in ML-based, the waiting time is estimated
-
-
-        Parameters
-        ----------
-        drone : Drone
-            The query drone.
-        otherEnsembles : list
-            unused here, following the definition of the ensemble.
-
-        Returns
-        -------
-        bool
-            if True, the drone is selected to be in waiting queue.
+        1. We only work with drones pre-assigned to the charger (`potentialDrones`).
+        2. We compute an estimated waiting time for a charger slot.
+        3. Based on the waiting time estimate and time needed to reach the charger, the drone decides whether it needs charging.
         """
-        if drone.state == DroneState.TERMINATED:
+        if drone not in self.charger.potentialDrones:
             return False
+
         waitingTimeEstimate = self.drones.estimate(drone)
         timeToFlyToCharger = drone.timeToFlyToCharger()
-        # needs charging
-        return drone in self.charger.potentialDrones and \
-            drone.needsCharging(waitingTimeEstimate + timeToFlyToCharger)
+        return drone.needsCharging(waitingTimeEstimate + timeToFlyToCharger)
 
-    # region Features
+    # region ML features
 
     @drones.estimate.input(NumericFeature(0, 1))
     def battery(self, drone):
@@ -221,14 +146,14 @@ class DroneChargingAssignment(Ensemble):
             k = len(drone.targetField.protectingDrones)
             if k == 0:
                 return 0
-            return sum([drone.battery for drone in drone.targetField.protectingDrones])/k
+            return sum([drone.battery for drone in drone.targetField.protectingDrones]) / k
         else:
             return 0
 
     @drones.estimate.input(NumericFeature(0, 1))
     def neighbor_drones(self, drone):
         if drone.targetField is not None:
-            return len(drone.targetField.protectingDrones)/len(drone.targetField.places)
+            return len(drone.targetField.protectingDrones) / len(drone.targetField.places)
         else:
             return 0
 
@@ -265,149 +190,76 @@ class DroneChargingAssignment(Ensemble):
     @drones.estimate.inputsValid
     @drones.estimate.conditionsValid
     def is_preassigned(self, drone):
-
-        # return drone in self.drones
+        """We only collect data for the ML if the drone is pre-assigned to the charger."""
         return drone in self.charger.potentialDrones
 
     @drones.estimate.condition
     def is_accepted(self, drone):
-        """
-
-        The Target value for estimation. 
-        The time estimator, calculates the time drone is in waiting queue,
-        and then it calculates when the drone is accepted.
-        The difference is the waited time.
-
-        Parameters
-        ----------
-        drone : Drone
-            The candiadate drone.
-
-        Returns
-        -------
-        bool
-            If True, the drone is accepted
-        """
+        """Condition for the estimate of waiting time. The waiting ends when the drone is accepted for charging."""
         return drone in self.charger.acceptedDrones
 
     def actuate(self):
-        """
-
-        The waiting queue will be updated to the list of current drones.
-        """
+        """Save the selected drones to the `waitingDrones` list of the charger."""
         verbosePrint(f"DroneChargingAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
+
         self.charger.waitingDrones = self.drones
 
 
 class AcceptedDronesAssignment(Ensemble):
     """
+    Groups the drones accepted for charging. These are drones which fly towards the charger, and they will start charging when they get there.
 
-    This ensemble only ensure that the drones are being charged in with the charger.
-
-    Parameters
-    ----------
-    charger : Charger
-        The charger component.
-
-    Properties:
-    ---------
-    drones: List (someOf) Drones 
+    Again, there is an instance of the `AcceptedDronesAssignment` ensemble per charger (which is a static role).
+    The ensemble groups all drones accepted for charging on this charger (using dynamic role `drones`).
+    The drones are saved to the `charger.acceptedDrones` list.
     """
-    charger: 'Charger'
+    charger: 'Charger'  # static role
 
     def __init__(self, charger: 'Charger'):
         """
-
-        Initiate the ensemble.
-
         Parameters
         ----------
         charger : Charger
-            The targeted charger.
+            The charger (static role member).
         """
+        super().__init__()
         self.charger = charger
 
     def priority(self):
-        """
+        """Arbitrarily set to 1 to be materialized last among the charging-related ensembles."""
+        return 1
 
-        Arbitrary set as 1, ensuring it will come after Pre-Assignment ensemble and the accepting ensemble.
-
-        Returns
-        -------
-        int
-            1
-        """
-        return 1  # The order of AcceptedDronesAssignment ensembles can be arbitrary as they don't influence each other.
-
+    # dynamic role
     drones: List[Drone] = someOf(Drone)
 
     @drones.cardinality
     def drones(self):
-        """
-
-        The length of drones.
-
-        Returns
-        -------
-        tuple
-            [0, charger capacity]
-        """
+        """The capacity of the charger is the upper limit of how many drones can be selected for this role."""
         return 0, self.charger.acceptedCapacity
 
     @drones.select
     def drones(self, drone, otherEnsembles):
         """
+        Decides which drones should be accepted for charging.
 
-        Selects the drone to be charrged :
-        1- the drone is not terminated
-        2- drone is accepted by the charger or the drone is in waiting queue
-        3- the charger will be free before/close to the time drone flies there
-
-        Parameters
-        ----------
-        drone : Drone
-            The query drone.
-        otherEnsembles : list
-            unused in this concept, following the definition of ensemble.
-
-        Returns
-        -------
-        bool
-            If True, the drone is accepted.
+        a) Drones which were accepted earlier are selected again (until they reach the charger)
+        b) Among the drones in need of charging (`waitingDrones`), we consider those, for which there would be a free charging slot when they reached the charger if they started flying towards it now.
         """
-        if drone.state == DroneState.TERMINATED:
-            return False
-        # was accepted before or needs charging (is waiting) and the charger will be free
         return drone in self.charger.acceptedDrones or \
             drone in self.charger.waitingDrones and \
             self.charger.timeToDoneCharging(len(self.drones)) <= drone.timeToFlyToCharger()
 
     @drones.utility
     def drones(self, drone):
-        """
-
-        sorts the drone toward their time to done charging.
-
-        Parameters
-        ----------
-        drone : Drone
-            The candidate drone.
-
-        Returns
-        -------
-        int
-            time to done charing.
-        """
+        """Orders the drones by the time needed to finish charging them (time to reach the charger + time to charge the battery). The drones accepted before have higher utility than all the new drones."""
         if drone in self.charger.acceptedDrones:
             return 1  # keep the accepted drones from previous time steps
         return -drone.timeToDoneCharging()
 
     def actuate(self):
-        """
-
-        Updates the accepted drone list.
-        """
+        """Saves the selected drones to the `acceptedDrones` list and updates their `targetCharger`."""
         verbosePrint(f"AcceptedDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
+
         self.charger.acceptedDrones = self.drones
         for drone in self.drones:
             drone.targetCharger = self.charger
@@ -416,15 +268,9 @@ class AcceptedDronesAssignment(Ensemble):
 ensembles: List[Ensemble]
 
 
-def getEnsembles():
+def getEnsembles() -> List[Ensemble]:
     """
-
-    creates a list of ensembles for all types of charging assignments.
-
-    Returns
-    -------
-    list
-        List of ensembles.
+    One instance of each ensemble type for each charger.
     """
     global ensembles
 

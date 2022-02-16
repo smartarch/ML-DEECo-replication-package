@@ -47,44 +47,36 @@ class Charger(StationaryComponent2D):
         self.acceptedDrones: List[Drone] = []  # drones accepted for charging, they move to the charger
         self.chargingDrones: List[Drone] = []  # drones currently being charged
 
-    def startCharging(self, drone):
+    def startCharging(self, drone: 'Drone'):
         """
-        Drone is in the correct location and starts charging.
-
-        Parameters
-        ----------
-        drone : Drone
-            the drone state changes to CHARGING.
+        This is called when the drone is in the correct location and starts charging.
         """
         self.acceptedDrones.remove(drone)
         self.chargingDrones.append(drone)
         drone.state = DroneState.CHARGING
 
-    def doneCharging(self, drone):
+    def doneCharging(self, drone: 'Drone'):
         """
-        The drone battery gets full and it is done charging. Because of different rates, the battery might get > 1, therefore, this function makes the battery 1.
-
-        Parameters
-        ----------
-        drone : Drone
-            drone battery completes charging.
+        This is called when the drone is fully charged.
         """
         drone.battery = 1
+        drone.targetCharger = None
+        drone.state = DroneState.IDLE
         self.chargingDrones.remove(drone)
 
     def timeToDoneCharging(self, alreadyAccepted=0):
         """
-        It computes the time that the charger will be free.
+        Computes how long it will take for the charger to have a free slot.
 
         Parameters
         ----------
         alreadyAccepted : int, optional
-            The accepted drones.
+            Number of drones already accepted for charging.
 
         Returns
         -------
         float
-            Time steps the charger will be free.
+            Time steps until a free charging slot.
         """
         batteries = sorted(map(lambda d: d.battery, self.chargingDrones), reverse=True)
         if len(batteries) > alreadyAccepted:
@@ -93,15 +85,8 @@ class Charger(StationaryComponent2D):
             nthMaxBattery = 1
         return (1 - nthMaxBattery) / self.chargingRate
 
-    def randomNearLocation(self):
-        """
-        finds random location near the charger.
-
-        Returns
-        -------
-        Point2D
-            a point near the charger.
-        """
+    def randomNearLocation(self) -> Point2D:
+        """Returns a random location near the charger."""
         return Point2D(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))
 
     def provideLocation(self, drone):
@@ -112,12 +97,12 @@ class Charger(StationaryComponent2D):
         Parameters
         ----------
         drone : Drone
-            The drone which is asking for the location, to be checked in which queue this request is risen.
+            The drone which is asking for the location.
 
         Returns
         -------
         Point2D
-            The point to be save in the target of drone.
+            The point to be set as the target of drone.
         """
         if drone in self.chargingDrones or drone in self.acceptedDrones:
             return self.location
@@ -125,17 +110,9 @@ class Charger(StationaryComponent2D):
             return self.randomNearLocation()
 
     def actuate(self):
-        """
-        Performs the charger actions in all queues:
-        chargingDrones:
-            Charge them with a saturation provided by ENVIRONMENT.totalAvailableChargingEnergy
-            For example if ENVIRONMENT.totalAvailableChargingEnergy = 0.12, and the charging rate is 0.04, then it means 3 drones could simultaneously change at one or different chargers.
-            But for instance with 0.12, if there are 4 drones, they will get 0.03 charge rate.
-            When the drone is done charging, its battery gets 1 and removed from queues.
-        acceptedDrones:
-            The charger will search and fill up the accepted drones with the capacity considered.
-        """
-        # charging rate depends on the number of drones currently being charged
+        # Charging rate depends on the number of drones currently being charged.
+        # For example if ENVIRONMENT.totalAvailableChargingEnergy = 0.12, and the charging rate is 0.04, then it means 3 drones could simultaneously change at one or different chargers.
+        # But for instance with 0.12, if there are 4 drones, they will get 0.03 charge rate.
         totalChargingDrones = sum([len(charger.chargingDrones) for charger in WORLD.chargers])
         if totalChargingDrones > 0:
             currentChargingRate = min(totalChargingDrones * ENVIRONMENT.chargingRate,
