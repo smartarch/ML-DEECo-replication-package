@@ -2,12 +2,12 @@ import random
 from typing import Optional, TYPE_CHECKING
 from components.drone_state import DroneState
 from world import ENVIRONMENT, WORLD
-from ml_deeco.simulation import Agent
+from ml_deeco.simulation import MovingComponent2D
 if TYPE_CHECKING:
     from components.charger import Charger
 
 
-class Drone(Agent):
+class Drone(MovingComponent2D):
     """
     The drones protect the fields from birds by moving to the field and scaring the flocks of birds away.
     In programming perspective, drone components have access to shared `WORLD` and they can find the position to protect.
@@ -17,15 +17,13 @@ class Drone(Agent):
     ----------
     droneRadius: int
         Protecting radius of drone.
-    droneSpeed: float
-        The moving speed of the drone.
     droneMovingEnergyConsumption: float
         The energy consumption per time-step for drone moving.
     droneProtectingEnergyConsumption: float
         The energy consumption per time-step for protecting/standing drone.
     battery: float
         The battery percentage of the drone.
-    target: Point
+    target: Point2D
         The target location of the drone.
     targetField: Field
         The target field to protect.
@@ -48,11 +46,10 @@ class Drone(Agent):
 
         Parameters
         ----------
-        location : Point
+        location : Point2D
             Starting point for the drone.
         """
         self.droneRadius = ENVIRONMENT.droneRadius
-        self.droneSpeed = ENVIRONMENT.droneSpeed
         self.droneMovingEnergyConsumption = ENVIRONMENT.droneMovingEnergyConsumption
         self.droneProtectingEnergyConsumption = ENVIRONMENT.droneProtectingEnergyConsumption
         self.battery = 1 - (ENVIRONMENT.droneBatteryRandomize * random.random())
@@ -62,7 +59,7 @@ class Drone(Agent):
         self.targetCharger: Optional[Charger] = None
         self.closestCharger: Optional[Charger] = None
         self.alert = 0.15
-        Agent.__init__(self, location, self.droneSpeed)
+        super().__init__(location, ENVIRONMENT.droneSpeed)
 
     @property
     def state(self):
@@ -284,7 +281,7 @@ class Drone(Agent):
 
         Parameters
         ----------
-        point : Point
+        point : Point2D
             A given point on the field.
 
         Returns
@@ -301,7 +298,7 @@ class Drone(Agent):
 
         Returns
         -------
-        Point, Point, Point, Point
+        Point2D, Point2D, Point2D, Point2D
             Top X, Top Y, Bottom X and Bottom Y
         """
         startX = self.location.x - self.droneRadius

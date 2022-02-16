@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from world import ENVIRONMENT, WORLD
-from ml_deeco.simulation import Agent
+from ml_deeco.simulation import MovingComponent2D
 
 class BirdState(Enum):
     """
@@ -16,7 +16,7 @@ class BirdState(Enum):
     EATING = 3
     FLEEING = 4
 
-class Bird(Agent):
+class Bird(MovingComponent2D):
     """
 
     The birds are the threats to the crops of the fields. 
@@ -25,9 +25,7 @@ class Bird(Agent):
 
     Attributes
     ----------
-    speed : float
-        The speed of birds.
-    target : Point
+    target : Point2D
         The target location, field or empty place.
     state: BirdState
         The state of birds.
@@ -51,14 +49,13 @@ class Bird(Agent):
 
         Parameters
         ----------
-        location : Point
+        location : Point2D
             the point which is given by the World.
         """
-        self.speed = ENVIRONMENT.birdSpeed
         self.state = BirdState.IDLE
         self.target = None
         self.field = None
-        Agent.__init__(self, location, self.speed)
+        super().__init__(location, ENVIRONMENT.birdSpeed)
 
     def moveToNewField(self):
         """

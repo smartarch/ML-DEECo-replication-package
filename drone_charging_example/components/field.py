@@ -2,7 +2,7 @@ import math
 import random
 from world import ENVIRONMENT
 from components.drone_state import DroneState
-from ml_deeco.simulation import Point
+from ml_deeco.simulation import Point2D
 
 class Field:
     """
@@ -46,8 +46,8 @@ class Field:
     # Field counter
     Count = 0
     DAMAGE_DEPTH = 2
-    topLeft: Point
-    bottomRight: Point
+    topLeft: Point2D
+    bottomRight: Point2D
 
     def __init__(self, pointLists):
         """
@@ -66,8 +66,8 @@ class Field:
         Field.Count = Field.Count + 1
         self.droneRadius = ENVIRONMENT.droneRadius
         self.id = f"FIELD_{Field.Count}"
-        self.topLeft = Point(pointLists[0], pointLists[1])
-        self.bottomRight = Point(pointLists[2], pointLists[3])
+        self.topLeft = Point2D(pointLists[0], pointLists[1])
+        self.bottomRight = Point2D(pointLists[2], pointLists[3])
         self.places = []
         self.protectingDrones = {}
         self.memory = {}
@@ -76,7 +76,7 @@ class Field:
         self.damage = 0
         for i in range(self.topLeft.x + self.droneRadius, self.bottomRight.x, round(self.droneRadius )):
             for j in range(self.topLeft.y + self.droneRadius, self.bottomRight.y, round(self.droneRadius)):
-                self.places.append(Point(i, j))
+                self.places.append(Point2D(i, j))
         for i in range(self.topLeft.x, self.bottomRight.x):
             for j in range(self.topLeft.y, self.bottomRight.y):
                 self.crops[(i, j)] = 0
@@ -95,7 +95,7 @@ class Field:
         points = []
         for x in range(self.topLeft.x, self.bottomRight.x):
             for y in range(self.topLeft.y, self.bottomRight.y):
-                points.append(Point(x, y))
+                points.append(Point2D(x, y))
         return points
 
     def isPointOnField(self, point):
@@ -106,7 +106,7 @@ class Field:
 
         Parameters
         ----------
-        point : Point
+        point : Point2D
             A point asked by the birds.
 
         Returns
@@ -157,7 +157,7 @@ class Field:
 
         Returns
         -------
-        Point
+        Point2D
             The protecting point (center of place).
         """
         if drone not in self.protectingDrones:
@@ -195,10 +195,10 @@ class Field:
 
         Returns
         -------
-        Point
+        Point2D
             A random point within the field.
         """
-        return Point.random(self.topLeft.x, self.topLeft.y, self.bottomRight.x, self.bottomRight.y)
+        return Point2D.random(self.topLeft.x, self.topLeft.y, self.bottomRight.x, self.bottomRight.y)
 
     def locationDamaged(self, location):
         """
@@ -208,7 +208,7 @@ class Field:
 
         Parameters
         ----------
-        location : Point
+        location : Point2D
             The eaten location.
         """
         p = (location.x, location.y)
@@ -216,7 +216,7 @@ class Field:
             self.crops[p] = self.crops[p] + 1
             if self.crops[p] == Field.DAMAGE_DEPTH:
                 del self.crops[p]
-                self.damaged.append(Point(location.x, location.y))
+                self.damaged.append(Point2D(location.x, location.y))
                 self.damage = self.damage + 1
 
     def randomUndamagedCrop(self):
@@ -226,13 +226,13 @@ class Field:
 
         Returns
         -------
-        Point
+        Point2D
             A random point which is not yet fully damaged.
         """
         if len(self.crops) == 0:
             return None
         safe = random.choice([p for p in self.crops])
-        return Point(safe[0], safe[1])
+        return Point2D(safe[0], safe[1])
  
     def __str__(self):
         """

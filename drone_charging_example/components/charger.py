@@ -3,13 +3,13 @@ from typing import List, TYPE_CHECKING
 
 from world import ENVIRONMENT, WORLD
 from components.drone_state import DroneState
-from ml_deeco.simulation import Component, Point
+from ml_deeco.simulation import StationaryComponent2D, Point2D
 
 if TYPE_CHECKING:
     from components.drone import Drone
 
 
-class Charger(Component):
+class Charger(StationaryComponent2D):
     """
     The charger class represents the charger stations providing energy for drones in the simulation.
     The charging rate and capacity is defined in the WORLD and ENVIRONMENT objects shared with all components.
@@ -36,10 +36,10 @@ class Charger(Component):
 
         Parameters
         ----------
-        location : Point
+        location : Point2D
             The location of the charger (constant).
         """
-        Component.__init__(self, location)
+        super().__init__(location)
         self.chargingRate = ENVIRONMENT.chargingRate
         self.acceptedCapacity = ENVIRONMENT.chargerCapacity
         self.potentialDrones: List[Drone] = []  # these belong to this charger and are not waiting or being charged
@@ -99,10 +99,10 @@ class Charger(Component):
 
         Returns
         -------
-        Point
+        Point2D
             a point near the charger.
         """
-        return Point(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))
+        return Point2D(self.location.x + random.randint(1, 3), self.location.y + random.randint(1, 3))
 
     def provideLocation(self, drone):
         """
@@ -116,7 +116,7 @@ class Charger(Component):
 
         Returns
         -------
-        Point
+        Point2D
             The point to be save in the target of drone.
         """
         if drone in self.chargingDrones or drone in self.acceptedDrones:

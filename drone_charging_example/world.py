@@ -85,7 +85,7 @@ class World:
         """
         Call this before the world is used.
         """
-        from ml_deeco.simulation.components import Point
+        from ml_deeco.simulation import Point2D
         from components.bird import Bird
         from components.field import Field
         from components.drone import Drone
@@ -98,11 +98,11 @@ class World:
             centerY = ENVIRONMENT.mapHeight / 2
             randomX = centerX + (random.choice([-1, 1]) * variant * random.random() * centerX)
             randomY = centerY + (random.choice([-1, 1]) * variant * random.random() * centerY)
-            return Point(int(randomX), int(randomY))
+            return Point2D(int(randomX), int(randomY))
 
         self.drones: List[Drone] = [Drone(randomStartingPoint()) for _ in range(ENVIRONMENT.droneCount)]
-        self.birds: List[Bird] = [Bird(Point.random(0, 0, ENVIRONMENT.mapWidth, ENVIRONMENT.mapHeight)) for _ in range(ENVIRONMENT.birdCount)]
-        self.chargers: List[Charger] = [Charger(Point(position)) for position in ENVIRONMENT.chargerPositions]
+        self.birds: List[Bird] = [Bird(Point2D.random(0, 0, ENVIRONMENT.mapWidth, ENVIRONMENT.mapHeight)) for _ in range(ENVIRONMENT.birdCount)]
+        self.chargers: List[Charger] = [Charger(Point2D(position)) for position in ENVIRONMENT.chargerPositions]
         self.fields: List[Field] = [Field(points) for points in ENVIRONMENT.fieldPositions]
 
         self.totalPlaces = sum([len(f.places) for f in self.fields])
@@ -110,7 +110,7 @@ class World:
 
         self.emptyPoints = []
         for i in range(MAX_RANDOM_POINTS):
-            p = Point.random(0, 0, ENVIRONMENT.mapWidth, ENVIRONMENT.mapHeight)
+            p = Point2D.random(0, 0, ENVIRONMENT.mapWidth, ENVIRONMENT.mapHeight)
             if self.isPointField(p):
                 i = i - 1
             else:
