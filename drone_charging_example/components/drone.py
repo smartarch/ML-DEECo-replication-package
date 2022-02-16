@@ -93,7 +93,7 @@ class Drone(MovingComponent2D):
 
         Parameters
         ----------
-        time : int
+        time : float
             The time (in time steps).
         consumptionRate : float, optional
             The battery consumption per time step, defaults to `self.droneMovingEnergyConsumption`.

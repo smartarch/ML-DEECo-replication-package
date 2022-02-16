@@ -1,11 +1,14 @@
 import math
 from typing import List, TYPE_CHECKING
+
 from world import ENVIRONMENT, WORLD
 from components.drone_state import DroneState
 from components.drone import Drone
+
 from ml_deeco.estimators import NumericFeature, CategoricalFeature
 from ml_deeco.simulation import Ensemble, someOf
 from ml_deeco.utils import verbosePrint
+
 if TYPE_CHECKING:
     from components.charger import Charger
 
@@ -406,6 +409,8 @@ class AcceptedDronesAssignment(Ensemble):
         """
         verbosePrint(f"AcceptedDronesAssignment: assigned {len(self.drones)} to {self.charger.id}", 4)
         self.charger.acceptedDrones = self.drones
+        for drone in self.drones:
+            drone.targetCharger = self.charger
 
 
 ensembles: List[Ensemble]

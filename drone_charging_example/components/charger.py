@@ -135,14 +135,18 @@ class Charger(StationaryComponent2D):
         acceptedDrones:
             The charger will search and fill up the accepted drones with the capacity considered.
         """
+        # charging rate depends on the number of drones currently being charged
+        totalChargingDrones = sum([len(charger.chargingDrones) for charger in WORLD.chargers])
+        if totalChargingDrones > 0:
+            currentChargingRate = min(totalChargingDrones * ENVIRONMENT.chargingRate,
+                                      ENVIRONMENT.totalAvailableChargingEnergy) / totalChargingDrones
+            ENVIRONMENT.currentChargingRate = currentChargingRate
+        else:
+            currentChargingRate = 0
+
         # charge the drones
         for drone in self.chargingDrones:
-            # charging rate drops slightly with increased drones in charging
-            totalChargingDrones = sum([len(charger.chargingDrones) for charger in WORLD.chargers])
-            currentCharingRate = min(totalChargingDrones * ENVIRONMENT.chargingRate,
-                                     ENVIRONMENT.totalAvailableChargingEnergy) / totalChargingDrones
-            ENVIRONMENT.currentChargingRate = currentCharingRate
-            drone.battery = drone.battery + currentCharingRate
+            drone.battery += currentChargingRate
             if drone.battery >= 1:
                 self.doneCharging(drone)
 
@@ -153,10 +157,6 @@ class Charger(StationaryComponent2D):
                 if drone.location == self.location:
                     self.startCharging(drone)
                     break
-
-        # assign the target charger of the accepted drones
-        for drone in self.acceptedDrones:
-            drone.targetCharger = self
 
     def __repr__(self):
         """
