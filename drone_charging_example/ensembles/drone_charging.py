@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 #  2. DroneChargingAssignment -- groups the drones in need of charging.
 #  3. AcceptedDronesAssignment -- groups the drones accepted for charging.
 # The order of the instances of each ensemble type can be arbitrary as the instances are independent.
+# Note that for field protection ensembles, the highest possible priority is 1, which is less than the priority of all charging ensembles. The charging ensembles will thus be always materialized before the field protection ensembles.
 
 
 class DroneChargingPreAssignment(Ensemble):
@@ -42,8 +43,8 @@ class DroneChargingPreAssignment(Ensemble):
         self.charger = charger
 
     def priority(self):
-        """Arbitrarily set to 3 to be the highest among charging-related ensembles."""
-        return 3
+        """Arbitrarily set to 4 to be the highest among charging-related ensembles."""
+        return 4
 
     # dynamic role
     drones: List[Drone] = someOf(Drone)
@@ -54,7 +55,7 @@ class DroneChargingPreAssignment(Ensemble):
         return 0, ENVIRONMENT.droneCount
 
     @drones.select
-    def drones(self, drone, otherEnsembles):
+    def drones(self, drone: 'Drone', otherEnsembles):
         """Drone can be selected if not terminated, not charging and the charger is the closest one."""
         return drone.state not in (DroneState.TERMINATED, DroneState.MOVING_TO_CHARGER, DroneState.CHARGING) and \
             drone.findClosestCharger() == self.charger
@@ -91,8 +92,8 @@ class DroneChargingAssignment(Ensemble):
         self.charger = charger
 
     def priority(self):
-        """Arbitrarily set to 2 to be materialized second among the charging-related ensembles."""
-        return 2
+        """Arbitrarily set to 3 to be materialized second among the charging-related ensembles."""
+        return 3
 
     # dynamic role with estimate
     drones: List[Drone] = someOf(Drone).withTimeEstimate().using(WORLD.waitingTimeEstimator)
@@ -103,7 +104,7 @@ class DroneChargingAssignment(Ensemble):
         return 0, ENVIRONMENT.droneCount
 
     @drones.select
-    def drones(self, drone, otherEnsembles):
+    def drones(self, drone: 'Drone', otherEnsembles):
         """
         Assesses whether a drone needs charging.
 
@@ -226,8 +227,8 @@ class AcceptedDronesAssignment(Ensemble):
         self.charger = charger
 
     def priority(self):
-        """Arbitrarily set to 1 to be materialized last among the charging-related ensembles."""
-        return 1
+        """Arbitrarily set to 2 to be materialized last among the charging-related ensembles (but before the field protection ensembles)."""
+        return 2
 
     # dynamic role
     drones: List[Drone] = someOf(Drone)
@@ -238,7 +239,7 @@ class AcceptedDronesAssignment(Ensemble):
         return 0, self.charger.acceptedCapacity
 
     @drones.select
-    def drones(self, drone, otherEnsembles):
+    def drones(self, drone: 'Drone', otherEnsembles):
         """
         Decides which drones should be accepted for charging.
 
@@ -250,7 +251,7 @@ class AcceptedDronesAssignment(Ensemble):
             self.charger.timeToDoneCharging(len(self.drones)) <= drone.timeToFlyToCharger()
 
     @drones.utility
-    def drones(self, drone):
+    def drones(self, drone: 'Drone'):
         """Orders the drones by the time needed to finish charging them (time to reach the charger + time to charge the battery). The drones accepted before have higher utility than all the new drones."""
         if drone in self.charger.acceptedDrones:
             return 1  # keep the accepted drones from previous time steps

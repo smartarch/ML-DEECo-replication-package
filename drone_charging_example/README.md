@@ -227,11 +227,11 @@ chargers are the components that provide energy to the drones. The capacity of c
 
 ### Field Protection
 
-The field protection ensemble manages the protection of the fields against the birds. There is one instance of the `FieldProtection` ensemble for each field on the map. The closest IDLE drones to the field become members of the ensemble and are assigned them to the fields. The fields are sorted based on the number of unprotected places they have; therefore, the priority goes as `number of protecting drones / current places`. In each time step the ensembles are resorted, and re-materialized to find the idle drones to protect the fields. 
+The field protection ensemble manages the protection of the fields against the birds. There is one instance of the `FieldProtection` ensemble for each field on the map. The closest IDLE drone to each field becomes member of the ensemble and is assigned the task to protect the field. The fields are sorted based on the number of unprotected places they have (which is the total number of places minus the number of protecting drones); therefore, the priority goes as `unprotected_places / places`. In each time step the ensembles are resorted, and re-materialized to find the idle drones to protect the fields. 
 
 ### Drone Charging
 
-Our example has three types of ensembles to perform the drone charging. The `DroneChargingPreAssignment` partitions the drones among the chargers, so that each drone is assigned to the closest charger. The `DroneChargingAssignment` selects the drones in need of charging, and the `AcceptedDronesAssignment` groups the drones which were assigned a slot at the charger &ndash; those start moving to the charger and start charging when they get there. Once on the charger, the drone will charge until its battery is and then its status changes to IDLE. A more detailed description of the ensembles is given later in the text.
+Our example has three types of ensembles to perform the drone charging. The `DroneChargingPreAssignment` partitions the drones among the chargers, so that each drone is assigned to the closest charger. The `DroneChargingAssignment` selects the drones in need of charging, and the `AcceptedDronesAssignment` groups the drones which were assigned a slot at the charger &ndash; those start moving to the charger and start charging when they get there. Once on the charger, the drone will charge until its battery is full and then its state changes to IDLE. A more detailed description of the ensembles is given later in the text.
 
 The following graph shows the cycle of a drone and how ensembles (colored as light orange) change course of the drone. However, an ensemble does not directly change the state of a drone, it rather sets for example the `target_field` attribute of the drone to command it to protect that field. Another example is that a drone could be in need of charging, but the charger is busy, so the drone will keep its current state (perhaps protecting the field) till the accepting ensemble signals that the charger is free now. For a better performance, the drones will start moving, when they know that by the time they reach the charger, the charger will be free.
 
@@ -241,9 +241,9 @@ The ensemble definitions are the same in both the baseline and machine-learning-
 
 #### DroneChargingPreAssignment
 
-Finds the closest charger to a drone in each time step. Technically, we have an instance of `DroneChargingPreAssignment` for each charger, so it groups the drones for which this charger is the closes.
+Finds the closest charger to a drone in each time step. Technically, we have an instance of `DroneChargingPreAssignment` for each charger, so it groups the drones for which this charger is the closest.
 
-#### DroneChargingAssignment 
+#### DroneChargingAssignment
 
 The ensemble groups the drones which need charging (again, we have an instance for each charger, and we only consider the drones already selected by the corresponding `DroneChargingPreAssignment`). The decision whether a drone needs charging is done as follows:
 
