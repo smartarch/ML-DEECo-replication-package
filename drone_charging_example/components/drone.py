@@ -135,13 +135,13 @@ class Drone(MovingComponent2D):
         """
         return self.timeToEnergy(self.timeToFlyToCharger(charger))
 
-    def computeBatteryAfterTime(self, time: int):
+    def computeBatteryAfterTime(self, time: float):
         """
         Computes the battery after given time (assuming the `self.droneMovingEnergyConsumption` energy consumption per time step).
 
         Parameters
         ----------
-        time : int
+        time : float
             Time steps.
 
         Returns
@@ -164,25 +164,27 @@ class Drone(MovingComponent2D):
         timeToCharge = (1 - batteryWhenGetToCharger) * self.closestCharger.chargingRate
         return self.timeToFlyToCharger() + timeToCharge
 
-    def needsCharging(self, timeToStartCharging: int) -> bool:
+    def needsCharging(self, waitingTime: float) -> bool:
         """
-        Checks if the drone needs charging assuming it will take `timeToStartCharging` time steps to get to the charger and start charging.
+        Checks if the drone needs charging assuming it will have to fly to the charger and wait there until it is available.
 
         Parameters
         ----------
-        timeToStartCharging : int
-            The time the drone needs to get to the charger (and possibly wait) and start charging.
+        waitingTime : float
+            The time the drone has to wait, after it gets to the charger, before it can start charging.
         """
         if self.state == DroneState.TERMINATED:
             return False
-        futureBattery = self.computeBatteryAfterTime(timeToStartCharging)
-        if futureBattery < 0:
+
+        if self.energyToFlyToCharger() > self.battery:  # the drone cannot be saved
             return False
+
+        futureBattery = self.computeBatteryAfterTime(self.timeToFlyToCharger() + waitingTime)
         return futureBattery < self.alert
 
     def checkBattery(self):
         """
-        It checks the battery if is below or equal to 0, it is assumed the drone is dead and it will get removed from the given tasks.
+        It checks the battery if is below or equal to 0, it is assumed the drone is dead, and it will get removed from the given tasks.
         """
         if self.battery <= 0:
             self.battery = 0

@@ -116,8 +116,7 @@ class DroneChargingAssignment(Ensemble):
             return False
 
         waitingTimeEstimate = self.drones.estimate(drone)
-        timeToFlyToCharger = drone.timeToFlyToCharger()
-        return drone.needsCharging(waitingTimeEstimate + timeToFlyToCharger)
+        return drone.needsCharging(waitingTimeEstimate)
 
     # region ML features
 
