@@ -250,8 +250,8 @@ def main():
                         choices=["baseline", "neural_network"],
                         help='The estimation model to be used for predicting charger waiting time.', required=False,
                         default="neural_network")
-    parser.add_argument('-d', '--accumulate_data', action='store_true', default=False,
-                        help='False = use only training data from last iteration.\nTrue = accumulate training data from all previous iterations.')
+    parser.add_argument('-d', '--accumulate_data', action='store', default=False, const=True, nargs="?", type=int,
+                        help='False = use only training data from last iteration.\nTrue = accumulate training data from all previous iterations.\n<number> = accumulate training data from last <number> iterations.')
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)

@@ -2,8 +2,11 @@
 # The environment and result folder are ignored
 env/
 /results/
-drone_charging_example/results/evaluation_local/
-drone_charging_example/results/16/
+drone_charging_example/results/*
+!drone_charging_example/results/evaluation
+!drone_charging_example/results/output
+!drone_charging_example/results/test_12_drones
+!drone_charging_example/results/vis_12drones
 .vscode/
 *.cmd
 
