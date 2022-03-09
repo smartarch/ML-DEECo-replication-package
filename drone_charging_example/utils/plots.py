@@ -1,39 +1,43 @@
+import csv
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+from pathlib import Path
 
 font = {'size': 12}
 
 matplotlib.rc('font', **font)
 
 
-def createLogPlot(log, averageLog, filename, title, size):
+def createLogPlot(records, averageRecords, filename, title, size, show=False):
     subtitles = [
         'Survived Drones',
         'Damage Rate'
     ]
     colors = [
-        'orange',
-        'blue',
+        'tab:blue',
+        'tab:orange',
     ]
     allX = np.arange(1, (size[0] * size[1]) + 1)
-    allXLabels = [record[-1] for record in log.records]
+    allXLabels = [int(record[-1]) for record in records]
 
     avX = np.concatenate([
         np.array([1]),
         np.linspace(size[0] + 0.5, ((size[1] - 1) * size[0]) + 0.5, size[1] - 1)
     ])
-    avXLabels = ['Baseline'] + [f"Train {i + 1}" for i in range(size[1] - 1)]
+    avXLabels = ['Baseline'] + [f"Training {i + 1}" for i in range(size[1] - 1)]
 
     mainY = [
-        [record[0] for record in log.records],
-        [record[3] for record in log.records]
+        [record[0] for record in records],
+        [record[3] for record in records]
     ]
 
     averageY = []
     averageSurvived = []
     averageDamage = []
-    for record in averageLog.records:
+    for record in averageRecords:
         for t in range(size[0]):
             averageSurvived.append(record[0])
             averageDamage.append(record[3])
@@ -43,29 +47,34 @@ def createLogPlot(log, averageLog, filename, title, size):
     fig, axs = plt.subplots(2, 1, figsize=(size[1] + 4, size[1] + 4))
 
     for i in range(2):
+        legend = [None] * 4
         twin = axs[i].twiny()
         if size[1] > 1:
+            legend[0] = axs[i].plot(allX, mainY[i], color=colors[0], label="ML-based", marker="o", linestyle="None")
+            legend[1] = twin.plot(allX, averageY[i], color=colors[0], label="ML-based – Average", linestyle="dashed")
             yLines = np.linspace(size[0] + 0.5, ((size[1] - 1) * size[0]) + 0.5, size[1] - 1)
-            axs[i].plot(allX, mainY[i], color=colors[0], label="ML Based", linestyle="solid")
-            twin.plot(allX, averageY[i], color=colors[0], label="ML Based - Average", linestyle="dashed")
             axs[i].vlines(x=yLines, colors='black', ymin=0, ymax=max(mainY[i]), linestyle='dotted')
 
-        axs[i].plot(allX[:size[0] + 1], mainY[i][:size[0] + 1], color=colors[1], label="Baseline", linestyle="solid")
-        twin.plot(allX[:size[0] + 1], averageY[i][:size[0] + 1], color=colors[1], label="Baseline - Average", linestyle="dashed")
+        legend[2] = axs[i].plot(allX[:size[0]], mainY[i][:size[0]], color=colors[1], label="Baseline", marker="o", linestyle="None")
+        legend[3] = twin.plot(allX[[0, -1]], averageY[i][:2], color=colors[1], label="Baseline – Average", linestyle="dashed")
 
         axs[i].set_xticks(allX, labels=allXLabels)
         axs[i].set_xlabel("Runs")
         twin.set_xticks(avX, labels=avXLabels)
-        twin.set_xlabel("Trains")
+        twin.set_xlabel("Trainings")
 
         axs[i].set_ylabel(subtitles[i])
-        axs[i].legend(loc='lower right')
-        twin.legend(loc='lower left')
+        # axs[i].legend(loc='lower right')
+        # twin.legend(loc='lower left')
+        lines = [line for lines in legend if lines is not None for line in lines]
+        labels = [line.get_label() for line in lines]
+        axs[i].legend(lines, labels)
 
     fig.suptitle(title, fontsize=12)
     fig.tight_layout()
     plt.savefig(filename)
-    plt.show()
+    if show:
+        plt.show()
     plt.close(fig)
 
 
@@ -98,3 +107,24 @@ def createChargerPlot(logs, filename, title):
     plt.savefig(filename + ".png", dpi=600)
     # plt.show()
     plt.close(fig)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('folder', type=str)
+    args = parser.parse_args()
+
+    folder = Path(args.folder)
+    for file in folder.glob("*.csv"):
+        with open(file, newline="") as csvfile:
+            reader = csv.reader(csvfile)
+            if "average" in file.name:
+                average = list(reader)
+            else:
+                log = list(reader)
+                world = file.name.split("_")[0]
+
+    log = np.array(log[1:], dtype=np.float32)
+    average = np.array(average[1:], dtype=np.float32)
+    size = (int(log[:, -1].max()), int(log[:, -2].max()))
+    createLogPlot(log, average, folder / "plot", f"World: {world}\nEstimator: Neural network [256, 256]", size, True)

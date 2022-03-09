@@ -114,14 +114,13 @@ def run(args):
     totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
     averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
 
-    if args.chart:
-        plots.createLogPlot(
-            totalLog,
-            averageLog,
-            f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
-            f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
-            (args.number, args.train)
-        )
+    plots.createLogPlot(
+        totalLog.records,
+        averageLog.records,
+        f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
+        f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
+        (args.number, args.train)
+    )
     return averageLog
 
 
