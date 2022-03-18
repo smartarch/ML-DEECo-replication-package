@@ -14,7 +14,7 @@ There are several folders in this repository:
 
 ## Limitations and Threats to Validity
 
-We list the most important ones below. We organize the threats to validity based on the schema in~\cite{runeson_guidelines_2009}, where the validity classes are defined as follows:
+We list the most important ones below. We organize the threats to validity based on the schema in [RH2009], where the validity classes are defined as follows:
  * construct validity,
  * internal validity,
  * external validity, and
@@ -27,3 +27,6 @@ We list the most important ones below. We organize the threats to validity based
 *External validity:* We attempted to ensure our solution is general by basing it on the taxonomy of predictions (Section III.A}), which is independent of our running example and is built as a combination of generally accepted abstractions. However, the use case we show and the simulation we did cannot by themselves guarantee generalizability. They serve rather as proof of feasibility. To show the full generalizability of our results, we would have to apply our approach on larger case studies. This is beyond the scope of this paper and constitutes future work.
 
 *Reliability:* Though coming from an EU project with multiple partners, the implementation of the use-case we used for demonstration was created by us, including the baseline and the ML-based solution. This makes our results dependent on us. We ensured the difference between the baseline and the ML-based solution is only in the use of the estimator. However, this still makes our results only an indicator of the potential improvement and a feasibility case. They do not permit quantification of an expected improvement in other applications.
+
+
+[RH2009]  P. Runeson and M. Höst, “Guidelines for conducting and reporting case study research in software engineering,” Empirical Software Engineering, vol. 14, no. 2, pp. 131–164, Apr. 2009. 
