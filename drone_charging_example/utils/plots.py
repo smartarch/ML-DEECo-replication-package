@@ -6,12 +6,14 @@ import numpy as np
 import argparse
 from pathlib import Path
 
+from matplotlib.lines import Line2D
+
 font = {'size': 12}
 
 matplotlib.rc('font', **font)
 
 
-def createLogPlot(records, averageRecords, filename, title, size, show=False, baseline100=None):
+def createLogPlot(records, averageRecords, filename, title, size, show=False, baseline100=None, figsize=None):
     subtitles = [
         'Survived Drones',
         'Damage Rate'
@@ -55,23 +57,25 @@ def createLogPlot(records, averageRecords, filename, title, size, show=False, ba
             [record[3] for record in baseline100[1]] * 2,
         ]
 
-    fig, axs = plt.subplots(2, 1, figsize=(size[1] + 4, size[1] + 4))
+    if not figsize:
+        figsize = (size[1] + 4, size[1] + 4)
+    fig, axs = plt.subplots(2, 1, figsize=figsize)
 
     for i in range(2):
         legend = []
         twin = axs[i].twiny()
         if size[1] > 1:
             legend.append(axs[i].plot(allX, mainY[i], color=colors[0], label="ML-based", marker="o", linestyle="None"))
-            legend.append(twin.plot(allX, averageY[i], color=colors[0], label="ML-based – Average", linestyle="dashed"))
+            twin.plot(allX, averageY[i], color=colors[0], label="ML-based – Average", linestyle="dashed")
             yLines = np.linspace(size[0] + 0.5, ((size[1] - 1) * size[0]) + 0.5, size[1] - 1)
             axs[i].vlines(x=yLines, colors='black', ymin=0, ymax=max(mainY[i]), linestyle='dotted')
 
         legend.append(axs[i].plot(allX[:size[0]], mainY[i][:size[0]], color=colors[1], label="Baseline 0", marker="o", linestyle="None"))
-        legend.append(twin.plot(allX[[0, -1]], averageY[i][:2], color=colors[1], label="Baseline 0 – Average", linestyle="dashed"))
+        twin.plot(allX[[0, -1]], averageY[i][:2], color=colors[1], label="Baseline 0 – Average", linestyle="dashed")
 
         if baseline100:
             legend.append(axs[i].plot(allX[:size[0]], baseline100main[i], color=colors[2], label="Baseline 100", marker="o", linestyle="None"))
-            legend.append(twin.plot(allX[[0, -1]], baseline100avg[i], color=colors[2], label="Baseline 100 – Average", linestyle="dashed"))
+            twin.plot(allX[[0, -1]], baseline100avg[i], color=colors[2], label="Baseline 100 – Average", linestyle="dashed")
 
         axs[i].set_xticks(allX, labels=allXLabels)
         axs[i].set_xlabel("Runs")
@@ -81,7 +85,8 @@ def createLogPlot(records, averageRecords, filename, title, size, show=False, ba
         axs[i].set_ylabel(subtitles[i])
         # axs[i].legend(loc='lower right')
         # twin.legend(loc='lower left')
-        lines = [line for lines in legend if lines is not None for line in lines]
+        legend.append([Line2D([0], [0], color="lightgrey", label="Average", linestyle="dashed")])
+        lines = [line for lines in legend for line in lines]
         labels = [line.get_label() for line in lines]
         twin.legend(lines, labels)
 
@@ -128,6 +133,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('folder', type=str)
     parser.add_argument('--baseline', '-b', action='store_true', default=False)
+    parser.add_argument('--show', '-s', action='store_true', default=False)
     args = parser.parse_args()
 
     folder = Path(args.folder)
@@ -158,4 +164,4 @@ if __name__ == "__main__":
     log = np.array(log[1:], dtype=np.float32)
     average = np.array(average[1:], dtype=np.float32)
     size = (int(log[:, -1].max()), int(log[:, -2].max()))
-    createLogPlot(log, average, folder / "plot", f"World: {world}\nEstimator: Neural network [256, 256]", size, True, baseline)
+    createLogPlot(log, average, folder / "plot", f"World: {world}\nEstimator: Neural network [256, 256]", size, args.show, baseline, figsize=(12, 9))
