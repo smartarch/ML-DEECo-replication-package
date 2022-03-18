@@ -40,7 +40,7 @@ class FieldProtection(Ensemble):
         unprotectedPlaces = places - protectedPlaces
         return unprotectedPlaces / places
 
-    def canMaterialize(self):
+    def situation(self):
         """Only materialize the ensemble if we don't have enough protecting drones."""
         return len(self.field.protectingDrones) < len(self.field.places)
 

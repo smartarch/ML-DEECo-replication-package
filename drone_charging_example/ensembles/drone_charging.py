@@ -49,11 +49,6 @@ class DroneChargingPreAssignment(Ensemble):
     # dynamic role
     drones: List[Drone] = someOf(Drone)
 
-    @drones.cardinality
-    def drones(self):
-        """Unlimited cardinality. Any number of drones can be selected for the role."""
-        return 0, ENVIRONMENT.droneCount
-
     @drones.select
     def drones(self, drone: 'Drone', otherEnsembles):
         """Drone can be selected if not terminated, not charging and the charger is the closest one."""
@@ -97,11 +92,6 @@ class DroneChargingAssignment(Ensemble):
 
     # dynamic role with estimate
     drones: List[Drone] = someOf(Drone).withTimeEstimate().using(WORLD.waitingTimeEstimator)
-
-    @drones.cardinality
-    def drones(self):
-        """Unlimited cardinality. Any number of drones can be selected for the role."""
-        return 0, ENVIRONMENT.droneCount
 
     @drones.select
     def drones(self, drone: 'Drone', otherEnsembles):
