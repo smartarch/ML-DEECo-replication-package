@@ -1,6 +1,7 @@
 import random
 from typing import Optional, TYPE_CHECKING
 from components.drone_state import DroneState
+from ml_deeco.estimators import ValueEstimate, NumericFeature, CategoricalFeature, NoEstimator
 from world import ENVIRONMENT, WORLD
 from ml_deeco.simulation import MovingComponent2D
 if TYPE_CHECKING:
@@ -60,6 +61,7 @@ class Drone(MovingComponent2D):
         self.targetCharger: Optional[Charger] = None
         self.closestCharger: Optional[Charger] = None
         self.alert = 0.1
+        self.wasCharged = False
         super().__init__(location, ENVIRONMENT.droneSpeed)
 
     @property
@@ -69,6 +71,34 @@ class Drone(MovingComponent2D):
     @state.setter
     def state(self, value: DroneState):
         self._state = value
+        if value == DroneState.CHARGING:
+            self.wasCharged = True
+
+    # region battery after time estimate
+
+    batteryAfterTime = ValueEstimate().inTimeStepsRange(1, 100, trainingPercentage=0.3).using(WORLD.batteryEstimator)
+    # TODO: .withBaseline(_func_) -> method to use before first training
+
+    @batteryAfterTime.input()
+    @batteryAfterTime.target()  # NumericFeature(0, 1)
+    def drone_battery(self):
+        return self.battery
+
+    # @batteryAfterTime.input(CategoricalFeature(DroneState))
+    # def drone_state(self):
+    #     return self.state
+
+    @batteryAfterTime.inputsValid
+    def not_terminated(self):
+        return self.state != DroneState.TERMINATED
+
+    @batteryAfterTime.targetsValid
+    def was_never_charged(self):
+        return not self.wasCharged
+
+    # endregion
+
+    # region helper functions
 
     def timeToEnergy(self, time, consumptionRate=None):
         """
@@ -151,6 +181,8 @@ class Drone(MovingComponent2D):
         """
         return self.battery - self.timeToEnergy(time)
 
+    # endregion
+
     def timeToDoneCharging(self):
         """
         Computes how long it will take to fly to the closest charger and get fully charged, assuming the charger is free.
@@ -179,7 +211,11 @@ class Drone(MovingComponent2D):
         if self.energyToFlyToCharger() > self.battery:  # the drone cannot be saved
             return False
 
-        futureBattery = self.computeBatteryAfterTime(self.timeToFlyToCharger() + waitingTime)
+        if isinstance(WORLD.batteryEstimator, NoEstimator) or WORLD.useBaselineForBattery:  # baseline
+            futureBattery = self.computeBatteryAfterTime(self.timeToFlyToCharger() + waitingTime)
+        else:  # neural network
+            futureBattery = self.batteryAfterTime(self.timeToFlyToCharger() + waitingTime)
+
         return futureBattery < self.alert
 
     def checkBattery(self):

@@ -255,14 +255,10 @@ class AcceptedDronesAssignment(Ensemble):
             drone.targetCharger = self.charger
 
 
-ensembles: List[Ensemble]
-
-
 def getEnsembles() -> List[Ensemble]:
     """
     One instance of each ensemble type for each charger.
     """
-    global ensembles
 
     ensembles = \
         [DroneChargingPreAssignment(charger) for charger in WORLD.chargers] + \

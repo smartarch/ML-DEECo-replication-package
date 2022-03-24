@@ -48,16 +48,18 @@ def run(args):
 
     folder, yamlFileName = prepareFoldersForResults(args)
     estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
+    estBatteryFolder = f"{folder}\\battery"
 
     averageLog, totalLog = createLogs()
     visualizer: Optional[Visualizer] = None
 
-    waitingTimeEstimator = createEstimators(args, folder, estWaitingFolder)
+    waitingTimeEstimator = createEstimators(args, folder, estWaitingFolder, estBatteryFolder)
     WORLD.initEstimators()
 
-    def prepareSimulation(i, s):
+    def prepareSimulation(iteration, s):
         """Prepares the _Simulation_ (formerly known as _Run_)."""
         components, ensembles = WORLD.reset()
+        WORLD.useBaselineForBattery = iteration == 0
         if args.animation:
             nonlocal visualizer
             visualizer = Visualizer(WORLD)
@@ -190,7 +192,7 @@ def prepareFoldersForResults(args):
     return folder, yamlFileName
 
 
-def createEstimators(args, folder, estWaitingFolder):
+def createEstimators(args, folder, estWaitingFolder, estBatteryFolder):
     # create the estimators
     commonArgs = {
         "accumulateData": args.accumulate_data,
@@ -200,6 +202,10 @@ def createEstimators(args, folder, estWaitingFolder):
     waitingTimeEstimatorArgs = {
         "outputFolder": estWaitingFolder,
         "name": "Waiting Time",
+    }
+    batteryEstimatorArgs = {
+        "outputFolder": estBatteryFolder,
+        "name": "Battery",
     }
     if args.waiting_estimation == "baseline":
         waitingTimeEstimator = ConstantEstimator(args.baseline, **waitingTimeEstimatorArgs, **commonArgs)
@@ -214,6 +220,14 @@ def createEstimators(args, folder, estWaitingFolder):
         )
         if args.load != "":
             waitingTimeEstimator.loadModel(args.load)
+        WORLD.batteryEstimator = NeuralNetworkEstimator(
+            args.hidden_layers,
+            fit_params={
+                "batch_size": 256,
+            },
+            **batteryEstimatorArgs,
+            **commonArgs,
+        )
 
     WORLD.waitingTimeEstimator = waitingTimeEstimator
     return waitingTimeEstimator
@@ -249,12 +263,16 @@ def main():
                         choices=["baseline", "neural_network"],
                         help='The estimation model to be used for predicting charger waiting time.', required=False,
                         default="neural_network")
+    parser.add_argument('-bat', '--battery_estimation', type=str,
+                        choices=["baseline", "neural_network"],
+                        help='The estimation model to be used for predicting future battery of drone.', required=False,
+                        default="neural_network")
     parser.add_argument('-d', '--accumulate_data', action='store', default=False, const=True, nargs="?", type=int,
                         help='False = use only training data from last iteration.\nTrue = accumulate training data from all previous iterations.\n<number> = accumulate training data from last <number> iterations.')
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
     parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
-    parser.add_argument('-b', '--baseline', type=int, help='Constant for baseline.', required=False, default=0)
+    parser.add_argument('-b', '--baseline', type=int, help='Constant for waiting time baseline.', required=False, default=0)
     parser.add_argument('-l', '--load', type=str, help='Load the model from a file.', required=False, default="")
     parser.add_argument('--threads', type=int, help='Number of CPU threads TF can use.', required=False, default=4)
     args = parser.parse_args()

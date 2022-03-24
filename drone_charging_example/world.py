@@ -1,7 +1,8 @@
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional
 
 from ml_deeco.simulation import SIMULATION_GLOBALS
 from ml_deeco.utils import Log
+from ml_deeco.estimators import NoEstimator
 
 if TYPE_CHECKING:
     from ml_deeco.estimators import Estimator
@@ -61,11 +62,13 @@ class World:
     """
     The simulated world.
     """
-    waitingTimeEstimator: 'Estimator'
 
     def __init__(self):
         if 'WORLD' in locals():
             raise RuntimeError("Do not create a new instance of the World. Use the WORLD global variable instead.")
+        waitingTimeEstimator: 'Estimator'
+        batteryEstimator: 'Estimator' = NoEstimator()
+        useBaselineForBattery = False
 
     @staticmethod
     def initEstimators():
