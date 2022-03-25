@@ -90,8 +90,14 @@ class DroneChargingAssignment(Ensemble):
         """Arbitrarily set to 3 to be materialized second among the charging-related ensembles."""
         return 3
 
+    def waitingTimeBaseline(self, drone):
+        return WORLD.waitingTimeBaseline
+
     # dynamic role with estimate
-    drones: List[Drone] = someOf(Drone).withTimeEstimate().using(WORLD.waitingTimeEstimator)
+    drones: List[Drone] = someOf(Drone)\
+        .withTimeEstimate()\
+        .using(WORLD.waitingTimeEstimator)\
+        .withBaseline(waitingTimeBaseline)
 
     @drones.select
     def drones(self, drone: 'Drone', otherEnsembles):

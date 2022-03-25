@@ -70,8 +70,8 @@ def createLogPlot(records, averageRecords, filename, title, size, show=False, ba
             yLines = np.linspace(size[0] + 0.5, ((size[1] - 1) * size[0]) + 0.5, size[1] - 1)
             axs[i].vlines(x=yLines, colors='black', ymin=0, ymax=max(mainY[i]), linestyle='dotted')
 
-        legend.append(axs[i].plot(allX[:size[0]], mainY[i][:size[0]], color=colors[1], label="Baseline 0", marker="o", linestyle="None"))
-        twin.plot(allX[[0, -1]], averageY[i][:2], color=colors[1], label="Baseline 0 – Average", linestyle="dashed")
+        legend.append(axs[i].plot(allX[:size[0]], mainY[i][:size[0]], color=colors[1], label="Baseline", marker="o", linestyle="None"))
+        twin.plot(allX[[0, -1]], averageY[i][:2], color=colors[1], label="Baseline – Average", linestyle="dashed")
 
         if baseline100:
             legend.append(axs[i].plot(allX[:size[0]], baseline100main[i], color=colors[2], label="Baseline 100", marker="o", linestyle="None"))

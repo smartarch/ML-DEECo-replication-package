@@ -10,7 +10,6 @@ except ImportError:
     from yaml import Loader, Dumper
 import os
 import argparse
-from datetime import datetime
 import random
 import numpy as np
 import math
@@ -32,7 +31,7 @@ from ml_deeco.utils import setVerboseLevel, verbosePrint, Log
 
 def run(args):
     """
-    Runs `args.trains` times _iteration_ of [`args.number` times _simulation_ + 1 training].
+    Runs `args.iterations` times _iteration_ of [`args.simulations` times _simulation_ + 1 training].
     """
 
     # Fix random seeds
@@ -47,19 +46,16 @@ def run(args):
     yamlObject = loadConfig(args)
 
     folder, yamlFileName = prepareFoldersForResults(args)
-    estWaitingFolder = f"{folder}\\{args.waiting_estimation}"
-    estBatteryFolder = f"{folder}\\battery"
 
     averageLog, totalLog = createLogs()
     visualizer: Optional[Visualizer] = None
 
-    waitingTimeEstimator = createEstimators(args, folder, estWaitingFolder, estBatteryFolder)
+    createEstimators(args, folder)
     WORLD.initEstimators()
 
     def prepareSimulation(iteration, s):
         """Prepares the _Simulation_ (formerly known as _Run_)."""
         components, ensembles = WORLD.reset()
-        WORLD.useBaselineForBattery = iteration == 0
         if args.animation:
             nonlocal visualizer
             visualizer = Visualizer(WORLD)
@@ -98,30 +94,30 @@ def run(args):
             plots.createChargerPlot(
                 WORLD.chargerLogs,
                 f"{folder}\\charger_logs\\{yamlFileName}_{str(t + 1)}_{str(i + 1)}",
-                f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
+                f"World: {yamlFileName}\n Run: {i + 1} in training {t + 1}\nCharger Queues")
             verbosePrint(f"Charger plot saved.", 3)
 
     def iterationCallback(t):
         """Aggregate statistics from all _Simulations_ in one _Iteration_."""
 
         # calculate the average rate
-        averageLog.register(totalLog.average(t * args.number, (t + 1) * args.number))
+        averageLog.register(totalLog.average(t * args.simulations, (t + 1) * args.simulations))
 
         for estimator in SIMULATION_GLOBALS.estimators:
             estimator.saveModel(t + 1)
 
-    run_experiment(args.train, args.number, ENVIRONMENT.maxSteps, prepareSimulation,
+    run_experiment(args.iterations, args.simulations, ENVIRONMENT.maxSteps, prepareSimulation,
                    iterationCallback=iterationCallback, simulationCallback=simulationCallback, stepCallback=stepCallback)
 
-    totalLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}.csv")
-    averageLog.export(f"{folder}\\{yamlFileName}_{args.waiting_estimation}_average.csv")
+    totalLog.export(f"{folder}\\{yamlFileName}.csv")
+    averageLog.export(f"{folder}\\{yamlFileName}_average.csv")
 
     plots.createLogPlot(
         totalLog.records,
         averageLog.records,
-        f"{folder}\\{yamlFileName}_{args.waiting_estimation}.png",
-        f"World: {yamlFileName}\nEstimator: {waitingTimeEstimator.estimatorName}",
-        (args.number, args.train)
+        f"{folder}\\{yamlFileName}.png",
+        f"World: {yamlFileName}",
+        (args.simulations, args.iterations)
     )
     return averageLog
 
@@ -192,45 +188,34 @@ def prepareFoldersForResults(args):
     return folder, yamlFileName
 
 
-def createEstimators(args, folder, estWaitingFolder, estBatteryFolder):
+def createEstimators(args, folder):
     # create the estimators
     commonArgs = {
         "accumulateData": args.accumulate_data,
         "saveCharts": args.chart,
         "testSplit": args.test_split,
     }
-    waitingTimeEstimatorArgs = {
-        "outputFolder": estWaitingFolder,
-        "name": "Waiting Time",
-    }
-    batteryEstimatorArgs = {
-        "outputFolder": estBatteryFolder,
-        "name": "Battery",
-    }
-    if args.waiting_estimation == "baseline":
-        waitingTimeEstimator = ConstantEstimator(args.baseline, **waitingTimeEstimatorArgs, **commonArgs)
-    else:
-        waitingTimeEstimator = NeuralNetworkEstimator(
-            args.hidden_layers,
-            fit_params={
-                "batch_size": 256,
-            },
-            **waitingTimeEstimatorArgs,
-            **commonArgs,
-        )
-        if args.load != "":
-            waitingTimeEstimator.loadModel(args.load)
-        WORLD.batteryEstimator = NeuralNetworkEstimator(
-            args.hidden_layers,
-            fit_params={
-                "batch_size": 256,
-            },
-            **batteryEstimatorArgs,
-            **commonArgs,
-        )
-
-    WORLD.waitingTimeEstimator = waitingTimeEstimator
-    return waitingTimeEstimator
+    WORLD.waitingTimeEstimator = NeuralNetworkEstimator(
+        args.hidden_layers,
+        fit_params={
+            "batch_size": 256,
+        },
+        outputFolder=f"{folder}\\waiting_time",
+        name="Waiting Time",
+        **commonArgs,
+    )
+    WORLD.waitingTimeBaseline = args.baseline
+    # if args.load != "":
+    #     waitingTimeEstimator.loadModel(args.load)
+    WORLD.batteryEstimator = NeuralNetworkEstimator(
+        args.hidden_layers,
+        fit_params={
+            "batch_size": 256,
+        },
+        outputFolder=f"{folder}\\battery",
+        name="Battery",
+        **commonArgs,
+    )
 
 
 def collectStatistics(train, iteration):
@@ -251,37 +236,35 @@ def collectStatistics(train, iteration):
 def main():
     parser = argparse.ArgumentParser(description='Process YAML source file (S) and run the simulation (N) Times with Model M.')
     parser.add_argument('input', type=str, help='YAML address to be run.')
-    parser.add_argument('-x', '--birds', type=int, help='number of birds, if no set, it loads from yaml file.', required=False, default=-1)
-    parser.add_argument('-n', '--number', type=int, help='the number of simulation runs per training.', required=False, default="1")
-    parser.add_argument('-t', '--train', type=int, help='the number of trainings to be performed.', required=False, default="1")
+
+    parser.add_argument('-i', '--iterations', type=int, help='The number of iterations (trainings) to be performed.', required=False, default="1")
+    parser.add_argument('-s', '--simulations', type=int, help='The number of simulation runs per iteration.', required=False, default="1")
+
     parser.add_argument('-o', '--output', type=str, help='the output folder', required=False, default="output")
     parser.add_argument('-v', '--verbose', type=int, help='the verboseness between 0 and 4.', required=False, default="0")
     parser.add_argument('-a', '--animation', action='store_true', default=False,
                         help='toggles saving the final results as a GIF animation.')
     parser.add_argument('-c', '--chart', action='store_true', default=False, help='toggles saving and showing the charts.')
-    parser.add_argument('-w', '--waiting_estimation', type=str,
-                        choices=["baseline", "neural_network"],
-                        help='The estimation model to be used for predicting charger waiting time.', required=False,
-                        default="neural_network")
-    parser.add_argument('-bat', '--battery_estimation', type=str,
-                        choices=["baseline", "neural_network"],
-                        help='The estimation model to be used for predicting future battery of drone.', required=False,
-                        default="neural_network")
+
     parser.add_argument('-d', '--accumulate_data', action='store', default=False, const=True, nargs="?", type=int,
                         help='False = use only training data from last iteration.\nTrue = accumulate training data from all previous iterations.\n<number> = accumulate training data from last <number> iterations.')
     parser.add_argument('--test_split', type=float, help='Number of records used for evaluation.', required=False, default=0.2)
     parser.add_argument('--hidden_layers', nargs="+", type=int, default=[256, 256], help='Number of neurons in hidden layers.')
-    parser.add_argument('-s', '--seed', type=int, help='Random seed.', required=False, default=42)
     parser.add_argument('-b', '--baseline', type=int, help='Constant for waiting time baseline.', required=False, default=0)
-    parser.add_argument('-l', '--load', type=str, help='Load the model from a file.', required=False, default="")
+
+    parser.add_argument('--seed', type=int, help='Random seed.', required=False, default=42)
     parser.add_argument('--threads', type=int, help='Number of CPU threads TF can use.', required=False, default=4)
+    # parser.add_argument('-l', '--load', type=str, help='Load the model from a file.', required=False, default="")  # TODO: split for waiting time and battery
+
+    parser.add_argument('-x', '--birds', type=int, help='number of birds, if no set, it loads from yaml file.', required=False, default=-1)
     args = parser.parse_args()
 
-    number = args.number
     setVerboseLevel(args.verbose)
 
-    if number <= 0:
-        raise argparse.ArgumentTypeError(f"{number} is an invalid positive int value")
+    if args.iterations <= 0:
+        raise argparse.ArgumentTypeError(f"Number of iterations must be positive: {args.iterations}")
+    if args.simulations <= 0:
+        raise argparse.ArgumentTypeError(f"Number of simulations must be positive: {args.simulations}")
 
     run(args)
 

@@ -67,8 +67,8 @@ class World:
         if 'WORLD' in locals():
             raise RuntimeError("Do not create a new instance of the World. Use the WORLD global variable instead.")
         waitingTimeEstimator: 'Estimator'
-        batteryEstimator: 'Estimator' = NoEstimator()
-        useBaselineForBattery = False
+        waitingTimeBaseline = 0
+        batteryEstimator: 'Estimator'
 
     @staticmethod
     def initEstimators():
