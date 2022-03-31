@@ -3,7 +3,8 @@ from typing import Optional, TYPE_CHECKING
 from components.drone_state import DroneState
 from ml_deeco.estimators import ValueEstimate, NumericFeature, CategoricalFeature, NoEstimator
 from world import ENVIRONMENT, WORLD
-from ml_deeco.simulation import MovingComponent2D
+from ml_deeco.simulation import MovingComponent2D, SIMULATION_GLOBALS
+
 if TYPE_CHECKING:
     from components.charger import Charger
 
@@ -61,7 +62,7 @@ class Drone(MovingComponent2D):
         self.targetCharger: Optional[Charger] = None
         self.closestCharger: Optional[Charger] = None
         self.alert = 0.1
-        self.wasCharged = False
+        self.lastChargingTime = -1
         super().__init__(location, ENVIRONMENT.droneSpeed)
 
     @property
@@ -71,8 +72,6 @@ class Drone(MovingComponent2D):
     @state.setter
     def state(self, value: DroneState):
         self._state = value
-        if value == DroneState.CHARGING:
-            self.wasCharged = True
 
     # region battery estimate
 
@@ -92,8 +91,9 @@ class Drone(MovingComponent2D):
         """
         return self.battery - self.timeToEnergy(time)
 
-    batteryAfterTime = ValueEstimate().using(WORLD.batteryEstimator)\
+    batteryAfterTime = ValueEstimate()\
         .inTimeStepsRange(1, 100, trainingPercentage=0.3)\
+        .using(WORLD.batteryEstimator)\
         .withBaseline(computeBatteryAfterTime)
 
     @batteryAfterTime.input()
@@ -110,9 +110,13 @@ class Drone(MovingComponent2D):
     def not_terminated(self):
         return self.state != DroneState.TERMINATED
 
-    @batteryAfterTime.targetsValid
-    def was_never_charged(self):
-        return not self.wasCharged
+    @batteryAfterTime.extra
+    def current_time(self):
+        return SIMULATION_GLOBALS.currentTimeStep
+
+    @batteryAfterTime.recordValid
+    def not_charging(self, x, y, extra):  # TODO: refactor to use inputs and targets before preprocessing, allow variable number of parameters
+        return extra['current_time'] >= self.lastChargingTime
 
     # endregion
 
@@ -269,6 +273,9 @@ class Drone(MovingComponent2D):
                 self.battery = self.battery - self.droneProtectingEnergyConsumption
             else:
                 self.move()
+
+        if self.state == DroneState.CHARGING:
+            self.lastChargingTime = self.current_time()
 
         self.checkBattery()
 
