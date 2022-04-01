@@ -92,7 +92,7 @@ class Drone(MovingComponent2D):
         return self.battery - self.timeToEnergy(time)
 
     batteryAfterTime = ValueEstimate()\
-        .inTimeStepsRange(1, 100, trainingPercentage=0.3)\
+        .inTimeStepsRange(1, 100, trainingPercentage=0.1)\
         .using(WORLD.batteryEstimator)\
         .withBaseline(computeBatteryAfterTime)
 
@@ -115,7 +115,7 @@ class Drone(MovingComponent2D):
         return SIMULATION_GLOBALS.currentTimeStep
 
     @batteryAfterTime.recordValid
-    def not_charging(self, x, y, extra):  # TODO: refactor to use inputs and targets before preprocessing, allow variable number of parameters
+    def not_charging(self, inputs, targets, extra):
         return extra['current_time'] >= self.lastChargingTime
 
     # endregion
