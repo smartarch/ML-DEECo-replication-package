@@ -5,7 +5,7 @@ In this broad example, we provide a simulation that runs a system which protects
 - [Installation](#installation)
 - [Usage](#usage)
 - [YAML Experiments](#yaml-experiments)
-- [Simulation Components](#simulation-components)
+- [Simulation &ndash; Components and Ensembles](#simulation-ndash-components-and-ensembles)
 
 ## Installation
 To run the example, some libraries must be installed. The installation requires `Python 3` and `pip`. If you have `pip` installed skip to - [Package Installation](#package-installation).

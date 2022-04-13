@@ -2,6 +2,8 @@
 
 This is an accompanying repository to the paper *ML-DEECo: Machine Learning-enabled Component Model for Dynamically Adapting Systems* by Milad Abdullah, Michal Töpfer, Tomáš Bureš, Petr Hnětynka, Martin Kruliš, and František Plášil.
 
+It also serves as a replication package for Master thesis *Machine-learning-based self-adaptation of component ensembles* by Michal Töpfer.
+
 ## Contents
 
 There are several folders in this repository:
@@ -97,4 +99,5 @@ We list the most important ones below. We organize the threats to validity based
 
 
 [RH2009]  P. Runeson and M. Höst, “Guidelines for conducting and reporting case study research in software engineering,” Empirical Software Engineering, vol. 14, no. 2, pp. 131–164, Apr. 2009.
+
 [B2013] Tomas Bures, Ilias Gerostathopoulos, Petr Hnetynka, Jaroslav Keznikl, Michal Kit, and Frantisek Plasil. 2013. DEECO: an ensemble-based component system. In Proceedings of the 16th International ACM Sigsoft symposium on Component-based software engineering (CBSE '13). Association for Computing Machinery, New York, NY, USA, 81–90. DOI:https://doi.org/10.1145/2465449.2465462
