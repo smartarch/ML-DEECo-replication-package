@@ -128,9 +128,9 @@ We list the most important ones below. We organize the threats to validity based
 *Reliability:* Though coming from an EU project with multiple partners, the implementation of the use-case we used for demonstration was created by us, including the baseline and the ML-based solution. This makes our results dependent on us. We ensured the difference between the baseline and the ML-based solution is only in the use of the estimator. However, this still makes our results only an indicator of the potential improvement and a feasibility case. They do not permit quantification of an expected improvement in other applications.
 
 
-[RH2009]:  P. Runeson and M. Höst, “Guidelines for conducting and reporting case study research in software engineering,” Empirical Software Engineering, vol. 14, no. 2, pp. 131–164, Apr. 2009.
+[^RH2009]: P. Runeson and M. Höst, “Guidelines for conducting and reporting case study research in software engineering,” Empirical Software Engineering, vol. 14, no. 2, pp. 131–164, Apr. 2009.
 
-[BGH+B2013]: T. Bures, I. Gerostathopoulos, P. Hnetynka, J. Keznikl, Michal Kit, and F. Plasil, “DEECO: an ensemble-based component system,“ In Proceedings of CBSE 2013, Vancouver, Canada, pp. 81–90., 2013, DOI:https://doi.org/10.1145/2465449.2465462
+[^BGH+2013]: T. Bures, I. Gerostathopoulos, P. Hnetynka, J. Keznikl, Michal Kit, and F. Plasil, “DEECO: an ensemble-based component system,“ In Proceedings of CBSE 2013, Vancouver, Canada, pp. 81–90., 2013, DOI:https://doi.org/10.1145/2465449.2465462
 
 [^1]: In our previous works, we were using the Scala-based DSL for ensembles specification. While the Scala language allows for much higher flexibility in designing DSLs, Python has better support in the area of ML, and, importantly, as it is currently one of the most popular programming languages, a Python-based DSL has much higher chances for further usage and adoption.
 
