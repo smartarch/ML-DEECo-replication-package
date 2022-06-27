@@ -24,7 +24,7 @@ Furthermore, this readme file contains supplementary content to the paper:
 
 In this section, we show how to integrate the ability to make predictions and use them in the meta-model of an ensemble-based component model.
 
-We start with a (simplified due to the space constraints) meta-model describing core concepts of components and ensembles from the DEECo ensemble-based component model [B2013].
+We start with a (simplified due to the space constraints) meta-model describing core concepts of components and ensembles from the DEECo ensemble-based component model [^BGH+2013].
 
 ![Ensembles meta-model](meta-models/ensembles-meta-model.png "Ensembles meta-model")
 
@@ -113,7 +113,7 @@ The definition of the `timeToChargingModeEstimate` estimator is very similar. Th
 
 ## Limitations and Threats to Validity
 
-We list the most important ones below. We organize the threats to validity based on the schema in [RH2009], where the validity classes are defined as follows:
+We list the most important ones below. We organize the threats to validity based on the schema in [^RH2009], where the validity classes are defined as follows:
  * construct validity,
  * internal validity,
  * external validity, and
@@ -128,9 +128,9 @@ We list the most important ones below. We organize the threats to validity based
 *Reliability:* Though coming from an EU project with multiple partners, the implementation of the use-case we used for demonstration was created by us, including the baseline and the ML-based solution. This makes our results dependent on us. We ensured the difference between the baseline and the ML-based solution is only in the use of the estimator. However, this still makes our results only an indicator of the potential improvement and a feasibility case. They do not permit quantification of an expected improvement in other applications.
 
 
-[RH2009]  P. Runeson and M. Höst, “Guidelines for conducting and reporting case study research in software engineering,” Empirical Software Engineering, vol. 14, no. 2, pp. 131–164, Apr. 2009.
+[RH2009]:  P. Runeson and M. Höst, “Guidelines for conducting and reporting case study research in software engineering,” Empirical Software Engineering, vol. 14, no. 2, pp. 131–164, Apr. 2009.
 
-[B2013] Tomas Bures, Ilias Gerostathopoulos, Petr Hnetynka, Jaroslav Keznikl, Michal Kit, and Frantisek Plasil. 2013. DEECO: an ensemble-based component system. In Proceedings of the 16th International ACM Sigsoft symposium on Component-based software engineering (CBSE '13). Association for Computing Machinery, New York, NY, USA, 81–90. DOI:https://doi.org/10.1145/2465449.2465462
+[BGH+B2013]: T. Bures, I. Gerostathopoulos, P. Hnetynka, J. Keznikl, Michal Kit, and F. Plasil, “DEECO: an ensemble-based component system,“ In Proceedings of CBSE 2013, Vancouver, Canada, pp. 81–90., 2013, DOI:https://doi.org/10.1145/2465449.2465462
 
 [^1]: In our previous works, we were using the Scala-based DSL for ensembles specification. While the Scala language allows for much higher flexibility in designing DSLs, Python has better support in the area of ML, and, importantly, as it is currently one of the most popular programming languages, a Python-based DSL has much higher chances for further usage and adoption.
 
