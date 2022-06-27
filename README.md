@@ -1,8 +1,7 @@
 # ML-DEECo: Machine Learning-enabled Component Model for Dynamically Adapting Systems
 
-This is an accompanying repository to the paper *ML-DEECo: Machine Learning-enabled Component Model for Dynamically Adapting Systems* by Milad Abdullah, Michal Töpfer, Tomáš Bureš, Petr Hnětynka, Martin Kruliš, and František Plášil.
+This is an accompanying repository to the paper *Introducing Estimators&mdash;Abstraction for Easy ML Employment in Self-adaptive Architectures* by Milad Abdullah, Michal Töpfer, Tomáš Bureš, Petr Hnětynka, Martin Kruliš, and František Plášil.
 
-It also serves as a replication package for Master thesis *Machine-learning-based self-adaptation of component ensembles* by Michal Töpfer.
 
 ## Contents
 
@@ -18,6 +17,7 @@ There are several folders in this repository:
 Furthermore, this readme file contains supplementary content to the paper:
 
 * [Estimators semantics and meta-models](#estimators-semantics-and-meta-models)
+* [Mapping to Python](#mapping-to-python)
 * [Limitations and Threats to Validity](#limitations-and-Threats-to-Validity)
 
 ## Estimators semantics and meta-models
@@ -81,6 +81,77 @@ It has a single static role for an associated `Charger` (with cardinality $1$) a
 The selector of the role selects drones that are in need of charging.
 As the cardinality is unlimited, there is no utility function defined (as all the drones can be assigned to the role).
 
+## Mapping to Python
+
+As a proof of concept, we developed an open-source Python-based framework (available in the [`ml_deeco`](ml_deeco) folder) that realizes the approach described in the paper. 
+The framework features API for defining components, ensembles, and the estimators&mdash;thus providing an internal domain-specific language for the design of ensemble-based component systems that employ ML[^1].
+
+The framework uses decorators[^2] to define inputs, expected outputs (value and condition), and guards for the estimators.
+
+Both the component and ensemble types are defined as classes. For illustration, consider the fragment of the `Drone` component type shown in Listing below.
+The class extends the predefined `Component` class. 
+The fields of the component are defined in the constructor (the `__init__` method). 
+
+The `Drone` class showcases two estimators&mdash;one for battery level estimation and another for estimating the time till the drone starts charging.
+
+The battery level estimator uses the current battery level `battery` and the operational mode of the drone `mode` as inputs and predicts `battery` in the future. The definition of the estimator is split into three parts: (a) The basic structure of the neural network and storage for the collected data (lines \ref{inlst:bat-estimator-beg}--\ref{inlst:bat-estimator-end}).  
+(b) The declaration of the estimate fields in the component 
+(lines \ref{inlst:bat-estim-beg}--\ref{inlst:state-estim-end}). (c) The definition of inputs, output, and guards. These are realized as decorators on component fields and getter functions of `Drone`. %the component.
+
+Namely, the decorators are as follows.
+The `@futureBatteryEstimate.input()` decorates methods returning input values. The inputs indicate whether they are numeric values or categorical ones.
+The output is similarly decorated with the `@futureBatteryEstimate.output()` (line \ref{inlst:bat-target}).
+The `@futureBatteryEstimate.inputsValid()` and `@futureBatteryEstimate.outputsValid()` denote guards, i.e., conditions under which the inputs and outputs can be used for training the estimators (in this particular case, the drone must not be in the TERMINATED mode&mdash;line \ref{inlst:drone-guard}).
+
+The definition of the `timeToChargingModeEstimate` estimator is very similar. The only difference is that instead of defining the output, a condition is provided (line \ref{inlst:state-cond}).
+
+
+```python
+droneBatteryEstimator = NeuralNetworkEstimator(
+    hidden_layers=[32, 32],  
+      # two hidden layers with 32 neurons
+    name="Drone battery"
+)
+timeToChargingEstimator = ...
+
+class Drone(Component):
+    futureBatteryEstimate = ValueEstimate().inTimeStepsRange(1, 200).using(droneBatteryEstimator)
+    timeToChargingModeEstimate = TimeEstimate().using(timeToChargingEstimator)
+
+    def __init__(self, location):
+        self.battery = 1
+        self.mode = DroneMode.IDLE
+        # more code
+
+    @futureBatteryEstimate.input(NumericFeature(0, 1))
+    @timeToChargingModeEstimate.input(NumericFeature(0, 1))
+    def battery(self):
+        return self.battery
+
+    @futureBatteryEstimate.input(CategoricalFeature(DroneMode))
+    @timeToChargingModeEstimate.input(CategoricalFeature(DroneMode))
+    def drone_mode(self):
+        return self.mode
+
+    @futureBatteryEstimate.output(NumericFeature(0, 1))
+    def battery(self):
+        return self.battery
+
+    @futureBatteryEstimate.inputsValid
+    @futureBatteryEstimate.outputsValid
+    @timeToChargingModeEstimate.inputsValid
+    @timeToChargingModeEstimate.outputsValid
+    def not_terminated(self):
+        return self.mode != DroneMode.TERMINATED
+
+    @timeToChargingStateEstimate.condition
+    def is_charging_state(self):
+        return self.mode == DroneMode.CHARGING
+
+    def actuate(self):
+        # more code
+```
+
 ## Limitations and Threats to Validity
 
 We list the most important ones below. We organize the threats to validity based on the schema in [RH2009], where the validity classes are defined as follows:
@@ -101,3 +172,7 @@ We list the most important ones below. We organize the threats to validity based
 [RH2009]  P. Runeson and M. Höst, “Guidelines for conducting and reporting case study research in software engineering,” Empirical Software Engineering, vol. 14, no. 2, pp. 131–164, Apr. 2009.
 
 [B2013] Tomas Bures, Ilias Gerostathopoulos, Petr Hnetynka, Jaroslav Keznikl, Michal Kit, and Frantisek Plasil. 2013. DEECO: an ensemble-based component system. In Proceedings of the 16th International ACM Sigsoft symposium on Component-based software engineering (CBSE '13). Association for Computing Machinery, New York, NY, USA, 81–90. DOI:https://doi.org/10.1145/2465449.2465462
+
+[^1]: In our previous works, we were using the Scala-based DSL for ensembles specification. While the Scala language allows for much higher flexibility in designing DSLs, Python has better support in the area of ML, and, importantly, as it is currently one of the most popular programming languages, a Python-based DSL has much higher chances for further usage and adoption.
+
+[^2]: A decorator in Python is a function/method that enhances the functionality  of the function/method over which is applied (without modifying it) and assigns the result to the identifier of the original function/method&mdash;see https://www.python.org/dev/peps/pep-0318/
