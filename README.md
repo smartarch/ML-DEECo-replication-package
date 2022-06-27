@@ -94,9 +94,11 @@ The fields of the component are defined in the constructor (the `__init__` metho
 
 The `Drone` class showcases two estimators&mdash;one for battery level estimation and another for estimating the time till the drone starts charging.
 
-The battery level estimator uses the current battery level `battery` and the operational mode of the drone `mode` as inputs and predicts `battery` in the future. The definition of the estimator is split into three parts: (a) The basic structure of the neural network and storage for the collected data (lines 1&ndash;5).  
+The battery level estimator uses the current battery level `battery` and the operational mode of the drone `mode` as inputs and predicts `battery` in the future. The definition of the estimator is split into three parts:  
+(a) The basic structure of the neural network and storage for the collected data (lines 1&ndash;5).  
 (b) The declaration of the estimate fields in the component 
-(lines 9&ndash;10). (c) The definition of inputs, output, and guards. These are realized as decorators on component fields and getter functions of `Drone`.
+(lines 9&ndash;10).  
+(c) The definition of inputs, output, and guards. These are realized as decorators on component fields and getter functions of `Drone`.
 
 Namely, the decorators are as follows.
 The `@futureBatteryEstimate.input()` decorates methods returning input values. The inputs indicate whether they are numeric values or categorical ones.
